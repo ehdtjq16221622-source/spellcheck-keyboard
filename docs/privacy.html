@@ -6,120 +6,279 @@
   <title>개인정보처리방침 - 맞춤법 키보드</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f2f2f7;
-      color: #1c1c1e;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+      background: #000;
+      color: #f5f5f7;
+      min-height: 100vh;
       line-height: 1.7;
     }
+
+    .bg {
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 10%, rgba(52, 199, 89, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 90%, rgba(0, 122, 255, 0.1) 0%, transparent 50%),
+        #0a0a0a;
+      z-index: 0;
+    }
+
     .container {
+      position: relative;
+      z-index: 1;
       max-width: 680px;
       margin: 0 auto;
-      padding: 40px 24px 80px;
+      padding: 60px 24px 100px;
     }
-    h1 {
-      font-size: 28px;
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
-    .updated {
-      font-size: 13px;
-      color: #8e8e93;
+
+    /* 뒤로가기 */
+    .back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #34c759;
+      font-size: 16px;
+      text-decoration: none;
       margin-bottom: 32px;
     }
-    .card {
-      background: white;
-      border-radius: 16px;
-      padding: 20px;
-      margin-bottom: 16px;
+
+    h1 {
+      font-size: 34px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
     }
-    h2 {
+
+    .updated {
+      font-size: 13px;
+      color: #636366;
+      margin-bottom: 32px;
+    }
+
+    /* 요약 배너 */
+    .banner {
+      background: rgba(52, 199, 89, 0.1);
+      border: 1px solid rgba(52, 199, 89, 0.3);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 16px;
+      padding: 18px 20px;
+      font-size: 15px;
+      color: #34c759;
+      margin-bottom: 32px;
+      line-height: 1.6;
+    }
+
+    /* 섹션 레이블 */
+    .section-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #636366;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 10px;
+      padding-left: 4px;
+    }
+
+    /* 카드 */
+    .card {
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      overflow: hidden;
+      margin-bottom: 28px;
+    }
+
+    .card-row {
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+
+    .card-row:last-child { border-bottom: none; }
+
+    .row-icon {
+      font-size: 20px;
+      width: 36px;
+      height: 36px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .row-content {}
+
+    .row-title {
       font-size: 15px;
       font-weight: 600;
+      color: #f5f5f7;
+      margin-bottom: 3px;
+    }
+
+    .row-desc {
+      font-size: 14px;
       color: #8e8e93;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      line-height: 1.5;
+    }
+
+    /* 문의 */
+    .contact-card {
+      background: rgba(0, 122, 255, 0.08);
+      border: 1px solid rgba(0, 122, 255, 0.2);
+      border-radius: 20px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .contact-card p {
+      font-size: 14px;
+      color: #8e8e93;
       margin-bottom: 12px;
     }
-    p { font-size: 15px; color: #1c1c1e; margin-bottom: 10px; }
-    p:last-child { margin-bottom: 0; }
-    ul { padding-left: 20px; }
-    li { font-size: 15px; color: #1c1c1e; margin-bottom: 6px; }
-    .highlight {
-      background: #e8f5e9;
-      border-radius: 10px;
-      padding: 14px 16px;
-      font-size: 14px;
-      color: #2e7d32;
-      margin-bottom: 16px;
+
+    .contact-card a {
+      color: #007aff;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
     }
-    a { color: #007aff; text-decoration: none; }
+
+    .footer {
+      text-align: center;
+      font-size: 13px;
+      color: #48484a;
+      margin-top: 20px;
+    }
+
+    .footer a { color: #636366; text-decoration: none; }
   </style>
 </head>
 <body>
+  <div class="bg"></div>
   <div class="container">
+
+    <a href="./index.html" class="back">‹ 맞춤법 키보드</a>
+
     <h1>개인정보처리방침</h1>
     <p class="updated">최종 업데이트: 2026년 3월 12일</p>
 
-    <div class="highlight">
-      맞춤법 키보드는 사용자의 개인정보를 소중히 여깁니다.<br>
-      입력하신 텍스트는 맞춤법 교정 및 번역 목적으로만 사용되며, 저장하지 않습니다.
+    <div class="banner">
+      🔒 맞춤법 키보드는 입력하신 텍스트를 저장하지 않습니다.<br>
+      교정·번역 목적으로만 사용되며 처리 후 즉시 폐기됩니다.
     </div>
 
+    <!-- 수집 정보 -->
+    <p class="section-label">수집하는 정보</p>
     <div class="card">
-      <h2>수집하는 정보</h2>
-      <ul>
-        <li><strong>입력 텍스트</strong> — 맞춤법 교정 또는 번역 요청 시 해당 텍스트</li>
-        <li><strong>설정 정보</strong> — 진동, 팝업, 기본 모드 등 앱 설정값 (기기 내 저장)</li>
-      </ul>
+      <div class="card-row">
+        <div class="row-icon">📝</div>
+        <div class="row-content">
+          <div class="row-title">입력 텍스트</div>
+          <div class="row-desc">맞춤법 교정 또는 번역 요청 시 해당 텍스트. 처리 후 즉시 삭제됩니다.</div>
+        </div>
+      </div>
+      <div class="card-row">
+        <div class="row-icon">⚙️</div>
+        <div class="row-content">
+          <div class="row-title">설정 정보</div>
+          <div class="row-desc">진동, 팝업, 기본 모드 등 앱 설정값. 기기 내에만 저장됩니다.</div>
+        </div>
+      </div>
     </div>
 
+    <!-- 사용 목적 -->
+    <p class="section-label">사용 목적</p>
     <div class="card">
-      <h2>정보 사용 목적</h2>
-      <ul>
-        <li>한국어 맞춤법 및 띄어쓰기 교정</li>
-        <li>한/영/중/일 번역</li>
-        <li>회사말투 변환</li>
-      </ul>
+      <div class="card-row">
+        <div class="row-icon">✅</div>
+        <div class="row-content">
+          <div class="row-title">맞춤법 및 띄어쓰기 교정</div>
+          <div class="row-desc">AI가 한국어 맞춤법을 실시간으로 교정합니다.</div>
+        </div>
+      </div>
+      <div class="card-row">
+        <div class="row-icon">🌐</div>
+        <div class="row-content">
+          <div class="row-title">한/영/중/일 번역</div>
+          <div class="row-desc">키보드에서 바로 번역 기능을 제공합니다.</div>
+        </div>
+      </div>
+      <div class="card-row">
+        <div class="row-icon">💼</div>
+        <div class="row-content">
+          <div class="row-title">회사말투 변환</div>
+          <div class="row-desc">비즈니스 격식체로 자동 변환합니다.</div>
+        </div>
+      </div>
     </div>
 
+    <!-- 제3자 제공 -->
+    <p class="section-label">제3자 제공</p>
     <div class="card">
-      <h2>제3자 제공</h2>
-      <p>교정 및 번역 처리를 위해 입력 텍스트가 아래 서비스로 전송됩니다:</p>
-      <ul>
-        <li><strong>OpenAI</strong> (GPT-4o-mini) — AI 교정·번역 처리</li>
-        <li><strong>Supabase</strong> — 서버 인프라 (API 키 보안 관리)</li>
-      </ul>
-      <p>전송된 텍스트는 처리 후 즉시 폐기되며 저장되지 않습니다.</p>
+      <div class="card-row">
+        <div class="row-icon">🤖</div>
+        <div class="row-content">
+          <div class="row-title">OpenAI (GPT-4o-mini)</div>
+          <div class="row-desc">AI 교정·번역 처리에 사용됩니다. 전송된 텍스트는 처리 후 즉시 폐기됩니다.</div>
+        </div>
+      </div>
+      <div class="card-row">
+        <div class="row-icon">🛡️</div>
+        <div class="row-content">
+          <div class="row-title">Supabase</div>
+          <div class="row-desc">서버 인프라 및 API 키 보안 관리에 사용됩니다.</div>
+        </div>
+      </div>
     </div>
 
+    <!-- 사용자 권리 -->
+    <p class="section-label">사용자 권리</p>
     <div class="card">
-      <h2>저장 및 보관</h2>
-      <ul>
-        <li>입력 텍스트는 서버에 저장하지 않습니다</li>
-        <li>설정값은 사용자 기기 내에만 저장됩니다</li>
-        <li>결제 정보는 Google Play에서 직접 처리하며 앱에서 접근하지 않습니다</li>
-      </ul>
+      <div class="card-row">
+        <div class="row-icon">🗑️</div>
+        <div class="row-content">
+          <div class="row-title">데이터 삭제</div>
+          <div class="row-desc">앱 삭제 시 기기 내 모든 설정 데이터가 삭제됩니다.</div>
+        </div>
+      </div>
+      <div class="card-row">
+        <div class="row-icon">👶</div>
+        <div class="row-content">
+          <div class="row-title">어린이 보호</div>
+          <div class="row-desc">만 14세 미만 어린이를 대상으로 하지 않으며 관련 정보를 수집하지 않습니다.</div>
+        </div>
+      </div>
+      <div class="card-row">
+        <div class="row-icon">💳</div>
+        <div class="row-content">
+          <div class="row-title">결제 정보</div>
+          <div class="row-desc">결제 정보는 Google Play에서 직접 처리하며 앱에서 접근하지 않습니다.</div>
+        </div>
+      </div>
     </div>
 
-    <div class="card">
-      <h2>사용자 권리</h2>
-      <ul>
-        <li>앱 삭제 시 기기 내 모든 설정 데이터가 삭제됩니다</li>
-        <li>맞춤법 교정 버튼을 누르지 않으면 텍스트가 전송되지 않습니다</li>
-      </ul>
+    <!-- 문의 -->
+    <p class="section-label">문의</p>
+    <div class="contact-card">
+      <p>개인정보 관련 문의사항이 있으시면 아래로 연락해 주세요</p>
+      <a href="mailto:ehdtjq1622@naver.com">ehdtjq1622@naver.com</a>
     </div>
 
-    <div class="card">
-      <h2>어린이 개인정보</h2>
-      <p>본 앱은 만 14세 미만 어린이를 대상으로 하지 않으며, 어린이의 개인정보를 의도적으로 수집하지 않습니다.</p>
+    <div class="footer">
+      <p>© 2026 맞춤법 키보드 · <a href="./index.html">홈으로</a></p>
     </div>
 
-    <div class="card">
-      <h2>문의</h2>
-      <p>개인정보 관련 문의사항이 있으시면 아래로 연락해 주세요:</p>
-      <p><a href="mailto:ehdtjq16221622@gmail.com">ehdtjq16221622@gmail.com</a></p>
-    </div>
   </div>
 </body>
 </html>

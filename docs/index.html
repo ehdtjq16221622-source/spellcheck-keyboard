@@ -6,44 +6,291 @@
   <title>맞춤법 키보드</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f2f2f7;
-      color: #1c1c1e;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+      background: #000;
+      color: #f5f5f7;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* 배경 그라디언트 (iOS 26 Liquid Glass) */
+    .bg {
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 20%, rgba(52, 199, 89, 0.25) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 80%, rgba(0, 122, 255, 0.2) 0%, transparent 60%),
+        #0a0a0a;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 80px 24px 100px;
+      text-align: center;
+    }
+
+    /* 앱 아이콘 */
+    .app-icon {
+      width: 100px;
+      height: 100px;
+      background: linear-gradient(145deg, #34c759, #30b350);
+      border-radius: 24px;
+      margin: 0 auto 28px;
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
-      padding: 24px;
+      font-size: 48px;
+      box-shadow: 0 20px 60px rgba(52, 199, 89, 0.4);
     }
-    .container { max-width: 480px; text-align: center; }
-    h1 { font-size: 32px; font-weight: 700; margin-bottom: 12px; }
-    p { font-size: 17px; color: #6c6c70; margin-bottom: 32px; }
+
+    h1 {
+      font-size: 48px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #fff 0%, #a0a0a0 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      font-size: 19px;
+      color: #8e8e93;
+      margin-bottom: 48px;
+      line-height: 1.5;
+    }
+
+    /* 기능 카드들 */
+    .features {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 48px;
+      text-align: left;
+    }
+
+    .feature-card {
+      background: rgba(255,255,255,0.07);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 20px;
+    }
+
+    .feature-icon {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    .feature-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #f5f5f7;
+      margin-bottom: 4px;
+    }
+
+    .feature-desc {
+      font-size: 13px;
+      color: #8e8e93;
+      line-height: 1.4;
+    }
+
+    /* 버튼 */
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+    }
+
     .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      max-width: 320px;
+      padding: 16px 32px;
+      border-radius: 14px;
+      font-size: 17px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+
+    .btn:active { opacity: 0.8; }
+
+    .btn-primary {
+      background: #34c759;
+      color: white;
+      box-shadow: 0 8px 32px rgba(52, 199, 89, 0.4);
+    }
+
+    .btn-glass {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #f5f5f7;
+    }
+
+    /* 구독 플랜 */
+    .plans {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 48px;
+    }
+
+    .plan-card {
+      background: rgba(255,255,255,0.07);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 20px;
+      text-align: left;
+    }
+
+    .plan-card.featured {
+      border-color: rgba(52, 199, 89, 0.5);
+      background: rgba(52, 199, 89, 0.08);
+    }
+
+    .plan-badge {
       display: inline-block;
       background: #34c759;
       color: white;
-      padding: 14px 32px;
-      border-radius: 12px;
-      font-size: 16px;
-      font-weight: 600;
-      text-decoration: none;
-      margin: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      margin-bottom: 10px;
     }
-    .btn-secondary {
-      background: white;
-      color: #007aff;
-      border: 1.5px solid #007aff;
+
+    .plan-name {
+      font-size: 17px;
+      font-weight: 700;
+      color: #f5f5f7;
+      margin-bottom: 4px;
+    }
+
+    .plan-price {
+      font-size: 26px;
+      font-weight: 700;
+      color: #34c759;
+      margin-bottom: 4px;
+    }
+
+    .plan-price span {
+      font-size: 14px;
+      color: #8e8e93;
+      font-weight: 400;
+    }
+
+    .plan-limit {
+      font-size: 13px;
+      color: #8e8e93;
+    }
+
+    /* 섹션 타이틀 */
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #8e8e93;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 16px;
+      text-align: left;
+    }
+
+    /* 하단 */
+    .footer {
+      margin-top: 60px;
+      font-size: 13px;
+      color: #48484a;
+    }
+
+    .footer a { color: #636366; text-decoration: none; }
+
+    @media (max-width: 400px) {
+      h1 { font-size: 36px; }
+      .features { grid-template-columns: 1fr; }
+      .plans { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
+  <div class="bg"></div>
   <div class="container">
+
+    <div class="app-icon">✍️</div>
     <h1>맞춤법 키보드</h1>
-    <p>AI가 실시간으로 맞춤법을 교정해주는 안드로이드 키보드</p>
-    <a href="https://play.google.com/store/apps/details?id=com.spellcheck.keyboard" class="btn">Google Play에서 다운로드</a>
-    <br>
-    <a href="./privacy.html" class="btn btn-secondary">개인정보처리방침</a>
+    <p class="subtitle">AI가 실시간으로 맞춤법을 교정해주는<br>스마트 안드로이드 키보드</p>
+
+    <!-- 기능 -->
+    <p class="section-title">주요 기능</p>
+    <div class="features">
+      <div class="feature-card">
+        <div class="feature-icon">✅</div>
+        <div class="feature-title">실시간 맞춤법 교정</div>
+        <div class="feature-desc">타이핑하면 자동으로 교정</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🌐</div>
+        <div class="feature-title">한/영/중/일 번역</div>
+        <div class="feature-desc">키보드에서 바로 번역</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💼</div>
+        <div class="feature-title">회사말투 변환</div>
+        <div class="feature-desc">격식체로 자동 변환</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⌨️</div>
+        <div class="feature-title">두벌식 + 천지인</div>
+        <div class="feature-desc">원하는 키보드 선택</div>
+      </div>
+    </div>
+
+    <!-- 구독 플랜 -->
+    <p class="section-title">구독 플랜</p>
+    <div class="plans">
+      <div class="plan-card">
+        <div class="plan-name">베이직</div>
+        <div class="plan-price">1,000<span>원/월</span></div>
+        <div class="plan-limit">하루 100번</div>
+      </div>
+      <div class="plan-card featured">
+        <div class="plan-badge">추천</div>
+        <div class="plan-name">프로</div>
+        <div class="plan-price">2,000<span>원/월</span></div>
+        <div class="plan-limit">하루 300번</div>
+      </div>
+    </div>
+
+    <!-- 버튼 -->
+    <div class="btn-group">
+      <a href="https://play.google.com/store/apps/details?id=com.spellcheck.keyboard" class="btn btn-primary">
+        Google Play에서 다운로드
+      </a>
+      <a href="./privacy.html" class="btn btn-glass">
+        개인정보처리방침
+      </a>
+    </div>
+
+    <div class="footer">
+      <p>© 2026 맞춤법 키보드 · <a href="./privacy.html">개인정보처리방침</a></p>
+      <p style="margin-top:6px;">1주일 무료 체험 후 구독</p>
+    </div>
+
   </div>
 </body>
 </html>
