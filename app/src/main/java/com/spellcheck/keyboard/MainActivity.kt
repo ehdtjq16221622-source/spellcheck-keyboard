@@ -230,7 +230,7 @@ fun SettingsScreen(onOpenKeyboardSettings: () -> Unit, onOpenPrivacyPolicy: () -
             textAlign = TextAlign.Center
         )
         Text(
-            "입력하신 텍스트는 맞춤법 교정을 위해 AI 서버로 전송됩니다",
+            "입력하신 텍스트는 맞춤법 교정을 위해 AI 서버로 전송되며 저장되지 않습니다",
             fontSize = 11.sp,
             color = LabelTertiary,
             modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
