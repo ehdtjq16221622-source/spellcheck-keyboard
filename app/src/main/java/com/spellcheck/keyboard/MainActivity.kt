@@ -5,8 +5,11 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -21,10 +24,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import android.graphics.BitmapFactory
+import java.io.File
+import java.io.FileOutputStream
 import com.spellcheck.keyboard.ui.theme.맞춤법키보드Theme
 
 // iOS 26 Liquid Glass 색상 팔레트
@@ -59,6 +70,16 @@ class MainActivity : ComponentActivity() {
                         },
                         onOpenFeedback = {
                             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://ehdtjq16221622-source.github.io/spellcheck-keyboard/feedback.html")))
+                        },
+                        onSaveCustomImage = { uri ->
+                            // URI → 앱 내부 저장소에 복사
+                            try {
+                                val input = contentResolver.openInputStream(uri)
+                                val file = File(filesDir, "custom_bg.jpg")
+                                FileOutputStream(file).use { out -> input?.copyTo(out) }
+                                input?.close()
+                                SettingsManager.customImagePath = file.absolutePath
+                            } catch (e: Exception) { e.printStackTrace() }
                         }
                     )
                 }
@@ -68,7 +89,12 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun SettingsScreen(onOpenKeyboardSettings: () -> Unit, onOpenPrivacyPolicy: () -> Unit, onOpenFeedback: () -> Unit) {
+fun SettingsScreen(
+    onOpenKeyboardSettings: () -> Unit,
+    onOpenPrivacyPolicy: () -> Unit,
+    onOpenFeedback: () -> Unit,
+    onSaveCustomImage: (Uri) -> Unit
+) {
     var vibration    by remember { mutableStateOf(SettingsManager.vibrationEnabled) }
     var doubleSpace  by remember { mutableStateOf(SettingsManager.doubleSpacePeriod) }
     var keyPopup     by remember { mutableStateOf(SettingsManager.keyPopup) }
@@ -78,7 +104,20 @@ fun SettingsScreen(onOpenKeyboardSettings: () -> Unit, onOpenPrivacyPolicy: () -
     var includeDialect by remember { mutableStateOf(SettingsManager.includeDialect) }
     var formalLevel  by remember { mutableStateOf(SettingsManager.formalLevel) }
     var formalIncludePunct by remember { mutableStateOf(SettingsManager.formalIncludePunct) }
-    var keyboardTheme by remember { mutableStateOf(SettingsManager.keyboardTheme) }
+    var keyboardTheme     by remember { mutableStateOf(SettingsManager.keyboardTheme) }
+    var customImagePath   by remember { mutableStateOf(SettingsManager.customImagePath) }
+    var customImageMode   by remember { mutableStateOf(SettingsManager.customImageMode) }
+    var customOverlay     by remember { mutableStateOf(SettingsManager.customImageOverlay.toFloat()) }
+    var customKeyText     by remember { mutableStateOf(SettingsManager.customKeyTextColor) }
+
+    val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let {
+            onSaveCustomImage(it)
+            customImagePath = SettingsManager.customImagePath
+            keyboardTheme = "커스텀"
+            SettingsManager.keyboardTheme = "커스텀"
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -141,7 +180,8 @@ fun SettingsScreen(onOpenKeyboardSettings: () -> Unit, onOpenPrivacyPolicy: () -
             Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
                 Text("키보드 테마", fontSize = 13.sp, color = LabelSecondary)
                 Spacer(Modifier.height(10.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // 기본 테마 3개
                     listOf(
                         "화이트" to Color(0xFFFFFFFF),
                         "블랙"   to Color(0xFF1C1C1E),
@@ -157,30 +197,132 @@ fun SettingsScreen(onOpenKeyboardSettings: () -> Unit, onOpenPrivacyPolicy: () -
                                     .size(52.dp)
                                     .clip(RoundedCornerShape(14.dp))
                                     .background(color)
-                                    .clickable { keyboardTheme = name; SettingsManager.keyboardTheme = name }
-                                    .then(
-                                        if (selected) Modifier.shadow(0.dp)
-                                        else Modifier
-                                    ),
+                                    .then(if (selected) Modifier.border(2.dp, AccentBlue, RoundedCornerShape(14.dp)) else Modifier)
+                                    .clickable { keyboardTheme = name; SettingsManager.keyboardTheme = name },
                                 contentAlignment = Alignment.Center
                             ) {
-                                if (selected) {
-                                    Text(
-                                        "✓",
-                                        fontSize = 20.sp,
-                                        color = if (name == "블랙") Color.White else Color(0xFF1C1C1E),
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
+                                if (selected) Text("✓", fontSize = 20.sp,
+                                    color = if (name == "블랙") Color.White else Color(0xFF1C1C1E),
+                                    fontWeight = FontWeight.Bold)
                             }
                             Spacer(Modifier.height(6.dp))
-                            Text(
-                                name,
-                                fontSize = 12.sp,
+                            Text(name, fontSize = 12.sp,
                                 color = if (selected) AccentBlue else LabelSecondary,
-                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
-                            )
+                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal)
                         }
+                    }
+                    // 커스텀 버튼
+                    val customSelected = keyboardTheme == "커스텀"
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(52.dp)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(
+                                    if (customImagePath.isNotEmpty())
+                                        Color(0xFF2C2C2E)
+                                    else Color(0xFFE5E5EA)
+                                )
+                                .then(if (customSelected) Modifier.border(2.dp, AccentBlue, RoundedCornerShape(14.dp)) else Modifier)
+                                .clickable { imagePicker.launch("image/*") },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (customImagePath.isNotEmpty()) {
+                                val bmp = remember(customImagePath) {
+                                    BitmapFactory.decodeFile(customImagePath)
+                                }
+                                if (bmp != null) {
+                                    androidx.compose.foundation.layout.Box(
+                                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp))
+                                    ) {
+                                        androidx.compose.foundation.Image(
+                                            painter = BitmapPainter(bmp.asImageBitmap()),
+                                            contentDescription = null,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    }
+                                }
+                            } else {
+                                Text("＋", fontSize = 22.sp, color = LabelSecondary)
+                            }
+                        }
+                        Spacer(Modifier.height(6.dp))
+                        Text("커스텀", fontSize = 12.sp,
+                            color = if (customSelected) AccentBlue else LabelSecondary,
+                            fontWeight = if (customSelected) FontWeight.SemiBold else FontWeight.Normal)
+                    }
+                }
+
+                // 커스텀 선택 시 추가 옵션
+                if (keyboardTheme == "커스텀" && customImagePath.isNotEmpty()) {
+                    Spacer(Modifier.height(16.dp))
+
+                    // 표시 모드
+                    Text("표시 방식", fontSize = 13.sp, color = LabelSecondary)
+                    Spacer(Modifier.height(8.dp))
+                    val modes = listOf("꽉채우기", "늘리기", "가운데", "타일", "미러타일", "블러")
+                    val modeIcons = listOf("⬛", "↔", "⊡", "⊞", "⊠", "🌫")
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        itemsIndexed(modes) { i, m ->
+                            val mSelected = customImageMode == m
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(if (mSelected) AccentBlue.copy(alpha = 0.15f) else Color(0xFFE5E5EA))
+                                        .then(if (mSelected) Modifier.border(1.5.dp, AccentBlue, RoundedCornerShape(12.dp)) else Modifier)
+                                        .clickable { customImageMode = m; SettingsManager.customImageMode = m },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(modeIcons[i], fontSize = 20.sp)
+                                }
+                                Spacer(Modifier.height(4.dp))
+                                Text(m, fontSize = 10.sp,
+                                    color = if (mSelected) AccentBlue else LabelSecondary,
+                                    fontWeight = if (mSelected) FontWeight.SemiBold else FontWeight.Normal)
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    // 오버레이 (어둡기)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("어둡기", fontSize = 13.sp, color = LabelSecondary)
+                        Spacer(Modifier.width(8.dp))
+                        Text("${customOverlay.toInt()}%", fontSize = 13.sp, color = LabelPrimary, fontWeight = FontWeight.Medium)
+                    }
+                    Slider(
+                        value = customOverlay,
+                        onValueChange = {
+                            customOverlay = it
+                            SettingsManager.customImageOverlay = it.toInt()
+                        },
+                        valueRange = 0f..80f,
+                        colors = SliderDefaults.colors(thumbColor = AccentBlue, activeTrackColor = AccentBlue)
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+
+                    // 키 텍스트 색상
+                    Text("키 글자 색상", fontSize = 13.sp, color = LabelSecondary)
+                    Spacer(Modifier.height(8.dp))
+                    IosSegmentedControl(
+                        options = listOf("어둠", "밝음"),
+                        selected = customKeyText,
+                        onSelect = { customKeyText = it; SettingsManager.customKeyTextColor = it }
+                    )
+
+                    Spacer(Modifier.height(10.dp))
+
+                    // 이미지 다시 선택
+                    TextButton(onClick = { imagePicker.launch("image/*") }) {
+                        Text("이미지 다시 선택", color = AccentBlue, fontSize = 14.sp)
                     }
                 }
             }

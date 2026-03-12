@@ -1,8 +1,19 @@
 package com.spellcheck.keyboard
 
 import android.content.Context
+import android.content.res.ColorStateList
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.BitmapShader
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Matrix
+import android.graphics.Paint
+import android.graphics.RenderEffect
+import android.graphics.Shader
+import android.graphics.drawable.BitmapDrawable
 import android.inputmethodservice.InputMethodService
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.VibrationEffect
@@ -128,10 +139,16 @@ class KeyboardService : InputMethodService() {
 
     private fun applyTheme() {
         val theme = SettingsManager.keyboardTheme
+
+        if (theme == "커스텀") {
+            applyCustomImageTheme()
+            return
+        }
+
         val bgColor = when (theme) {
             "블랙" -> Color.parseColor("#1C1C1E")
             "핑크" -> Color.parseColor("#FFE4F0")
-            else   -> Color.parseColor("#F0F0F0") // 화이트
+            else   -> Color.parseColor("#F0F0F0")
         }
         val keyColor = when (theme) {
             "블랙" -> Color.parseColor("#2C2C2E")
@@ -143,14 +160,130 @@ class KeyboardService : InputMethodService() {
             else   -> Color.parseColor("#1C1C1E")
         }
 
-        // 루트 배경
         keyboardView.setBackgroundColor(bgColor)
+        applyButtonStyle(keyColor, textColor, transparentKey = false)
+    }
 
-        // 모든 버튼 텍스트 색상 적용
+    private fun applyCustomImageTheme() {
+        val path = SettingsManager.customImagePath
+        if (path.isEmpty()) {
+            keyboardView.setBackgroundColor(Color.parseColor("#F0F0F0"))
+            return
+        }
+
+        val srcBitmap = try {
+            BitmapFactory.decodeFile(path) ?: return
+        } catch (e: Exception) {
+            return
+        }
+
+        val mode = SettingsManager.customImageMode
+        val overlayAlpha = SettingsManager.customImageOverlay // 0~100
+        val textColor = if (SettingsManager.customKeyTextColor == "밝음") Color.WHITE
+                        else Color.parseColor("#1C1C1E")
+
+        // 키보드 뷰 크기 (측정 후 적용)
+        keyboardView.post {
+            val w = keyboardView.width.takeIf { it > 0 } ?: 1080
+            val h = keyboardView.height.takeIf { it > 0 } ?: 800
+
+            val processed: Bitmap = when (mode) {
+                "꽉채우기" -> centerCropBitmap(srcBitmap, w, h)
+                "늘리기"   -> Bitmap.createScaledBitmap(srcBitmap, w, h, true)
+                "가운데"   -> centerBitmap(srcBitmap, w, h)
+                "타일"     -> tileBitmap(srcBitmap, w, h, mirror = false)
+                "미러타일" -> tileBitmap(srcBitmap, w, h, mirror = true)
+                "블러"     -> blurBitmap(centerCropBitmap(srcBitmap, w, h))
+                else       -> centerCropBitmap(srcBitmap, w, h)
+            }
+
+            // 오버레이 적용 (반투명 어두운 레이어)
+            val final = applyOverlay(processed, overlayAlpha)
+
+            keyboardView.background = BitmapDrawable(resources, final)
+            // 커스텀 테마에서는 키를 반투명으로
+            applyButtonStyle(
+                keyColor = Color.argb(80, 255, 255, 255),
+                textColor = textColor,
+                transparentKey = true
+            )
+        }
+    }
+
+    // CENTER CROP: 비율 유지, 꽉 채우기
+    private fun centerCropBitmap(src: Bitmap, w: Int, h: Int): Bitmap {
+        val srcRatio = src.width.toFloat() / src.height
+        val dstRatio = w.toFloat() / h
+        val (scaledW, scaledH) = if (srcRatio > dstRatio)
+            (src.height * dstRatio).toInt() to src.height
+        else
+            src.width to (src.width / dstRatio).toInt()
+        val x = (src.width - scaledW) / 2
+        val y = (src.height - scaledH) / 2
+        val cropped = Bitmap.createBitmap(src, x, y, scaledW, scaledH)
+        return Bitmap.createScaledBitmap(cropped, w, h, true)
+    }
+
+    // 가운데 배치 (패딩)
+    private fun centerBitmap(src: Bitmap, w: Int, h: Int): Bitmap {
+        val result = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(result)
+        canvas.drawColor(Color.parseColor("#F0F0F0"))
+        val scale = minOf(w.toFloat() / src.width, h.toFloat() / src.height)
+        val scaledW = (src.width * scale).toInt()
+        val scaledH = (src.height * scale).toInt()
+        val left = (w - scaledW) / 2f
+        val top = (h - scaledH) / 2f
+        val scaled = Bitmap.createScaledBitmap(src, scaledW, scaledH, true)
+        canvas.drawBitmap(scaled, left, top, null)
+        return result
+    }
+
+    // 타일 반복
+    private fun tileBitmap(src: Bitmap, w: Int, h: Int, mirror: Boolean): Bitmap {
+        val tileSize = minOf(w, h) / 3  // 타일 크기 = 키보드 짧은 쪽의 1/3
+        val tile = Bitmap.createScaledBitmap(src, tileSize, tileSize, true)
+        val result = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(result)
+        val paint = Paint()
+        val shader = BitmapShader(
+            tile,
+            if (mirror) Shader.TileMode.MIRROR else Shader.TileMode.REPEAT,
+            if (mirror) Shader.TileMode.MIRROR else Shader.TileMode.REPEAT
+        )
+        paint.shader = shader
+        canvas.drawRect(0f, 0f, w.toFloat(), h.toFloat(), paint)
+        return result
+    }
+
+    // 블러
+    private fun blurBitmap(src: Bitmap): Bitmap {
+        // 소프트웨어 블러 (API 레벨 무관)
+        val scale = 0.1f
+        val small = Bitmap.createScaledBitmap(
+            src, (src.width * scale).toInt().coerceAtLeast(1),
+            (src.height * scale).toInt().coerceAtLeast(1), true
+        )
+        return Bitmap.createScaledBitmap(small, src.width, src.height, true)
+    }
+
+    // 오버레이 (반투명 어두운 레이어)
+    private fun applyOverlay(src: Bitmap, alphaPercent: Int): Bitmap {
+        if (alphaPercent == 0) return src
+        val result = src.copy(Bitmap.Config.ARGB_8888, true)
+        val canvas = Canvas(result)
+        val paint = Paint()
+        paint.color = Color.argb((alphaPercent * 2.55f).toInt(), 0, 0, 0)
+        canvas.drawRect(0f, 0f, result.width.toFloat(), result.height.toFloat(), paint)
+        return result
+    }
+
+    // 버튼 스타일 일괄 적용
+    private fun applyButtonStyle(keyColor: Int, textColor: Int, transparentKey: Boolean) {
         fun applyToButtons(view: View) {
             if (view is android.widget.Button) {
                 view.setTextColor(textColor)
-                view.backgroundTintList = android.content.res.ColorStateList.valueOf(keyColor)
+                view.backgroundTintList = ColorStateList.valueOf(keyColor)
             } else if (view is android.view.ViewGroup) {
                 for (i in 0 until view.childCount) applyToButtons(view.getChildAt(i))
             }

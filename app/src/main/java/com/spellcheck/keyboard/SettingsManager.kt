@@ -51,8 +51,28 @@ object SettingsManager {
         get() = prefs.getBoolean("formal_include_punct", true)
         set(v) = prefs.edit().putBoolean("formal_include_punct", v).apply()
 
-    // 키보드 테마: "화이트" / "블랙" / "핑크"
+    // 키보드 테마: "화이트" / "블랙" / "핑크" / "커스텀"
     var keyboardTheme: String
         get() = prefs.getString("keyboard_theme", "화이트") ?: "화이트"
         set(v) = prefs.edit().putString("keyboard_theme", v).apply()
+
+    // 커스텀 배경 이미지 파일 경로
+    var customImagePath: String
+        get() = prefs.getString("custom_image_path", "") ?: ""
+        set(v) = prefs.edit().putString("custom_image_path", v).apply()
+
+    // 커스텀 배경 표시 모드: "꽉채우기" / "타일" / "미러타일" / "늘리기" / "가운데" / "블러"
+    var customImageMode: String
+        get() = prefs.getString("custom_image_mode", "꽉채우기") ?: "꽉채우기"
+        set(v) = prefs.edit().putString("custom_image_mode", v).apply()
+
+    // 오버레이 투명도 (0~100, 기본 30 = 30% 어두운 레이어)
+    var customImageOverlay: Int
+        get() = prefs.getInt("custom_image_overlay", 30)
+        set(v) = prefs.edit().putInt("custom_image_overlay", v).apply()
+
+    // 커스텀 배경 사용 시 키 텍스트 색상: "어둠" / "밝음"
+    var customKeyTextColor: String
+        get() = prefs.getString("custom_key_text_color", "어둠") ?: "어둠"
+        set(v) = prefs.edit().putString("custom_key_text_color", v).apply()
 }
