@@ -1,21 +1,28 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# 맞춤법 키보드 ProGuard 규칙
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# 스택 트레이스 디버깅을 위한 줄 번호 유지
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Kotlin 관련
+-keep class kotlin.** { *; }
+-keep class kotlinx.** { *; }
+-dontwarn kotlin.**
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Android IME (키보드 서비스) 유지 - 난독화하면 키보드가 안 뜸
+-keep class com.spellcheck.keyboard.KeyboardService { *; }
+-keep class com.spellcheck.keyboard.MainActivity { *; }
+
+# JSON 파싱 (org.json)
+-keep class org.json.** { *; }
+
+# Google Play Billing
+-keep class com.android.billingclient.** { *; }
+-dontwarn com.android.billingclient.**
+
+# Compose 관련
+-keep class androidx.compose.** { *; }
+-dontwarn androidx.compose.**
+
+# 앱 전체 클래스 유지 (소규모 앱이라 전체 유지)
+-keep class com.spellcheck.keyboard.** { *; }

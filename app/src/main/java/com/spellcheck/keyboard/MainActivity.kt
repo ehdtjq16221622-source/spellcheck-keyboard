@@ -1,11 +1,13 @@
 package com.spellcheck.keyboard
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -51,6 +53,9 @@ class MainActivity : ComponentActivity() {
                     SettingsScreen(
                         onOpenKeyboardSettings = {
                             startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
+                        },
+                        onOpenPrivacyPolicy = {
+                            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://ehdtjq16221622.github.io/spellcheck-keyboard/privacy")))
                         }
                     )
                 }
@@ -60,7 +65,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun SettingsScreen(onOpenKeyboardSettings: () -> Unit) {
+fun SettingsScreen(onOpenKeyboardSettings: () -> Unit, onOpenPrivacyPolicy: () -> Unit) {
     var vibration    by remember { mutableStateOf(SettingsManager.vibrationEnabled) }
     var doubleSpace  by remember { mutableStateOf(SettingsManager.doubleSpacePeriod) }
     var keyPopup     by remember { mutableStateOf(SettingsManager.keyPopup) }
@@ -204,6 +209,17 @@ fun SettingsScreen(onOpenKeyboardSettings: () -> Unit) {
             )
         }
 
+        Spacer(Modifier.height(28.dp))
+
+        // ── 정보
+        IosSection(label = "정보") {
+            IosRow(
+                title = "개인정보처리방침",
+                trailingType = TrailingType.Chevron,
+                onClick = onOpenPrivacyPolicy
+            )
+        }
+
         Spacer(Modifier.height(36.dp))
 
         Text(
@@ -211,6 +227,13 @@ fun SettingsScreen(onOpenKeyboardSettings: () -> Unit) {
             fontSize = 13.sp,
             color = LabelTertiary,
             modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center
+        )
+        Text(
+            "입력하신 텍스트는 맞춤법 교정을 위해 AI 서버로 전송됩니다",
+            fontSize = 11.sp,
+            color = LabelTertiary,
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
             textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(32.dp))
@@ -359,6 +382,7 @@ fun IosRow(
     val modifier = if (onClick != null) {
         Modifier
             .fillMaxWidth()
+            .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 12.dp)
     } else {
         Modifier

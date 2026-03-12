@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>맞춤법 키보드</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f2f2f7;
+      color: #1c1c1e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .container { max-width: 480px; text-align: center; }
+    h1 { font-size: 32px; font-weight: 700; margin-bottom: 12px; }
+    p { font-size: 17px; color: #6c6c70; margin-bottom: 32px; }
+    .btn {
+      display: inline-block;
+      background: #34c759;
+      color: white;
+      padding: 14px 32px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      margin: 8px;
+    }
+    .btn-secondary {
+      background: white;
+      color: #007aff;
+      border: 1.5px solid #007aff;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>맞춤법 키보드</h1>
+    <p>AI가 실시간으로 맞춤법을 교정해주는 안드로이드 키보드</p>
+    <a href="https://play.google.com/store/apps/details?id=com.spellcheck.keyboard" class="btn">Google Play에서 다운로드</a>
+    <br>
+    <a href="./privacy.html" class="btn btn-secondary">개인정보처리방침</a>
+  </div>
+</body>
+</html>
