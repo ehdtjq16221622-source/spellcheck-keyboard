@@ -120,9 +120,42 @@ class KeyboardService : InputMethodService() {
             else -> InputMode.DUBEOLSIK
         }
         isFormalMode = SettingsManager.formalDefault
+        applyTheme()
         setupButtons()
         updateKeyboardMode()
         return keyboardView
+    }
+
+    private fun applyTheme() {
+        val theme = SettingsManager.keyboardTheme
+        val bgColor = when (theme) {
+            "블랙" -> Color.parseColor("#1C1C1E")
+            "핑크" -> Color.parseColor("#FFE4F0")
+            else   -> Color.parseColor("#F0F0F0") // 화이트
+        }
+        val keyColor = when (theme) {
+            "블랙" -> Color.parseColor("#2C2C2E")
+            "핑크" -> Color.parseColor("#FFB6D9")
+            else   -> Color.parseColor("#FFFFFF")
+        }
+        val textColor = when (theme) {
+            "블랙" -> Color.WHITE
+            else   -> Color.parseColor("#1C1C1E")
+        }
+
+        // 루트 배경
+        keyboardView.setBackgroundColor(bgColor)
+
+        // 모든 버튼 텍스트 색상 적용
+        fun applyToButtons(view: View) {
+            if (view is android.widget.Button) {
+                view.setTextColor(textColor)
+                view.backgroundTintList = android.content.res.ColorStateList.valueOf(keyColor)
+            } else if (view is android.view.ViewGroup) {
+                for (i in 0 until view.childCount) applyToButtons(view.getChildAt(i))
+            }
+        }
+        applyToButtons(keyboardView)
     }
 
     // 키보드가 나타날 때마다 기본 모드 설정 반영

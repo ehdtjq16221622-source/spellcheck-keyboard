@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>건의사항 - 맞춤법 키보드</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+      background: #000;
+      color: #f5f5f7;
+      min-height: 100vh;
+    }
+
+    .bg {
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 30% 20%, rgba(0, 122, 255, 0.2) 0%, transparent 55%),
+        radial-gradient(ellipse at 70% 80%, rgba(52, 199, 89, 0.15) 0%, transparent 55%),
+        #0a0a0a;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 60px 24px 100px;
+    }
+
+    .back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #34c759;
+      font-size: 16px;
+      text-decoration: none;
+      margin-bottom: 32px;
+    }
+
+    h1 {
+      font-size: 34px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 16px;
+      color: #8e8e93;
+      margin-bottom: 40px;
+      line-height: 1.5;
+    }
+
+    /* 카테고리 */
+    .section-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #636366;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 10px;
+      padding-left: 4px;
+    }
+
+    .category-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .category-btn {
+      background: rgba(255,255,255,0.07);
+      border: 1.5px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: left;
+    }
+
+    .category-btn:hover,
+    .category-btn.active {
+      background: rgba(0, 122, 255, 0.12);
+      border-color: rgba(0, 122, 255, 0.4);
+    }
+
+    .category-icon { font-size: 22px; margin-bottom: 6px; }
+    .category-name { font-size: 14px; font-weight: 600; color: #f5f5f7; }
+    .category-desc { font-size: 12px; color: #8e8e93; margin-top: 2px; }
+
+    /* 폼 */
+    .form-card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .form-row {
+      padding: 14px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .form-row:last-child { border-bottom: none; }
+
+    .form-label {
+      font-size: 12px;
+      color: #8e8e93;
+      margin-bottom: 6px;
+    }
+
+    input, textarea {
+      width: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #f5f5f7;
+      font-size: 15px;
+      font-family: inherit;
+      resize: none;
+    }
+
+    textarea { min-height: 120px; line-height: 1.6; }
+
+    input::placeholder, textarea::placeholder { color: #48484a; }
+
+    .submit-btn {
+      width: 100%;
+      padding: 16px;
+      background: #007aff;
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 17px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: opacity 0.2s;
+      margin-bottom: 28px;
+    }
+
+    .submit-btn:hover { opacity: 0.85; }
+    .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* 직접 연락 */
+    .contact-card {
+      background: rgba(52, 199, 89, 0.08);
+      border: 1px solid rgba(52, 199, 89, 0.2);
+      border-radius: 20px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .contact-card p { font-size: 14px; color: #8e8e93; margin-bottom: 10px; }
+    .contact-card a { color: #34c759; font-size: 15px; font-weight: 600; text-decoration: none; }
+
+    /* 완료 메시지 */
+    .success {
+      display: none;
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .success-icon { font-size: 56px; margin-bottom: 16px; }
+    .success h2 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+    .success p { font-size: 15px; color: #8e8e93; }
+
+    @media (max-width: 400px) {
+      .category-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg"></div>
+  <div class="container">
+
+    <a href="./index.html" class="back">‹ 맞춤법 키보드</a>
+
+    <h1>건의사항</h1>
+    <p class="subtitle">불편한 점이나 원하는 기능을 알려주세요.<br>더 좋은 앱을 만드는 데 큰 도움이 됩니다.</p>
+
+    <div id="formSection">
+      <!-- 카테고리 -->
+      <p class="section-label">유형 선택</p>
+      <div class="category-grid">
+        <div class="category-btn" onclick="selectCategory(this, '버그 신고')">
+          <div class="category-icon">🐛</div>
+          <div class="category-name">버그 신고</div>
+          <div class="category-desc">오류·오작동</div>
+        </div>
+        <div class="category-btn" onclick="selectCategory(this, '기능 요청')">
+          <div class="category-icon">✨</div>
+          <div class="category-name">기능 요청</div>
+          <div class="category-desc">추가됐으면 하는 기능</div>
+        </div>
+        <div class="category-btn" onclick="selectCategory(this, '교정 품질')">
+          <div class="category-icon">✍️</div>
+          <div class="category-name">교정 품질</div>
+          <div class="category-desc">맞춤법·번역 오류</div>
+        </div>
+        <div class="category-btn" onclick="selectCategory(this, '기타')">
+          <div class="category-icon">💬</div>
+          <div class="category-name">기타</div>
+          <div class="category-desc">그 외 의견</div>
+        </div>
+      </div>
+
+      <!-- 입력 폼 -->
+      <p class="section-label">내용 작성</p>
+      <div class="form-card">
+        <div class="form-row">
+          <div class="form-label">제목</div>
+          <input type="text" id="title" placeholder="한 줄로 요약해주세요" maxlength="100">
+        </div>
+        <div class="form-row">
+          <div class="form-label">내용</div>
+          <textarea id="content" placeholder="자세한 내용을 적어주세요&#10;(예: 어떤 상황에서 문제가 발생했는지)"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-label">연락처 (선택)</div>
+          <input type="email" id="email" placeholder="답변받으실 이메일 (선택사항)">
+        </div>
+      </div>
+
+      <button class="submit-btn" onclick="submitFeedback()">건의사항 보내기</button>
+
+      <!-- 직접 연락 -->
+      <p class="section-label">직접 연락</p>
+      <div class="contact-card">
+        <p>이메일로 직접 문의하실 수도 있어요</p>
+        <a href="mailto:ehdtjq1622@naver.com">ehdtjq1622@naver.com</a>
+      </div>
+    </div>
+
+    <!-- 완료 메시지 -->
+    <div class="success" id="successSection">
+      <div class="success-icon">🎉</div>
+      <h2>감사합니다!</h2>
+      <p>소중한 의견 잘 받았어요.<br>더 좋은 앱을 만들도록 노력할게요.</p>
+    </div>
+
+  </div>
+
+  <script>
+    let selectedCategory = '';
+
+    function selectCategory(el, name) {
+      document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+      el.classList.add('active');
+      selectedCategory = name;
+    }
+
+    function submitFeedback() {
+      const title = document.getElementById('title').value.trim();
+      const content = document.getElementById('content').value.trim();
+      const email = document.getElementById('email').value.trim();
+
+      if (!selectedCategory) { alert('유형을 선택해주세요.'); return; }
+      if (!title) { alert('제목을 입력해주세요.'); return; }
+      if (!content) { alert('내용을 입력해주세요.'); return; }
+
+      const mailtoEmail = 'ehdtjq1622@naver.com';
+      const subject = encodeURIComponent(`[맞춤법 키보드 건의] [${selectedCategory}] ${title}`);
+      const body = encodeURIComponent(
+        `유형: ${selectedCategory}\n제목: ${title}\n\n내용:\n${content}${email ? '\n\n연락처: ' + email : ''}`
+      );
+
+      window.location.href = `mailto:${mailtoEmail}?subject=${subject}&body=${body}`;
+
+      document.getElementById('formSection').style.display = 'none';
+      document.getElementById('successSection').style.display = 'block';
+    }
+  </script>
+</body>
+</html>

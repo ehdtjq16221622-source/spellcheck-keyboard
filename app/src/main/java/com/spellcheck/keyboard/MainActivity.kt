@@ -55,7 +55,10 @@ class MainActivity : ComponentActivity() {
                             startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
                         },
                         onOpenPrivacyPolicy = {
-                            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://ehdtjq16221622.github.io/spellcheck-keyboard/privacy")))
+                            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://ehdtjq16221622-source.github.io/spellcheck-keyboard/privacy.html")))
+                        },
+                        onOpenFeedback = {
+                            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://ehdtjq16221622-source.github.io/spellcheck-keyboard/feedback.html")))
                         }
                     )
                 }
@@ -65,7 +68,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun SettingsScreen(onOpenKeyboardSettings: () -> Unit, onOpenPrivacyPolicy: () -> Unit) {
+fun SettingsScreen(onOpenKeyboardSettings: () -> Unit, onOpenPrivacyPolicy: () -> Unit, onOpenFeedback: () -> Unit) {
     var vibration    by remember { mutableStateOf(SettingsManager.vibrationEnabled) }
     var doubleSpace  by remember { mutableStateOf(SettingsManager.doubleSpacePeriod) }
     var keyPopup     by remember { mutableStateOf(SettingsManager.keyPopup) }
@@ -75,6 +78,7 @@ fun SettingsScreen(onOpenKeyboardSettings: () -> Unit, onOpenPrivacyPolicy: () -
     var includeDialect by remember { mutableStateOf(SettingsManager.includeDialect) }
     var formalLevel  by remember { mutableStateOf(SettingsManager.formalLevel) }
     var formalIncludePunct by remember { mutableStateOf(SettingsManager.formalIncludePunct) }
+    var keyboardTheme by remember { mutableStateOf(SettingsManager.keyboardTheme) }
 
     Column(
         modifier = Modifier
@@ -131,6 +135,54 @@ fun SettingsScreen(onOpenKeyboardSettings: () -> Unit, onOpenPrivacyPolicy: () -
                     selected = defaultMode,
                     onSelect = { defaultMode = it; SettingsManager.defaultMode = it }
                 )
+            }
+            IosDivider()
+            // 테마 선택
+            Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+                Text("키보드 테마", fontSize = 13.sp, color = LabelSecondary)
+                Spacer(Modifier.height(10.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    listOf(
+                        "화이트" to Color(0xFFFFFFFF),
+                        "블랙"   to Color(0xFF1C1C1E),
+                        "핑크"   to Color(0xFFFFB6D9)
+                    ).forEach { (name, color) ->
+                        val selected = keyboardTheme == name
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(52.dp)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(color)
+                                    .clickable { keyboardTheme = name; SettingsManager.keyboardTheme = name }
+                                    .then(
+                                        if (selected) Modifier.shadow(0.dp)
+                                        else Modifier
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (selected) {
+                                    Text(
+                                        "✓",
+                                        fontSize = 20.sp,
+                                        color = if (name == "블랙") Color.White else Color(0xFF1C1C1E),
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.height(6.dp))
+                            Text(
+                                name,
+                                fontSize = 12.sp,
+                                color = if (selected) AccentBlue else LabelSecondary,
+                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+                            )
+                        }
+                    }
+                }
             }
             IosDivider()
             IosRow(
@@ -213,6 +265,12 @@ fun SettingsScreen(onOpenKeyboardSettings: () -> Unit, onOpenPrivacyPolicy: () -
 
         // ── 정보
         IosSection(label = "정보") {
+            IosRow(
+                title = "건의사항 보내기",
+                trailingType = TrailingType.Chevron,
+                onClick = onOpenFeedback
+            )
+            IosDivider()
             IosRow(
                 title = "개인정보처리방침",
                 trailingType = TrailingType.Chevron,

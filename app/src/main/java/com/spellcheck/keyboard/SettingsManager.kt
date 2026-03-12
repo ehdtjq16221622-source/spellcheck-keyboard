@@ -50,4 +50,9 @@ object SettingsManager {
     var formalIncludePunct: Boolean
         get() = prefs.getBoolean("formal_include_punct", true)
         set(v) = prefs.edit().putBoolean("formal_include_punct", v).apply()
+
+    // 키보드 테마: "화이트" / "블랙" / "핑크"
+    var keyboardTheme: String
+        get() = prefs.getString("keyboard_theme", "화이트") ?: "화이트"
+        set(v) = prefs.edit().putString("keyboard_theme", v).apply()
 }
