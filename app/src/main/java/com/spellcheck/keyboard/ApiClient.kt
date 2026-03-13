@@ -70,7 +70,7 @@ object ApiClient {
             val response = BufferedReader(InputStreamReader(conn.inputStream)).use { it.readText() }
             JSONObject(response).getString("result")
         } else {
-            val error = BufferedReader(InputStreamReader(conn.errorStream)).use { it.readText() }
+            val error = conn.errorStream?.let { BufferedReader(InputStreamReader(it)).use { r -> r.readText() } } ?: "Unknown error"
             throw Exception("서버 오류 (${conn.responseCode}): $error")
         }
     }

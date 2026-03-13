@@ -13,6 +13,7 @@ import android.graphics.RenderEffect
 import android.graphics.Shader
 import android.graphics.drawable.BitmapDrawable
 import android.inputmethodservice.InputMethodService
+import android.view.ViewTreeObserver
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -41,6 +42,8 @@ class KeyboardService : InputMethodService() {
 
     private var inputMode = InputMode.DUBEOLSIK
     private var prevInputMode = InputMode.DUBEOLSIK  // mode before entering symbol keyboard
+    private var lastKoreanMode = InputMode.DUBEOLSIK  // last active Korean mode for 한/영 cycle
+    private var isServiceActive = false
     private var isFormalMode = false
     private var isShiftOn = false       // 영어 shift
     private var isDubeolShift = false   // 두벌식 쌍자음 shift
@@ -77,6 +80,10 @@ class KeyboardService : InputMethodService() {
 
     // 더블 스페이스 → 마침표
     private var lastSpaceTime = 0L
+
+    // custom image bitmap cache to avoid re-reading file on every keyboard show
+    private var cachedBitmapPath = ""
+    private var cachedBitmap: Bitmap? = null
 
     // 꾹 누르기 반복 삭제
     private val deleteRepeatRunnable = object : Runnable {
@@ -116,20 +123,30 @@ class KeyboardService : InputMethodService() {
 
     override fun onCreate() {
         super.onCreate()
+        isServiceActive = true
         SettingsManager.init(this)
         TrialManager.init(this)
     }
 
     override fun onCreateInputView(): View {
         keyboardView = layoutInflater.inflate(R.layout.keyboard_view, null)
+        @Suppress("DEPRECATION")
         keyboardView.setOnApplyWindowInsetsListener { v, insets ->
-            v.setPadding(0, 0, 0, insets.systemWindowInsetBottom)
+            val bottom = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                insets.getInsets(android.view.WindowInsets.Type.systemBars()).bottom
+            } else {
+                insets.systemWindowInsetBottom
+            }
+            v.setPadding(0, 0, 0, bottom)
             insets
         }
-        inputMode = when (SettingsManager.defaultMode) {
+        val koreanMode = when (SettingsManager.defaultMode) {
             "천지인" -> InputMode.CHEONJIIN
             else -> InputMode.DUBEOLSIK
         }
+        inputMode = koreanMode
+        prevInputMode = koreanMode
+        lastKoreanMode = koreanMode
         isFormalMode = SettingsManager.formalDefault
         applyTheme()
         setupButtons()
@@ -161,7 +178,7 @@ class KeyboardService : InputMethodService() {
         }
 
         keyboardView.setBackgroundColor(bgColor)
-        applyButtonStyle(keyColor, textColor, transparentKey = false)
+        applyButtonStyle(keyColor, textColor)
     }
 
     private fun applyCustomImageTheme() {
@@ -171,19 +188,26 @@ class KeyboardService : InputMethodService() {
             return
         }
 
-        val srcBitmap = try {
-            BitmapFactory.decodeFile(path) ?: return
-        } catch (e: Exception) {
-            return
+        // Use cached bitmap to avoid re-reading file on every keyboard show
+        val srcBitmap: Bitmap = if (path == cachedBitmapPath && cachedBitmap != null) {
+            cachedBitmap!!
+        } else {
+            val bmp = try { BitmapFactory.decodeFile(path) } catch (e: Exception) { null }
+            if (bmp == null) {
+                keyboardView.setBackgroundColor(Color.parseColor("#F0F0F0"))
+                return
+            }
+            cachedBitmapPath = path
+            cachedBitmap = bmp
+            bmp
         }
 
         val mode = SettingsManager.customImageMode
-        val overlayAlpha = SettingsManager.customImageOverlay // 0~100
+        val overlayAlpha = SettingsManager.customImageOverlay
         val textColor = if (SettingsManager.customKeyTextColor == "밝음") Color.WHITE
                         else Color.parseColor("#1C1C1E")
 
-        // 키보드 뷰 크기 (측정 후 적용)
-        keyboardView.post {
+        fun applyWithSize() {
             val w = keyboardView.width.takeIf { it > 0 } ?: 1080
             val h = keyboardView.height.takeIf { it > 0 } ?: 800
 
@@ -197,16 +221,23 @@ class KeyboardService : InputMethodService() {
                 else       -> centerCropBitmap(srcBitmap, w, h)
             }
 
-            // 오버레이 적용 (반투명 어두운 레이어)
-            val final = applyOverlay(processed, overlayAlpha)
-
-            keyboardView.background = BitmapDrawable(resources, final)
-            // 커스텀 테마에서는 키를 반투명으로
+            val finalBitmap = applyOverlay(processed, overlayAlpha)
+            keyboardView.background = BitmapDrawable(resources, finalBitmap)
             applyButtonStyle(
                 keyColor = Color.argb(80, 255, 255, 255),
-                textColor = textColor,
-                transparentKey = true
+                textColor = textColor
             )
+        }
+
+        if (keyboardView.width > 0 && keyboardView.height > 0) {
+            applyWithSize()
+        } else {
+            keyboardView.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
+                override fun onGlobalLayout() {
+                    keyboardView.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                    applyWithSize()
+                }
+            })
         }
     }
 
@@ -221,7 +252,9 @@ class KeyboardService : InputMethodService() {
         val x = (src.width - scaledW) / 2
         val y = (src.height - scaledH) / 2
         val cropped = Bitmap.createBitmap(src, x, y, scaledW, scaledH)
-        return Bitmap.createScaledBitmap(cropped, w, h, true)
+        val result = Bitmap.createScaledBitmap(cropped, w, h, true)
+        if (cropped !== src) cropped.recycle()
+        return result
     }
 
     // 가운데 배치 (패딩)
@@ -236,6 +269,7 @@ class KeyboardService : InputMethodService() {
         val top = (h - scaledH) / 2f
         val scaled = Bitmap.createScaledBitmap(src, scaledW, scaledH, true)
         canvas.drawBitmap(scaled, left, top, null)
+        if (scaled !== src) scaled.recycle()
         return result
     }
 
@@ -279,7 +313,7 @@ class KeyboardService : InputMethodService() {
     }
 
     // 버튼 스타일 일괄 적용
-    private fun applyButtonStyle(keyColor: Int, textColor: Int, transparentKey: Boolean) {
+    private fun applyButtonStyle(keyColor: Int, textColor: Int) {
         fun applyToButtons(view: View) {
             if (view is android.widget.Button) {
                 view.setTextColor(textColor)
@@ -291,9 +325,10 @@ class KeyboardService : InputMethodService() {
         applyToButtons(keyboardView)
     }
 
-    // 키보드가 나타날 때마다 기본 모드 설정 반영
+    // 키보드가 나타날 때마다 기본 모드 설정 반영 + 테마 재적용
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
+        applyTheme()
         if (!restarting) {
             val newMode = when (SettingsManager.defaultMode) {
                 "천지인" -> InputMode.CHEONJIIN
@@ -302,6 +337,8 @@ class KeyboardService : InputMethodService() {
             if (inputMode != newMode) {
                 commitComposing()
                 inputMode = newMode
+                lastKoreanMode = newMode
+                prevInputMode = newMode
                 updateKeyboardMode()
             }
         }
@@ -349,10 +386,46 @@ class KeyboardService : InputMethodService() {
             keyboardView.findViewById<View>(R.id.langSelectRow).visibility = View.GONE
         }
 
-        // 회사말투 토글
+        // 말투 교정 토글 + 옵션 행
         val switchFormal = keyboardView.findViewById<Switch>(R.id.switchFormal)
+        val formalOptionsRow = keyboardView.findViewById<View>(R.id.formalOptionsRow)
         switchFormal.isChecked = isFormalMode
-        switchFormal.setOnCheckedChangeListener { _, checked -> isFormalMode = checked }
+        formalOptionsRow.visibility = if (isFormalMode) View.VISIBLE else View.GONE
+        switchFormal.setOnCheckedChangeListener { _, checked ->
+            isFormalMode = checked
+            formalOptionsRow.visibility = if (checked) View.VISIBLE else View.GONE
+        }
+
+        // 말투 옵션 버튼들
+        val formalOptionButtons = mapOf(
+            R.id.btnFormal_jondaemal to "적당한 존댓말",
+            R.id.btnFormal_gyeoksik to "엄격 격식체",
+            R.id.btnFormal_sanae to "사내 메시지",
+            R.id.btnFormal_gogaek to "고객 응대",
+            R.id.btnFormal_hakbumo to "학부모 안내",
+            R.id.btnFormal_sogaeting to "소개팅"
+        )
+        fun updateFormalOptionHighlight() {
+            val current = SettingsManager.formalLevel
+            formalOptionButtons.forEach { (id, level) ->
+                val btn = keyboardView.findViewById<Button>(id) ?: return@forEach
+                if (level == current) {
+                    btn.setBackgroundResource(R.drawable.key_primary)
+                    btn.setTextColor(android.graphics.Color.WHITE)
+                } else {
+                    btn.setBackgroundResource(R.drawable.key_letter)
+                    btn.setTextColor(android.graphics.Color.parseColor("#1A1A1A"))
+                }
+            }
+        }
+        updateFormalOptionHighlight()
+        formalOptionButtons.forEach { (id, level) ->
+            keyboardView.findViewById<Button>(id)?.setOnClickListener {
+                vibrateKey()
+                SettingsManager.formalLevel = level
+                updateFormalOptionHighlight()
+            }
+        }
 
         // 교정/번역 결과 적용 (버튼 또는 텍스트 클릭)
         val applyAction = View.OnClickListener {
@@ -802,11 +875,11 @@ class KeyboardService : InputMethodService() {
         commitComposing()
         if (isDubeolShift) { isDubeolShift = false; updateDubeolShift() }
         inputMode = when (inputMode) {
-            InputMode.DUBEOLSIK, InputMode.CHEONJIIN -> InputMode.ENGLISH
-            InputMode.ENGLISH -> when (SettingsManager.defaultMode) {
-                "천지인" -> InputMode.CHEONJIIN
-                else -> InputMode.DUBEOLSIK
+            InputMode.DUBEOLSIK, InputMode.CHEONJIIN -> {
+                lastKoreanMode = inputMode  // remember current Korean mode
+                InputMode.ENGLISH
             }
+            InputMode.ENGLISH -> lastKoreanMode  // return to same Korean mode we left
             InputMode.SYMBOL, InputMode.SYMBOL2, InputMode.SYMBOL3 -> prevInputMode
         }
         updateKeyboardMode()
@@ -965,7 +1038,10 @@ class KeyboardService : InputMethodService() {
     private fun updateEnglishShift() {
         val btn = keyboardView.findViewById<Button>(R.id.key_en_shift)
         btn.setBackgroundResource(if (isShiftOn) R.drawable.key_primary else R.drawable.key_func)
-        btn.setTextColor(0xFFFFFFFF.toInt())
+        // key_primary (blue) always has white text; key_func color depends on theme
+        val theme = SettingsManager.keyboardTheme
+        val textColor = if (isShiftOn || theme == "블랙") Color.WHITE else Color.parseColor("#1C1C1E")
+        btn.setTextColor(textColor)
 
         val englishMap = mapOf(
             R.id.key_en_q to 'q', R.id.key_en_w to 'w', R.id.key_en_e to 'e',
@@ -1008,6 +1084,7 @@ class KeyboardService : InputMethodService() {
             SettingsManager.formalLevel, SettingsManager.formalIncludePunct
         ) { result ->
             handler.post {
+                if (!isServiceActive) return@post
                 if (result.trim() == text.trim()) {
                     hideSuggestionBar()
                 } else {
@@ -1032,6 +1109,7 @@ class KeyboardService : InputMethodService() {
 
         ApiClient.translate(text, targetLang) { result ->
             handler.post {
+                if (!isServiceActive) return@post
                 translatedText = result
                 showSuggestion("[$langName] $result", true)
             }
@@ -1053,9 +1131,12 @@ class KeyboardService : InputMethodService() {
     }
 
     override fun onDestroy() {
+        isServiceActive = false
         super.onDestroy()
         handler.removeCallbacks(deleteRepeatRunnable)
         handler.removeCallbacks(autoCorrectRunnable)
         keyPreviewPopup?.dismiss()
+        cachedBitmap?.recycle()
+        cachedBitmap = null
     }
 }

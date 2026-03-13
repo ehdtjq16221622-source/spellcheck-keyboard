@@ -34,6 +34,9 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import android.graphics.BitmapFactory
+import androidx.compose.runtime.produceState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import com.spellcheck.keyboard.ui.theme.맞춤법키보드Theme
@@ -231,9 +234,12 @@ fun SettingsScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             if (customImagePath.isNotEmpty()) {
-                                val bmp = remember(customImagePath) {
-                                    BitmapFactory.decodeFile(customImagePath)
+                                val bmpState = produceState<android.graphics.Bitmap?>(null, customImagePath) {
+                                    value = withContext(Dispatchers.IO) {
+                                        BitmapFactory.decodeFile(customImagePath)
+                                    }
                                 }
+                                val bmp = bmpState.value
                                 if (bmp != null) {
                                     androidx.compose.foundation.layout.Box(
                                         modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp))
@@ -349,7 +355,7 @@ fun SettingsScreen(
             )
             IosDivider()
             IosRow(
-                title = "회사말투 기본 ON",
+                title = "말투 교정 기본 ON",
                 trailingType = TrailingType.Toggle(formalDefault) {
                     formalDefault = it; SettingsManager.formalDefault = it
                 }
@@ -378,12 +384,15 @@ fun SettingsScreen(
 
         Spacer(Modifier.height(28.dp))
 
-        // ── 회사말투 설정
-        IosSection(label = "회사말투 방식") {
+        // ── 말투 교정 설정
+        IosSection(label = "말투 교정 방식") {
             listOf(
-                "적당한 존댓말"  to "-요/-세요 체",
-                "엄격 격식체"   to "-습니다/-입니다 체",
-                "스마트 교정"   to "AI가 비즈니스 격식체로 재작성"
+                "적당한 존댓말" to "-요/-세요 체로 교정",
+                "엄격 격식체"   to "-습니다/-입니다 체로 교정",
+                "사내 메시지"   to "동료·상사에게 보내는 업무 메시지",
+                "고객 응대"     to "고객에게 따뜻하고 친절하게",
+                "학부모 안내"   to "학부모·외부인에게 정중하게",
+                "소개팅"        to "차분하고 자연스러운 호감 말투"
             ).forEachIndexed { i, (level, desc) ->
                 if (i > 0) IosDivider()
                 val selected = formalLevel == level
@@ -396,7 +405,7 @@ fun SettingsScreen(
             }
             IosDivider()
             IosRow(
-                title = "회사말투 시 구두점 교정",
+                title = "말투 교정 시 구두점 교정",
                 trailingType = TrailingType.Toggle(formalIncludePunct) {
                     formalIncludePunct = it; SettingsManager.formalIncludePunct = it
                 }
@@ -661,6 +670,7 @@ fun IosSegmentedControl(
                     .weight(1f)
                     .clip(RoundedCornerShape(8.dp))
                     .background(if (isSelected) Color.White else Color.Transparent)
+                    .clickable { onSelect(option) }
                     .padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {

@@ -127,7 +127,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="회사말투"
+            android:text="말투 교정"
             android:textSize="12sp"
             android:textColor="#555555"
             android:paddingEnd="4dp" />
@@ -138,6 +138,106 @@
             android:layout_height="wrap_content" />
 
     </LinearLayout>
+
+    <!-- ===== 말투 옵션 선택 행 (스위치 ON 시 표시) ===== -->
+    <HorizontalScrollView
+        android:id="@+id/formalOptionsRow"
+        android:layout_width="match_parent"
+        android:layout_height="42dp"
+        android:background="#F5F0FF"
+        android:scrollbars="none"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <Button
+                android:id="@+id/btnFormal_jondaemal"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:text="존댓말"
+                android:textSize="11sp"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/key_primary"
+                android:textColor="#FFFFFF"
+                android:stateListAnimator="@null" />
+
+            <Button
+                android:id="@+id/btnFormal_gyeoksik"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:text="격식체"
+                android:textSize="11sp"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/key_letter"
+                android:textColor="#1A1A1A"
+                android:stateListAnimator="@null" />
+
+            <Button
+                android:id="@+id/btnFormal_sanae"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:text="사내메시지"
+                android:textSize="11sp"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/key_letter"
+                android:textColor="#1A1A1A"
+                android:stateListAnimator="@null" />
+
+            <Button
+                android:id="@+id/btnFormal_gogaek"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:text="고객응대"
+                android:textSize="11sp"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/key_letter"
+                android:textColor="#1A1A1A"
+                android:stateListAnimator="@null" />
+
+            <Button
+                android:id="@+id/btnFormal_hakbumo"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:text="학부모안내"
+                android:textSize="11sp"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/key_letter"
+                android:textColor="#1A1A1A"
+                android:stateListAnimator="@null" />
+
+            <Button
+                android:id="@+id/btnFormal_sogaeting"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:text="소개팅"
+                android:textSize="11sp"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/key_letter"
+                android:textColor="#1A1A1A"
+                android:stateListAnimator="@null" />
+
+        </LinearLayout>
+    </HorizontalScrollView>
 
     <!-- ===== 숫자 행 ===== -->
     <LinearLayout
