@@ -40,6 +40,12 @@ class KeyboardService : InputMethodService() {
     private val cheonjiinComposer = CheonjiinComposer()
     private val handler = Handler(Looper.getMainLooper())
 
+    // InputConnection IPC 호출을 별도 스레드로 분리 (메인 스레드 블로킹 방지)
+    private val icThread = android.os.HandlerThread("ICThread").also { it.start() }
+    private val icHandler = Handler(icThread.looper)
+
+    private fun postIC(block: () -> Unit) = icHandler.post(block)
+
     private var inputMode = InputMode.DUBEOLSIK
     private var prevInputMode = InputMode.DUBEOLSIK  // mode before entering symbol keyboard
     private var lastKoreanMode = InputMode.DUBEOLSIK  // last active Korean mode for 한/영 cycle
@@ -210,7 +216,7 @@ class KeyboardService : InputMethodService() {
         )
         fun setNestedBg(view: View) {
             if (view is LinearLayout) view.setBackgroundColor(bgColor)
-            if (view is ViewGroup) for (i in 0 until view.childCount) setNestedBg(view.getChildAt(i))
+            if (view is android.view.ViewGroup) for (i in 0 until view.childCount) setNestedBg(view.getChildAt(i))
         }
         containerIds.forEach { id -> keyboardView.findViewById<View>(id)?.let { setNestedBg(it) } }
     }
@@ -801,15 +807,19 @@ class KeyboardService : InputMethodService() {
         vibrateKey()
         anchor?.let { showKeyPreview(it, key.toString()) }
         val result = cheonjiinComposer.input(key)
-        val ic = currentInputConnection ?: return
-        ic.beginBatchEdit()
-        when {
-            result.committed == "\b" -> ic.deleteSurroundingText(1, 0)
-            result.committed.isNotEmpty() -> ic.commitText(result.committed, 1)
+        val committed = result.committed
+        val composing = result.composing?.toString()
+        postIC {
+            val ic = currentInputConnection ?: return@postIC
+            ic.beginBatchEdit()
+            when {
+                committed == "\b" -> ic.deleteSurroundingText(1, 0)
+                committed.isNotEmpty() -> ic.commitText(committed, 1)
+            }
+            if (composing != null) ic.setComposingText(composing, 1)
+            else ic.finishComposingText()
+            ic.endBatchEdit()
         }
-        if (result.composing != null) ic.setComposingText(result.composing.toString(), 1)
-        else ic.finishComposingText()
-        ic.endBatchEdit()
         scheduleAutoCorrect()
     }
 
@@ -846,16 +856,20 @@ class KeyboardService : InputMethodService() {
     }
 
     private fun onHangulInput(jamo: Char, composer: HangulComposer) {
-        val result = composer.input(jamo)
-        val ic = currentInputConnection ?: return
-        ic.beginBatchEdit()
-        when {
-            result.committed == "\b" -> ic.deleteSurroundingText(1, 0)
-            result.committed.isNotEmpty() -> ic.commitText(result.committed, 1)
+        val result = composer.input(jamo)  // 메인 스레드에서 조합 (순수 로직)
+        val committed = result.committed
+        val composing = result.composing?.toString()
+        postIC {
+            val ic = currentInputConnection ?: return@postIC
+            ic.beginBatchEdit()
+            when {
+                committed == "\b" -> ic.deleteSurroundingText(1, 0)
+                committed.isNotEmpty() -> ic.commitText(committed, 1)
+            }
+            if (composing != null) ic.setComposingText(composing, 1)
+            else ic.finishComposingText()
+            ic.endBatchEdit()
         }
-        if (result.composing != null) ic.setComposingText(result.composing.toString(), 1)
-        else ic.finishComposingText()
-        ic.endBatchEdit()
     }
 
     private fun onBackspace() {
@@ -1189,6 +1203,7 @@ class KeyboardService : InputMethodService() {
         super.onDestroy()
         handler.removeCallbacks(deleteRepeatRunnable)
         handler.removeCallbacks(autoCorrectRunnable)
+        icThread.quitSafely()
         keyPreviewPopup?.dismiss()
         cachedBitmap?.recycle()
         cachedBitmap = null
