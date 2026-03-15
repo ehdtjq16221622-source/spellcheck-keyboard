@@ -51,6 +51,10 @@ class KeyboardService : InputMethodService() {
     private var translatedText = ""
     private var suggestionMode = SuggestionMode.CORRECTION
 
+    // 커서 위치 캐시 (getExtractedText IPC 호출 대체 → 입력 씹힘 방지)
+    private var cachedSelStart = -1
+    private var cachedSelEnd = -1
+
     // 두벌식 쌍자음 두 번 연속 입력용
     private var lastConsonant: Char = ' '
     private var lastConsonantTime: Long = 0
@@ -95,9 +99,11 @@ class KeyboardService : InputMethodService() {
 
     // 자동 교정 (3초 대기)
     private val autoCorrectRunnable = Runnable { performAutoCorrect() }
+    private val keyPreviewDismissRunnable = Runnable { keyPreviewPopup?.dismiss() }
 
     // 키 팝업
     private var keyPreviewPopup: PopupWindow? = null
+    private var keyPreviewTextView: TextView? = null
 
     // 진동
     @Suppress("DEPRECATION")
@@ -164,21 +170,49 @@ class KeyboardService : InputMethodService() {
 
         val bgColor = when (theme) {
             "블랙" -> Color.parseColor("#1C1C1E")
-            "핑크" -> Color.parseColor("#FFE4F0")
+            "핑크" -> Color.parseColor("#FFD6E8")
             else   -> Color.parseColor("#F0F0F0")
         }
         val keyColor = when (theme) {
             "블랙" -> Color.parseColor("#2C2C2E")
-            "핑크" -> Color.parseColor("#FFB6D9")
+            "핑크" -> Color.parseColor("#FF6B9D")
             else   -> Color.parseColor("#FFFFFF")
         }
         val textColor = when (theme) {
             "블랙" -> Color.WHITE
+            "핑크" -> Color.WHITE
             else   -> Color.parseColor("#1C1C1E")
+        }
+        val toolbarBg = when (theme) {
+            "블랙" -> Color.parseColor("#2A2A2E")
+            "핑크" -> Color.parseColor("#FFB3CF")
+            else   -> Color.parseColor("#FFFFFF")
+        }
+        val formalRowBg = when (theme) {
+            "블랙" -> Color.parseColor("#252528")
+            "핑크" -> Color.parseColor("#FFC8DF")
+            else   -> Color.parseColor("#EEF0FF")
         }
 
         keyboardView.setBackgroundColor(bgColor)
+        keyboardView.findViewById<View>(R.id.toolbar)?.setBackgroundColor(toolbarBg)
+        keyboardView.findViewById<View>(R.id.formalOptionsRow)?.setBackgroundColor(formalRowBg)
+        applyContainerBackgrounds(bgColor)
         applyButtonStyle(keyColor, textColor)
+    }
+
+    private fun applyContainerBackgrounds(bgColor: Int) {
+        val containerIds = listOf(
+            R.id.container_dubeolsik, R.id.container_cheonjiin,
+            R.id.container_english,
+            R.id.container_symbols, R.id.container_symbols2, R.id.container_symbols3,
+            R.id.rowNumbers, R.id.bottomRow
+        )
+        fun setNestedBg(view: View) {
+            if (view is LinearLayout) view.setBackgroundColor(bgColor)
+            if (view is ViewGroup) for (i in 0 until view.childCount) setNestedBg(view.getChildAt(i))
+        }
+        containerIds.forEach { id -> keyboardView.findViewById<View>(id)?.let { setNestedBg(it) } }
     }
 
     private fun applyCustomImageTheme() {
@@ -326,6 +360,16 @@ class KeyboardService : InputMethodService() {
     }
 
     // 키보드가 나타날 때마다 기본 모드 설정 반영 + 테마 재적용
+    override fun onUpdateSelection(
+        oldSelStart: Int, oldSelEnd: Int,
+        newSelStart: Int, newSelEnd: Int,
+        candidatesStart: Int, candidatesEnd: Int
+    ) {
+        super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd)
+        cachedSelStart = newSelStart
+        cachedSelEnd = newSelEnd
+    }
+
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         applyTheme()
@@ -637,42 +681,53 @@ class KeyboardService : InputMethodService() {
         }
     }
 
+    private val vibrationEffect by lazy {
+        VibrationEffect.createOneShot(25, VibrationEffect.DEFAULT_AMPLITUDE)
+    }
+
     private fun vibrateKey() {
         if (!SettingsManager.vibrationEnabled) return
-        try {
-            vibrator.vibrate(VibrationEffect.createOneShot(25, VibrationEffect.DEFAULT_AMPLITUDE))
-        } catch (e: Exception) { }
+        try { vibrator.vibrate(vibrationEffect) } catch (e: Exception) { }
     }
 
     private fun showKeyPreview(anchor: View, text: String) {
         if (!SettingsManager.keyPopup) return
-        keyPreviewPopup?.dismiss()
         val density = resources.displayMetrics.density
-        val bg = android.graphics.drawable.GradientDrawable().apply {
-            setColor(Color.WHITE)
-            cornerRadius = 16 * density
-            setStroke((1 * density).toInt(), Color.parseColor("#CCCCCC"))
-        }
-        val tv = TextView(this).apply {
-            this.text = text
+        val w = (68 * density).toInt()
+        val h = (60 * density).toInt()
+
+        // 팝업/TextView 재사용 (매번 생성 X → 입력 지연 방지)
+        val tv = keyPreviewTextView ?: TextView(this).apply {
             textSize = 22f
             gravity = Gravity.CENTER
             setTextColor(Color.parseColor("#222222"))
-            background = bg
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(Color.WHITE)
+                cornerRadius = 16 * density
+                setStroke((1 * density).toInt(), Color.parseColor("#CCCCCC"))
+            }
             setPadding(
                 (16 * density).toInt(), (8 * density).toInt(),
                 (16 * density).toInt(), (8 * density).toInt()
             )
-        }
-        val w = (68 * density).toInt()
-        val h = (60 * density).toInt()
-        val popup = PopupWindow(tv, w, h, false).apply { elevation = 8f }
+        }.also { keyPreviewTextView = it }
+
+        tv.text = text
+
+        val popup = keyPreviewPopup ?: PopupWindow(tv, w, h, false).apply {
+            elevation = 8f
+        }.also { keyPreviewPopup = it }
+
         try {
             val xOff = (anchor.width - w) / 2
             val yOff = -(anchor.height + h + (4 * density).toInt())
-            popup.showAsDropDown(anchor, xOff, yOff)
-            keyPreviewPopup = popup
-            handler.postDelayed({ popup.dismiss() }, 180)
+            if (popup.isShowing) {
+                popup.update(anchor, xOff, yOff, w, h)
+            } else {
+                popup.showAsDropDown(anchor, xOff, yOff)
+            }
+            handler.removeCallbacks(keyPreviewDismissRunnable)
+            handler.postDelayed(keyPreviewDismissRunnable, 120)
         } catch (e: Exception) { }
     }
 
@@ -837,8 +892,7 @@ class KeyboardService : InputMethodService() {
     }
 
     private fun deleteSelectedOrPrevChar(ic: android.view.inputmethod.InputConnection) {
-        val extracted = ic.getExtractedText(ExtractedTextRequest(), 0)
-        if (extracted != null && extracted.selectionStart != extracted.selectionEnd) {
+        if (cachedSelStart >= 0 && cachedSelStart != cachedSelEnd) {
             ic.commitText("", 1)  // 선택된 텍스트 삭제
         } else {
             ic.deleteSurroundingText(1, 0)

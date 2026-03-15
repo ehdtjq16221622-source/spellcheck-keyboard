@@ -132,14 +132,14 @@ fun SettingsScreen(
 
         // ── 대형 타이틀 (iOS 26 Large Title)
         Text(
-            "맞춤법 키보드",
+            "킹보드",
             fontSize = 34.sp,
             fontWeight = FontWeight.Bold,
             color = LabelPrimary,
             lineHeight = 41.sp
         )
         Text(
-            "AI 한국어 맞춤법 교정",
+            "AI 한국어 맞춤법 · 말투 교정 키보드",
             fontSize = 15.sp,
             color = LabelSecondary,
             modifier = Modifier.padding(top = 4.dp)
@@ -152,8 +152,8 @@ fun SettingsScreen(
 
         Spacer(Modifier.height(28.dp))
 
-        // ── 키보드 활성화
-        IosSection(label = "시작하기") {
+        // ── 1. 시작하기
+        IosAccordionSection(label = "시작하기", subtitle = "키보드 활성화 방법") {
             IosRow(
                 title = "키보드 설정 열기",
                 subtitle = "활성화 후 기본 키보드로 설정하세요",
@@ -161,14 +161,14 @@ fun SettingsScreen(
                 accentColor = AccentBlue,
                 onClick = onOpenKeyboardSettings
             )
+            IosDivider()
+            SetupStepsCardInline()
         }
-        SetupStepsCard()
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(12.dp))
 
-        // ── 키보드 설정
-        IosSection(label = "키보드") {
-            // 기본 입력 모드 세그먼트
+        // ── 2. 키보드 설정
+        IosAccordionSection(label = "키보드 설정", subtitle = "테마, 입력 모드, 진동 등") {
             Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
                 Text("기본 입력 모드", fontSize = 13.sp, color = LabelSecondary)
                 Spacer(Modifier.height(10.dp))
@@ -179,16 +179,14 @@ fun SettingsScreen(
                 )
             }
             IosDivider()
-            // 테마 선택
             Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
                 Text("키보드 테마", fontSize = 13.sp, color = LabelSecondary)
                 Spacer(Modifier.height(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // 기본 테마 3개
                     listOf(
                         "화이트" to Color(0xFFFFFFFF),
                         "블랙"   to Color(0xFF1C1C1E),
-                        "핑크"   to Color(0xFFFFB6D9)
+                        "핑크"   to Color(0xFFFF6B9D)
                     ).forEach { (name, color) ->
                         val selected = keyboardTheme == name
                         Column(
@@ -205,7 +203,7 @@ fun SettingsScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 if (selected) Text("✓", fontSize = 20.sp,
-                                    color = if (name == "블랙") Color.White else Color(0xFF1C1C1E),
+                                    color = if (name == "블랙") Color.White else Color.White,
                                     fontWeight = FontWeight.Bold)
                             }
                             Spacer(Modifier.height(6.dp))
@@ -214,7 +212,6 @@ fun SettingsScreen(
                                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal)
                         }
                     }
-                    // 커스텀 버튼
                     val customSelected = keyboardTheme == "커스텀"
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -224,20 +221,14 @@ fun SettingsScreen(
                             modifier = Modifier
                                 .size(52.dp)
                                 .clip(RoundedCornerShape(14.dp))
-                                .background(
-                                    if (customImagePath.isNotEmpty())
-                                        Color(0xFF2C2C2E)
-                                    else Color(0xFFE5E5EA)
-                                )
+                                .background(if (customImagePath.isNotEmpty()) Color(0xFF2C2C2E) else Color(0xFFE5E5EA))
                                 .then(if (customSelected) Modifier.border(2.dp, AccentBlue, RoundedCornerShape(14.dp)) else Modifier)
                                 .clickable { imagePicker.launch("image/*") },
                             contentAlignment = Alignment.Center
                         ) {
                             if (customImagePath.isNotEmpty()) {
                                 val bmpState = produceState<android.graphics.Bitmap?>(null, customImagePath) {
-                                    value = withContext(Dispatchers.IO) {
-                                        BitmapFactory.decodeFile(customImagePath)
-                                    }
+                                    value = withContext(Dispatchers.IO) { BitmapFactory.decodeFile(customImagePath) }
                                 }
                                 val bmp = bmpState.value
                                 if (bmp != null) {
@@ -262,12 +253,8 @@ fun SettingsScreen(
                             fontWeight = if (customSelected) FontWeight.SemiBold else FontWeight.Normal)
                     }
                 }
-
-                // 커스텀 선택 시 추가 옵션
                 if (keyboardTheme == "커스텀" && customImagePath.isNotEmpty()) {
                     Spacer(Modifier.height(16.dp))
-
-                    // 표시 모드
                     Text("표시 방식", fontSize = 13.sp, color = LabelSecondary)
                     Spacer(Modifier.height(8.dp))
                     val modes = listOf("꽉채우기", "늘리기", "가운데", "타일", "미러타일", "블러")
@@ -284,9 +271,7 @@ fun SettingsScreen(
                                         .then(if (mSelected) Modifier.border(1.5.dp, AccentBlue, RoundedCornerShape(12.dp)) else Modifier)
                                         .clickable { customImageMode = m; SettingsManager.customImageMode = m },
                                     contentAlignment = Alignment.Center
-                                ) {
-                                    Text(modeIcons[i], fontSize = 20.sp)
-                                }
+                                ) { Text(modeIcons[i], fontSize = 20.sp) }
                                 Spacer(Modifier.height(4.dp))
                                 Text(m, fontSize = 10.sp,
                                     color = if (mSelected) AccentBlue else LabelSecondary,
@@ -294,10 +279,7 @@ fun SettingsScreen(
                             }
                         }
                     }
-
                     Spacer(Modifier.height(16.dp))
-
-                    // 오버레이 (어둡기)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("어둡기", fontSize = 13.sp, color = LabelSecondary)
                         Spacer(Modifier.width(8.dp))
@@ -305,17 +287,11 @@ fun SettingsScreen(
                     }
                     Slider(
                         value = customOverlay,
-                        onValueChange = {
-                            customOverlay = it
-                            SettingsManager.customImageOverlay = it.toInt()
-                        },
+                        onValueChange = { customOverlay = it; SettingsManager.customImageOverlay = it.toInt() },
                         valueRange = 0f..80f,
                         colors = SliderDefaults.colors(thumbColor = AccentBlue, activeTrackColor = AccentBlue)
                     )
-
                     Spacer(Modifier.height(8.dp))
-
-                    // 키 텍스트 색상
                     Text("키 글자 색상", fontSize = 13.sp, color = LabelSecondary)
                     Spacer(Modifier.height(8.dp))
                     IosSegmentedControl(
@@ -323,49 +299,27 @@ fun SettingsScreen(
                         selected = customKeyText,
                         onSelect = { customKeyText = it; SettingsManager.customKeyTextColor = it }
                     )
-
                     Spacer(Modifier.height(10.dp))
-
-                    // 이미지 다시 선택
                     TextButton(onClick = { imagePicker.launch("image/*") }) {
                         Text("이미지 다시 선택", color = AccentBlue, fontSize = 14.sp)
                     }
                 }
             }
             IosDivider()
-            IosRow(
-                title = "키 누를 때 진동",
-                trailingType = TrailingType.Toggle(vibration) {
-                    vibration = it; SettingsManager.vibrationEnabled = it
-                }
-            )
+            IosRow(title = "키 누를 때 진동",
+                trailingType = TrailingType.Toggle(vibration) { vibration = it; SettingsManager.vibrationEnabled = it })
             IosDivider()
-            IosRow(
-                title = "키 누를 때 크게 보이기",
-                trailingType = TrailingType.Toggle(keyPopup) {
-                    keyPopup = it; SettingsManager.keyPopup = it
-                }
-            )
+            IosRow(title = "키 누를 때 크게 보이기",
+                trailingType = TrailingType.Toggle(keyPopup) { keyPopup = it; SettingsManager.keyPopup = it })
             IosDivider()
-            IosRow(
-                title = "스페이스 두 번 → 마침표",
-                trailingType = TrailingType.Toggle(doubleSpace) {
-                    doubleSpace = it; SettingsManager.doubleSpacePeriod = it
-                }
-            )
-            IosDivider()
-            IosRow(
-                title = "말투 교정 기본 ON",
-                trailingType = TrailingType.Toggle(formalDefault) {
-                    formalDefault = it; SettingsManager.formalDefault = it
-                }
-            )
+            IosRow(title = "스페이스 두 번 → 마침표",
+                trailingType = TrailingType.Toggle(doubleSpace) { doubleSpace = it; SettingsManager.doubleSpacePeriod = it })
         }
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(12.dp))
 
-        // ── 교정 설정
-        IosSection(label = "맞춤법 교정") {
+        // ── 3. 맞춤법 교정 설정
+        IosAccordionSection(label = "맞춤법 교정 설정", subtitle = "구두점, 사투리 교정") {
             IosRow(
                 title = "구두점 포함 교정",
                 subtitle = "쉼표·마침표 위치 교정",
@@ -382,10 +336,17 @@ fun SettingsScreen(
             )
         }
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(12.dp))
 
-        // ── 말투 교정 설정
-        IosSection(label = "말투 교정 방식") {
+        // ── 4. 말투 교정 설정
+        IosAccordionSection(label = "말투 교정 설정", subtitle = "말투 스타일 선택") {
+            IosRow(
+                title = "말투 교정 기본 ON",
+                trailingType = TrailingType.Toggle(formalDefault) {
+                    formalDefault = it; SettingsManager.formalDefault = it
+                }
+            )
+            IosDivider()
             listOf(
                 "적당한 존댓말" to "-요/-세요 체로 교정",
                 "엄격 격식체"   to "-습니다/-입니다 체로 교정",
@@ -535,6 +496,66 @@ fun SetupStepsCard() {
                 ) {
                     Text(num, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = AccentBlue)
                 }
+                Spacer(Modifier.width(12.dp))
+                Text(text, fontSize = 14.sp, color = LabelPrimary)
+            }
+        }
+    }
+}
+
+// ── Accordion 섹션 (클릭 시 펼쳐짐)
+@Composable
+fun IosAccordionSection(
+    label: String,
+    subtitle: String? = null,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(elevation = 1.dp, shape = RoundedCornerShape(16.dp), clip = false)
+            .clip(RoundedCornerShape(16.dp))
+            .background(GlassCard)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = !expanded }
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(label, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = LabelPrimary)
+                if (subtitle != null) Text(subtitle, fontSize = 13.sp, color = LabelSecondary, modifier = Modifier.padding(top = 2.dp))
+            }
+            Text(if (expanded) "▲" else "▼", fontSize = 11.sp, color = LabelTertiary)
+        }
+        if (expanded) {
+            HorizontalDivider(color = Separator, thickness = 0.5.dp)
+            content()
+        }
+    }
+}
+
+// ── 활성화 단계 (accordion 내부용 - 카드 없이)
+@Composable
+fun SetupStepsCardInline() {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        listOf(
+            "1" to "아래 버튼을 눌러 키보드 설정으로 이동",
+            "2" to "'킹보드' 항목을 찾아 토글 ON",
+            "3" to "'기본 키보드 변경'에서 킹보드 선택"
+        ).forEach { (num, text) ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier.size(26.dp).background(AccentBlue.copy(alpha = 0.12f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) { Text(num, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = AccentBlue) }
                 Spacer(Modifier.width(12.dp))
                 Text(text, fontSize = 14.sp, color = LabelPrimary)
             }

@@ -91,11 +91,7 @@ function buildPrompt(
 ): string {
   const noPunct = " 중요: 쉼표(,)와 마침표(.)는 절대로 추가·삭제·변경하지 마세요. 원문의 구두점을 그대로 유지하세요.";
 
-  // 새 말투 교정 옵션들은 formalMode 스위치 ON 여부와 무관하게 항상 적용
-  const newStyleOptions = ["사내 메시지", "고객 응대", "학부모 안내", "소개팅"];
-  const effectiveFormalMode = formalMode || newStyleOptions.includes(formalLevel);
-
-  if (effectiveFormalMode) {
+  if (formalMode) {
     const punctNote = !formalIncludePunct ? noPunct : "";
     switch (formalLevel) {
       case "엄격 격식체":
