@@ -5,277 +5,182 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>건의사항 - 맞춤법 키보드</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
-      background: #000;
-      color: #f5f5f7;
-      min-height: 100vh;
-    }
-
-    .bg {
-      position: fixed;
-      inset: 0;
-      background:
-        radial-gradient(ellipse at 30% 20%, rgba(0, 122, 255, 0.2) 0%, transparent 55%),
-        radial-gradient(ellipse at 70% 80%, rgba(52, 199, 89, 0.15) 0%, transparent 55%),
-        #0a0a0a;
-      z-index: 0;
-    }
-
-    .container {
-      position: relative;
-      z-index: 1;
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 60px 24px 100px;
-    }
-
-    .back {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      color: #34c759;
-      font-size: 16px;
-      text-decoration: none;
-      margin-bottom: 32px;
-    }
-
-    h1 {
-      font-size: 34px;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-      margin-bottom: 8px;
-    }
-
-    .subtitle {
-      font-size: 16px;
-      color: #8e8e93;
-      margin-bottom: 40px;
-      line-height: 1.5;
-    }
-
-    /* 카테고리 */
-    .section-label {
-      font-size: 12px;
-      font-weight: 600;
-      color: #636366;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      margin-bottom: 10px;
-      padding-left: 4px;
-    }
-
-    .category-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 28px;
-    }
-
-    .category-btn {
-      background: rgba(255,255,255,0.07);
-      border: 1.5px solid rgba(255,255,255,0.08);
-      border-radius: 14px;
-      padding: 14px 16px;
-      cursor: pointer;
-      transition: all 0.15s;
-      text-align: left;
-    }
-
-    .category-btn:hover,
-    .category-btn.active {
-      background: rgba(0, 122, 255, 0.12);
-      border-color: rgba(0, 122, 255, 0.4);
-    }
-
-    .category-icon { font-size: 22px; margin-bottom: 6px; }
-    .category-name { font-size: 14px; font-weight: 600; color: #f5f5f7; }
-    .category-desc { font-size: 12px; color: #8e8e93; margin-top: 2px; }
-
-    /* 폼 */
-    .form-card {
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 20px;
-      overflow: hidden;
-      margin-bottom: 16px;
-    }
-
-    .form-row {
-      padding: 14px 20px;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-    }
-
-    .form-row:last-child { border-bottom: none; }
-
-    .form-label {
-      font-size: 12px;
-      color: #8e8e93;
-      margin-bottom: 6px;
-    }
-
-    input, textarea {
-      width: 100%;
-      background: transparent;
-      border: none;
-      outline: none;
-      color: #f5f5f7;
-      font-size: 15px;
-      font-family: inherit;
-      resize: none;
-    }
-
-    textarea { min-height: 120px; line-height: 1.6; }
-
-    input::placeholder, textarea::placeholder { color: #48484a; }
-
-    .submit-btn {
-      width: 100%;
-      padding: 16px;
-      background: #007aff;
-      color: white;
-      border: none;
-      border-radius: 14px;
-      font-size: 17px;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: inherit;
-      transition: opacity 0.2s;
-      margin-bottom: 28px;
-    }
-
-    .submit-btn:hover { opacity: 0.85; }
-    .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-    /* 직접 연락 */
-    .contact-card {
-      background: rgba(52, 199, 89, 0.08);
-      border: 1px solid rgba(52, 199, 89, 0.2);
-      border-radius: 20px;
-      padding: 20px;
-      text-align: center;
-    }
-
-    .contact-card p { font-size: 14px; color: #8e8e93; margin-bottom: 10px; }
-    .contact-card a { color: #34c759; font-size: 15px; font-weight: 600; text-decoration: none; }
-
-    /* 완료 메시지 */
-    .success {
-      display: none;
-      text-align: center;
-      padding: 40px 20px;
-    }
-
-    .success-icon { font-size: 56px; margin-bottom: 16px; }
-    .success h2 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
-    .success p { font-size: 15px; color: #8e8e93; }
-
-    @media (max-width: 400px) {
-      .category-grid { grid-template-columns: 1fr 1fr; }
-    }
+    :root{--black:#000;--near-black:#1d1d1f;--light-gray:#f5f5f7;--white:#fff;--apple-blue:#0071e3;--link-blue:#0066cc;--body-light:rgba(0,0,0,.8);--body-dark:rgba(255,255,255,.82);--muted-light:rgba(0,0,0,.56);--muted-dark:rgba(255,255,255,.6);--surface-dark:#272729;--surface-dark-2:#2a2a2d;--hairline-light:rgba(0,0,0,.1);--hairline-dark:rgba(255,255,255,.12);--shadow-card:rgba(0,0,0,.22) 3px 5px 30px 0;--nav-bg:rgba(0,0,0,.8);--font-display:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Apple SD Gothic Neo","Helvetica Neue",Helvetica,Arial,sans-serif;--font-text:-apple-system,BlinkMacSystemFont,"SF Pro Text","Apple SD Gothic Neo","Helvetica Neue",Helvetica,Arial,sans-serif}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font-text);font-size:17px;line-height:1.47;letter-spacing:-.374px;color:var(--near-black);background:var(--white);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+    a{color:inherit}
+    .nav{position:sticky;top:0;z-index:100;height:48px;background:var(--nav-bg);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px)}
+    .nav-inner{max-width:1120px;height:100%;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+    .brand{font-size:12px;font-weight:600;letter-spacing:-.12px;color:var(--white);text-decoration:none;white-space:nowrap}
+    .nav-links{list-style:none;display:flex;align-items:center;gap:22px}
+    .nav-links a{font-size:12px;font-weight:400;color:rgba(255,255,255,.82);text-decoration:none}
+    .nav-cta{display:inline-flex;align-items:center;justify-content:center;min-height:28px;padding:0 12px;border-radius:980px;background:var(--apple-blue);color:var(--white);font-size:12px;text-decoration:none;white-space:nowrap}
+    .hero{background:var(--light-gray);padding:88px 24px 56px;text-align:center}
+    .hero-inner,.section-inner{max-width:980px;margin:0 auto}
+    .eyebrow{font-size:21px;font-weight:600;line-height:1.24;letter-spacing:.231px;color:var(--apple-blue);margin-bottom:12px}
+    h1{font-family:var(--font-display);font-size:56px;font-weight:600;line-height:1.07;letter-spacing:-.28px;color:var(--near-black);margin-bottom:14px}
+    .hero-copy{max-width:720px;margin:0 auto;color:var(--body-light)}
+    .section{padding:72px 24px}
+    .section-light{background:var(--white)}
+    .section-dark{background:var(--black);color:var(--white)}
+    .section-gray{background:var(--light-gray)}
+    .section-label{font-size:12px;font-weight:600;line-height:1.33;letter-spacing:.5px;text-transform:uppercase;color:var(--muted-light);margin-bottom:10px}
+    .section-dark .section-label{color:var(--muted-dark)}
+    h2{font-family:var(--font-display);font-size:40px;font-weight:600;line-height:1.1;letter-spacing:-.28px;margin-bottom:16px}
+    .section-copy{max-width:760px;color:var(--body-light);margin-bottom:28px}
+    .section-dark .section-copy{color:var(--body-dark)}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+    .category-btn,.summary-card,.contact-card{border-radius:18px;padding:26px 24px}
+    .category-btn{background:var(--surface-dark);box-shadow:var(--shadow-card);border:none;color:var(--white);text-align:left;cursor:pointer;transition:transform .15s ease,background .15s ease,box-shadow .15s ease}
+    .category-btn.alt{background:var(--surface-dark-2)}
+    .category-btn.active{background:#10345d;box-shadow:0 0 0 1px rgba(41,151,255,.45),var(--shadow-card)}
+    .category-btn:hover{transform:translateY(-1px)}
+    .category-icon{font-size:24px;margin-bottom:10px}
+    .category-name,.summary-card h3,.contact-card h3{font-family:var(--font-display);font-size:28px;font-weight:400;line-height:1.14;letter-spacing:.196px;margin-bottom:8px}
+    .category-desc,.summary-card p{color:var(--body-dark)}
+    .form-wrap{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);gap:18px}
+    .form-card{border-radius:24px;background:var(--white);box-shadow:var(--shadow-card);overflow:hidden}
+    .form-row{padding:18px 22px;border-top:1px solid rgba(0,0,0,.08)}
+    .form-row:first-child{border-top:none}
+    .form-label{font-size:12px;font-weight:600;line-height:1.33;letter-spacing:.5px;text-transform:uppercase;color:var(--muted-light);margin-bottom:8px}
+    input,textarea{width:100%;border:none;outline:none;background:transparent;color:var(--near-black);font:inherit;resize:none}
+    textarea{min-height:176px}
+    input::placeholder,textarea::placeholder{color:rgba(0,0,0,.36)}
+    .submit-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 22px;border-radius:980px;border:none;background:var(--apple-blue);color:var(--white);font-size:17px;font-weight:400;cursor:pointer}
+    .submit-btn:disabled{opacity:.45;cursor:not-allowed}
+    .summary-stack{display:grid;gap:18px}
+    .summary-card{background:var(--light-gray);box-shadow:0 0 0 1px var(--hairline-light)}
+    .summary-card ul{list-style:none;display:grid;gap:14px}
+    .summary-card li{padding-top:14px;border-top:1px solid rgba(0,0,0,.08);color:var(--body-light)}
+    .summary-card li:first-child{padding-top:0;border-top:none}
+    .summary-card strong{display:block;margin-bottom:2px;font-size:17px;font-weight:600;line-height:1.24;color:var(--near-black)}
+    .contact-card{background:var(--white);box-shadow:var(--shadow-card);text-align:center}
+    .contact-card p{color:var(--body-light);margin-bottom:14px}
+    .contact-card a{color:var(--link-blue);font-size:21px;font-weight:400;line-height:1.19;letter-spacing:.231px;text-decoration:none}
+    .success{display:none;padding:36px 28px;border-radius:24px;background:var(--white);box-shadow:var(--shadow-card);text-align:center}
+    .success h3{font-family:var(--font-display);font-size:40px;font-weight:600;line-height:1.1;letter-spacing:-.28px;margin-bottom:12px}
+    .success p{color:var(--body-light)}
+    .footer{padding:28px 24px 40px;text-align:center;background:var(--light-gray);color:var(--muted-light);font-size:12px;line-height:1.33;letter-spacing:-.12px}
+    .footer a{color:var(--link-blue);text-decoration:none}
+    .nav-links a:hover,.nav-cta:hover,.brand:hover,.contact-card a:hover,.footer a:hover,.submit-btn:hover{opacity:.88}
+    .nav-links a:focus-visible,.nav-cta:focus-visible,.brand:focus-visible,.contact-card a:focus-visible,.footer a:focus-visible,.submit-btn:focus-visible,.category-btn:focus-visible{outline:2px solid var(--apple-blue);outline-offset:2px}
+    @media (max-width:900px){h1{font-size:40px}h2,.success h3{font-size:32px}.grid,.form-wrap{grid-template-columns:1fr}}
+    @media (max-width:720px){.nav-links{display:none}.hero{padding-top:80px}}
   </style>
 </head>
 <body>
-  <div class="bg"></div>
-  <div class="container">
-
-    <a href="./index.html" class="back">‹ 맞춤법 키보드</a>
-
-    <h1>건의사항</h1>
-    <p class="subtitle">불편한 점이나 원하는 기능을 알려주세요.<br>더 좋은 앱을 만드는 데 큰 도움이 됩니다.</p>
-
-    <div id="formSection">
-      <!-- 카테고리 -->
-      <p class="section-label">유형 선택</p>
-      <div class="category-grid">
-        <div class="category-btn" onclick="selectCategory(this, '버그 신고')">
-          <div class="category-icon">🐛</div>
-          <div class="category-name">버그 신고</div>
-          <div class="category-desc">오류·오작동</div>
-        </div>
-        <div class="category-btn" onclick="selectCategory(this, '기능 요청')">
-          <div class="category-icon">✨</div>
-          <div class="category-name">기능 요청</div>
-          <div class="category-desc">추가됐으면 하는 기능</div>
-        </div>
-        <div class="category-btn" onclick="selectCategory(this, '교정 품질')">
-          <div class="category-icon">✍️</div>
-          <div class="category-name">교정 품질</div>
-          <div class="category-desc">맞춤법·번역 오류</div>
-        </div>
-        <div class="category-btn" onclick="selectCategory(this, '기타')">
-          <div class="category-icon">💬</div>
-          <div class="category-name">기타</div>
-          <div class="category-desc">그 외 의견</div>
-        </div>
-      </div>
-
-      <!-- 입력 폼 -->
-      <p class="section-label">내용 작성</p>
-      <div class="form-card">
-        <div class="form-row">
-          <div class="form-label">제목</div>
-          <input type="text" id="title" placeholder="한 줄로 요약해주세요" maxlength="100">
-        </div>
-        <div class="form-row">
-          <div class="form-label">내용</div>
-          <textarea id="content" placeholder="자세한 내용을 적어주세요&#10;(예: 어떤 상황에서 문제가 발생했는지)"></textarea>
-        </div>
-        <div class="form-row">
-          <div class="form-label">연락처 (선택)</div>
-          <input type="email" id="email" placeholder="답변받으실 이메일 (선택사항)">
-        </div>
-      </div>
-
-      <button class="submit-btn" onclick="submitFeedback()">건의사항 보내기</button>
-
-      <!-- 직접 연락 -->
-      <p class="section-label">직접 연락</p>
-      <div class="contact-card">
-        <p>이메일로 직접 문의하실 수도 있어요</p>
-        <a href="mailto:ehdtjq1622@naver.com">ehdtjq1622@naver.com</a>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="./index.html">맞춤법 키보드</a>
+      <ul class="nav-links">
+        <li><a href="#categories">유형</a></li>
+        <li><a href="#form">작성</a></li>
+        <li><a href="./privacy.html">개인정보처리방침</a></li>
+      </ul>
+      <a class="nav-cta" href="./index.html">홈으로</a>
+    </div>
+  </nav>
+  <header class="hero">
+    <div class="hero-inner">
+      <p class="eyebrow">건의사항</p>
+      <h1>불편했던 점도,<br>추가됐으면 하는 점도 듣고 싶습니다.</h1>
+      <p class="hero-copy">버그, 기능 요청, 교정 품질, 그 밖의 의견까지 한 번에 남길 수 있게 간단하게 정리했습니다.</p>
+    </div>
+  </header>
+  <section class="section section-dark" id="categories">
+    <div class="section-inner">
+      <p class="section-label">Categories</p>
+      <h2>어떤 의견인지 먼저 골라 주세요.</h2>
+      <p class="section-copy">유형을 고르면 메일 제목에 함께 들어가서, 나중에 정리하고 확인하기 더 쉬워집니다.</p>
+      <div class="grid">
+        <button class="category-btn" type="button" onclick="selectCategory(this,'버그 신고')"><div class="category-icon">🐛</div><div class="category-name">버그 신고</div><div class="category-desc">오류, 오작동, 입력 문제처럼 바로 확인이 필요한 이슈</div></button>
+        <button class="category-btn alt" type="button" onclick="selectCategory(this,'기능 요청')"><div class="category-icon">✨</div><div class="category-name">기능 요청</div><div class="category-desc">있으면 더 자주 쓰게 될 기능이나 개선 아이디어</div></button>
+        <button class="category-btn alt" type="button" onclick="selectCategory(this,'교정 품질')"><div class="category-icon">✍️</div><div class="category-name">교정 품질</div><div class="category-desc">맞춤법, 번역, 말투 변환 결과가 어색했던 사례</div></button>
+        <button class="category-btn" type="button" onclick="selectCategory(this,'기타')"><div class="category-icon">💬</div><div class="category-name">기타</div><div class="category-desc">칭찬, 아쉬운 점, 제안처럼 분류하기 어려운 의견</div></button>
       </div>
     </div>
-
-    <!-- 완료 메시지 -->
-    <div class="success" id="successSection">
-      <div class="success-icon">🎉</div>
-      <h2>감사합니다!</h2>
-      <p>소중한 의견 잘 받았어요.<br>더 좋은 앱을 만들도록 노력할게요.</p>
+  </section>
+  <section class="section section-light" id="form">
+    <div class="section-inner">
+      <p class="section-label">Feedback</p>
+      <h2>적어주신 내용은 메일로 바로 보낼 수 있습니다.</h2>
+      <p class="section-copy">지금은 빠르게 받을 수 있도록 메일 전송 방식으로 연결해 두었습니다. 제목과 내용을 적으면 기본 메일 앱이 열립니다.</p>
+      <div id="formSection" class="form-wrap">
+        <div class="form-card">
+          <div class="form-row">
+            <div class="form-label">제목</div>
+            <input type="text" id="title" placeholder="한 줄로 요약해 주세요" maxlength="100">
+          </div>
+          <div class="form-row">
+            <div class="form-label">내용</div>
+            <textarea id="content" placeholder="어떤 상황에서 문제가 있었는지, 어떤 기능이 필요했는지 자세히 적어 주세요."></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-label">연락처 (선택)</div>
+            <input type="email" id="email" placeholder="답변받을 이메일을 남겨 주세요">
+          </div>
+          <div class="form-row">
+            <button class="submit-btn" type="button" onclick="submitFeedback()">건의사항 보내기</button>
+          </div>
+        </div>
+        <div class="summary-stack">
+          <div class="summary-card">
+            <h3>잘 전달되는 팁</h3>
+            <ul>
+              <li><strong>버그 신고</strong>어떤 앱에서, 어떤 입력을 했을 때 문제가 났는지 적어 주세요.</li>
+              <li><strong>교정 품질</strong>원문과 기대한 결과를 함께 적어 주시면 확인이 훨씬 빨라집니다.</li>
+              <li><strong>기능 요청</strong>왜 필요한지, 언제 자주 쓰는지까지 적어 주시면 우선순위를 잡기 쉽습니다.</li>
+            </ul>
+          </div>
+          <div class="contact-card">
+            <h3>직접 연락</h3>
+            <p>메일로 바로 보내고 싶다면 아래 주소로 직접 연락하셔도 됩니다.</p>
+            <a href="mailto:ehdtjq1622@naver.com">ehdtjq1622@naver.com</a>
+          </div>
+        </div>
+      </div>
+      <div class="success" id="successSection">
+        <h3>감사합니다.</h3>
+        <p>기본 메일 앱이 열리도록 연결했습니다. 보내기까지 완료해 주시면 의견이 정상 접수됩니다.</p>
+      </div>
     </div>
-
-  </div>
-
+  </section>
+  <footer class="footer">
+    <p>© 2026 맞춤법 키보드 · <a href="./privacy.html">개인정보처리방침</a></p>
+  </footer>
   <script>
-    let selectedCategory = '';
+    let selectedCategory = "";
 
     function selectCategory(el, name) {
-      document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
-      el.classList.add('active');
+      document.querySelectorAll(".category-btn").forEach((button) => button.classList.remove("active"));
+      el.classList.add("active");
       selectedCategory = name;
     }
 
     function submitFeedback() {
-      const title = document.getElementById('title').value.trim();
-      const content = document.getElementById('content').value.trim();
-      const email = document.getElementById('email').value.trim();
+      const title = document.getElementById("title").value.trim();
+      const content = document.getElementById("content").value.trim();
+      const email = document.getElementById("email").value.trim();
 
-      if (!selectedCategory) { alert('유형을 선택해주세요.'); return; }
-      if (!title) { alert('제목을 입력해주세요.'); return; }
-      if (!content) { alert('내용을 입력해주세요.'); return; }
+      if (!selectedCategory) {
+        alert("유형을 선택해 주세요.");
+        return;
+      }
+      if (!title) {
+        alert("제목을 입력해 주세요.");
+        return;
+      }
+      if (!content) {
+        alert("내용을 입력해 주세요.");
+        return;
+      }
 
-      const mailtoEmail = 'ehdtjq1622@naver.com';
       const subject = encodeURIComponent(`[맞춤법 키보드 건의] [${selectedCategory}] ${title}`);
-      const body = encodeURIComponent(
-        `유형: ${selectedCategory}\n제목: ${title}\n\n내용:\n${content}${email ? '\n\n연락처: ' + email : ''}`
-      );
+      const body = encodeURIComponent(`유형: ${selectedCategory}\n제목: ${title}\n\n내용:\n${content}${email ? `\n\n연락처: ${email}` : ""}`);
+      window.location.href = `mailto:ehdtjq1622@naver.com?subject=${subject}&body=${body}`;
 
-      window.location.href = `mailto:${mailtoEmail}?subject=${subject}&body=${body}`;
-
-      document.getElementById('formSection').style.display = 'none';
-      document.getElementById('successSection').style.display = 'block';
+      document.getElementById("formSection").style.display = "none";
+      document.getElementById("successSection").style.display = "block";
     }
   </script>
 </body>
