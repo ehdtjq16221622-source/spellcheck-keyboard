@@ -5,56 +5,409 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>개인정보처리방침 - 맞춤법 키보드</title>
   <style>
-    :root{--black:#000;--near-black:#1d1d1f;--light-gray:#f5f5f7;--white:#fff;--apple-blue:#0071e3;--link-blue:#0066cc;--link-blue-dark:#2997ff;--body-light:rgba(0,0,0,.8);--body-dark:rgba(255,255,255,.82);--muted-light:rgba(0,0,0,.56);--muted-dark:rgba(255,255,255,.6);--surface-dark:#272729;--hairline-light:rgba(0,0,0,.1);--shadow-card:rgba(0,0,0,.22) 3px 5px 30px 0;--nav-bg:rgba(0,0,0,.8);--font-display:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Apple SD Gothic Neo","Helvetica Neue",Helvetica,Arial,sans-serif;--font-text:-apple-system,BlinkMacSystemFont,"SF Pro Text","Apple SD Gothic Neo","Helvetica Neue",Helvetica,Arial,sans-serif}
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:var(--font-text);font-size:17px;line-height:1.47;letter-spacing:-.374px;color:var(--near-black);background:var(--white);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
-    a{color:inherit}
-    .nav{position:sticky;top:0;z-index:100;height:48px;background:var(--nav-bg);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px)}
-    .nav-inner{max-width:1120px;height:100%;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;gap:16px}
-    .brand,.nav-links a,.nav-cta{text-decoration:none;color:var(--white)}
-    .brand{font-size:12px;font-weight:600;letter-spacing:-.12px;white-space:nowrap}
-    .nav-links{list-style:none;display:flex;align-items:center;gap:22px}
-    .nav-links a{font-size:12px;font-weight:400;color:rgba(255,255,255,.82)}
-    .nav-cta{display:inline-flex;align-items:center;justify-content:center;min-height:28px;padding:0 12px;border-radius:980px;background:var(--apple-blue);font-size:12px;white-space:nowrap}
-    .nav-links a:hover,.brand:hover,.nav-cta:hover,.contact-card a:hover,.link-row a:hover,.footer a:hover{opacity:.88}
-    .nav-links a:focus-visible,.brand:focus-visible,.nav-cta:focus-visible,.contact-card a:focus-visible,.link-row a:focus-visible,.footer a:focus-visible{outline:2px solid var(--apple-blue);outline-offset:2px}
-    .hero{background:var(--light-gray);padding:88px 24px 56px;text-align:center}
-    .hero-inner,.section-inner{max-width:980px;margin:0 auto}
-    .eyebrow{font-size:21px;font-weight:600;line-height:1.24;letter-spacing:.231px;color:var(--apple-blue);margin-bottom:12px}
-    h1{font-family:var(--font-display);font-size:56px;font-weight:600;line-height:1.07;letter-spacing:-.28px;color:var(--near-black);margin-bottom:14px}
-    .hero-copy{max-width:760px;margin:0 auto 16px;color:var(--body-light)}
-    .updated{font-size:14px;line-height:1.43;letter-spacing:-.224px;color:var(--muted-light)}
-    .section{padding:72px 24px}
-    .section-light{background:var(--white)}
-    .section-gray{background:var(--light-gray)}
-    .section-dark{background:var(--black);color:var(--white)}
-    .notice{max-width:900px;margin:0 auto;padding:20px 24px;border-radius:18px;background:var(--white);box-shadow:0 0 0 1px var(--hairline-light);color:var(--body-light);text-align:left}
-    .section-label{font-size:12px;font-weight:600;line-height:1.33;letter-spacing:.5px;text-transform:uppercase;color:var(--muted-light);margin-bottom:10px}
-    .section-dark .section-label{color:var(--muted-dark)}
-    h2{font-family:var(--font-display);font-size:40px;font-weight:600;line-height:1.1;letter-spacing:-.28px;margin-bottom:16px}
-    .section-copy{max-width:760px;color:var(--body-light);margin-bottom:28px}
-    .section-dark .section-copy{color:var(--body-dark)}
-    .card-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
-    .card{border-radius:18px;padding:26px 24px;background:var(--white);box-shadow:0 0 0 1px var(--hairline-light)}
-    .section-dark .card{background:var(--surface-dark);box-shadow:var(--shadow-card)}
-    .card h3{font-family:var(--font-display);font-size:28px;font-weight:400;line-height:1.14;letter-spacing:.196px;margin-bottom:10px}
-    .card p,.card li{color:var(--body-light)}
-    .section-dark .card p,.section-dark .card li{color:var(--body-dark)}
-    .list{list-style:none;display:grid;gap:14px}
-    .list li{padding-top:14px;border-top:1px solid rgba(0,0,0,.08)}
-    .section-dark .list li{border-top-color:rgba(255,255,255,.12)}
-    .list li:first-child{border-top:none;padding-top:0}
-    .list strong{display:block;margin-bottom:3px;font-size:17px;font-weight:600;line-height:1.24;color:var(--near-black)}
-    .section-dark .list strong{color:var(--white)}
-    .contact-card{border-radius:24px;padding:32px 28px;background:var(--white);box-shadow:var(--shadow-card);text-align:center}
-    .contact-card p{color:var(--body-light);margin-bottom:16px}
-    .contact-card a{color:var(--link-blue);font-size:21px;font-weight:400;line-height:1.19;letter-spacing:.231px;text-decoration:none}
-    .link-row{display:flex;flex-wrap:wrap;gap:24px}
-    .link-row a{color:var(--link-blue-dark);text-decoration:none}
-    .footer{padding:28px 24px 40px;text-align:center;background:var(--light-gray);color:var(--muted-light);font-size:12px;line-height:1.33;letter-spacing:-.12px}
-    .footer a{color:var(--link-blue);text-decoration:none}
-    @media (max-width:834px){h1{font-size:40px}h2{font-size:32px}.card-grid{grid-template-columns:1fr}}
-    @media (max-width:720px){.nav-links{display:none}.hero{padding-top:80px}}
+    :root {
+      --black: #000000;
+      --near-black: #1d1d1f;
+      --light-gray: #f5f5f7;
+      --white: #ffffff;
+      --apple-blue: #0071e3;
+      --link-blue: #0066cc;
+      --link-blue-dark: #2997ff;
+      --body-light: rgba(0, 0, 0, 0.78);
+      --body-dark: rgba(255, 255, 255, 0.82);
+      --muted-light: rgba(0, 0, 0, 0.56);
+      --muted-dark: rgba(255, 255, 255, 0.62);
+      --surface-dark: #272729;
+      --hairline-light: rgba(0, 0, 0, 0.08);
+      --shadow-card: rgba(0, 0, 0, 0.2) 3px 5px 30px 0;
+      --nav-bg: rgba(0, 0, 0, 0.8);
+      --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Apple SD Gothic Neo", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      --font-text: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-text);
+      font-size: 17px;
+      line-height: 1.72;
+      letter-spacing: -0.01em;
+      color: var(--near-black);
+      background: var(--white);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+      line-break: strict;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    p,
+    li,
+    span,
+    a {
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+      line-break: strict;
+      text-wrap: pretty;
+    }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 48px;
+      background: var(--nav-bg);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+    }
+
+    .nav-inner {
+      max-width: 1160px;
+      height: 100%;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand,
+    .nav-links a,
+    .nav-cta {
+      text-decoration: none;
+      color: var(--white);
+    }
+
+    .brand {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+    }
+
+    .nav-links {
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .nav-links a {
+      font-size: 12px;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.82);
+    }
+
+    .nav-cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 28px;
+      padding: 0 12px;
+      border-radius: 980px;
+      background: var(--apple-blue);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .hero {
+      background: var(--light-gray);
+      padding: 104px 28px 72px;
+      text-align: center;
+    }
+
+    .hero-inner,
+    .section-inner {
+      max-width: 1040px;
+      margin: 0 auto;
+    }
+
+    .eyebrow {
+      font-size: 20px;
+      font-weight: 600;
+      line-height: 1.5;
+      letter-spacing: -0.02em;
+      color: var(--apple-blue);
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      font-family: var(--font-display);
+      font-size: 54px;
+      font-weight: 600;
+      line-height: 1.2;
+      letter-spacing: -0.03em;
+      color: var(--near-black);
+      margin-bottom: 18px;
+      text-wrap: balance;
+    }
+
+    .hero-copy {
+      max-width: 880px;
+      margin: 0 auto 16px;
+      font-size: 20px;
+      line-height: 1.82;
+      color: var(--body-light);
+    }
+
+    .updated {
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--muted-light);
+    }
+
+    .section {
+      padding: 92px 28px;
+    }
+
+    .section-light {
+      background: var(--white);
+    }
+
+    .section-gray {
+      background: var(--light-gray);
+    }
+
+    .section-dark {
+      background: var(--black);
+      color: var(--white);
+    }
+
+    .notice {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 28px 28px;
+      border-radius: 22px;
+      background: var(--white);
+      box-shadow: 0 0 0 1px var(--hairline-light);
+      color: var(--body-light);
+      text-align: left;
+      font-size: 18px;
+      line-height: 1.85;
+    }
+
+    .section-label {
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.5;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted-light);
+      margin-bottom: 12px;
+    }
+
+    .section-dark .section-label {
+      color: var(--muted-dark);
+    }
+
+    h2 {
+      font-family: var(--font-display);
+      font-size: 42px;
+      font-weight: 600;
+      line-height: 1.24;
+      letter-spacing: -0.03em;
+      margin-bottom: 18px;
+      text-wrap: balance;
+    }
+
+    .section-copy {
+      max-width: 860px;
+      color: var(--body-light);
+      margin-bottom: 34px;
+      font-size: 18px;
+      line-height: 1.82;
+    }
+
+    .section-dark .section-copy {
+      color: var(--body-dark);
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 22px;
+    }
+
+    .card {
+      border-radius: 22px;
+      padding: 32px 30px;
+      background: var(--white);
+      box-shadow: 0 0 0 1px var(--hairline-light);
+    }
+
+    .section-dark .card {
+      background: var(--surface-dark);
+      box-shadow: var(--shadow-card);
+    }
+
+    .card h3 {
+      font-family: var(--font-display);
+      font-size: 30px;
+      font-weight: 400;
+      line-height: 1.3;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+
+    .card p,
+    .card li {
+      color: var(--body-light);
+      font-size: 17px;
+      line-height: 1.82;
+    }
+
+    .section-dark .card p,
+    .section-dark .card li {
+      color: var(--body-dark);
+    }
+
+    .list {
+      list-style: none;
+      display: grid;
+      gap: 18px;
+    }
+
+    .list li {
+      padding-top: 18px;
+      border-top: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .section-dark .list li {
+      border-top-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .list li:first-child {
+      border-top: none;
+      padding-top: 0;
+    }
+
+    .list strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 1.55;
+      color: var(--near-black);
+    }
+
+    .section-dark .list strong {
+      color: var(--white);
+    }
+
+    .contact-card {
+      border-radius: 24px;
+      padding: 34px 30px;
+      background: var(--white);
+      box-shadow: var(--shadow-card);
+      text-align: center;
+      margin-top: 18px;
+    }
+
+    .contact-card p {
+      color: var(--body-light);
+      margin-bottom: 16px;
+      font-size: 17px;
+      line-height: 1.8;
+    }
+
+    .contact-card a {
+      color: var(--link-blue);
+      font-size: 22px;
+      font-weight: 400;
+      line-height: 1.5;
+      letter-spacing: -0.02em;
+      text-decoration: none;
+    }
+
+    .link-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 28px;
+    }
+
+    .link-row a {
+      color: var(--link-blue-dark);
+      text-decoration: none;
+      font-size: 18px;
+      line-height: 1.7;
+    }
+
+    .footer {
+      padding: 32px 24px 42px;
+      text-align: center;
+      background: var(--light-gray);
+      color: var(--muted-light);
+      font-size: 12px;
+      line-height: 1.6;
+      letter-spacing: -0.01em;
+    }
+
+    .footer a {
+      color: var(--link-blue);
+      text-decoration: none;
+    }
+
+    .nav-links a:hover,
+    .brand:hover,
+    .nav-cta:hover,
+    .contact-card a:hover,
+    .link-row a:hover,
+    .footer a:hover {
+      opacity: 0.88;
+    }
+
+    .nav-links a:focus-visible,
+    .brand:focus-visible,
+    .nav-cta:focus-visible,
+    .contact-card a:focus-visible,
+    .link-row a:focus-visible,
+    .footer a:focus-visible {
+      outline: 2px solid var(--apple-blue);
+      outline-offset: 2px;
+    }
+
+    @media (max-width: 834px) {
+      h1 {
+        font-size: 40px;
+      }
+
+      h2 {
+        font-size: 34px;
+      }
+
+      .card-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .nav-links {
+        display: none;
+      }
+
+      .hero {
+        padding-top: 84px;
+      }
+
+      h1 {
+        font-size: 36px;
+      }
+
+      .section,
+      .hero {
+        padding-left: 22px;
+        padding-right: 22px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -70,6 +423,7 @@
       <a class="nav-cta" href="./index.html">홈으로</a>
     </div>
   </nav>
+
   <header class="hero">
     <div class="hero-inner">
       <p class="eyebrow">개인정보처리방침</p>
@@ -78,22 +432,31 @@
       <p class="updated">최종 업데이트: 2026년 4월 6일</p>
     </div>
   </header>
+
   <section class="section section-light">
     <div class="section-inner">
       <div class="notice">맞춤법 키보드는 교정, 번역, 말투 변환 기능을 실행할 때에만 필요한 입력 텍스트를 처리 서버로 전송합니다. 비밀번호와 같은 민감 입력 필드는 운영체제가 민감 필드로 표시한 경우 전송 대상에서 제외되도록 설계했으며, 사용자가 선택한 커스텀 배경 이미지는 기기 내부에만 저장하고 서버로 업로드하지 않습니다.</div>
     </div>
   </section>
+
   <section class="section section-gray" id="scope">
     <div class="section-inner">
       <p class="section-label">Scope</p>
       <h2>이 방침이 적용되는 범위</h2>
       <p class="section-copy">본 방침은 안드로이드용 맞춤법 키보드 앱, 앱 내 설정 화면, GitHub Pages로 제공되는 소개 페이지 및 개인정보처리방침 페이지에 적용됩니다.</p>
       <div class="card-grid">
-        <article class="card"><h3>앱 기능</h3><p>맞춤법 교정, 번역, 말투 변환, 크레딧 지급 및 차감, 광고 보상 기능에 적용됩니다.</p></article>
-        <article class="card"><h3>웹 문서</h3><p>다운로드 안내, 건의사항 링크, 개인정보처리방침 페이지처럼 서비스 소개를 위한 공개 웹 페이지에도 동일한 기준을 적용합니다.</p></article>
+        <article class="card">
+          <h3>앱 기능</h3>
+          <p>맞춤법 교정, 번역, 말투 변환, 크레딧 지급 및 차감, 광고 보상 기능에 적용됩니다.</p>
+        </article>
+        <article class="card">
+          <h3>웹 문서</h3>
+          <p>다운로드 안내, 건의사항 링크, 개인정보처리방침 페이지처럼 서비스 소개를 위한 공개 웹 페이지에도 동일한 기준을 적용합니다.</p>
+        </article>
       </div>
     </div>
   </section>
+
   <section class="section section-light" id="collect">
     <div class="section-inner">
       <p class="section-label">Collected Data</p>
@@ -119,61 +482,135 @@
       </div>
     </div>
   </section>
+
   <section class="section section-dark">
     <div class="section-inner">
       <p class="section-label">Not Collected</p>
       <h2>수집하지 않거나 제한하는 정보</h2>
       <p class="section-copy">키보드 앱 특성상 민감한 입력이 섞일 수 있으므로, 아래 정보는 처리 대상에서 제외하거나 별도로 수집하지 않는 방향으로 설계했습니다.</p>
       <div class="card-grid">
-        <article class="card"><h3>민감 입력 필드</h3><p>운영체제가 비밀번호, 결제 정보, 기타 민감 필드로 표시한 입력창의 텍스트는 AI 처리 대상으로 전송하지 않도록 제한합니다. 다만 외부 앱이 민감 필드를 올바르게 표시하지 않는 경우 운영체제 한계로 인해 완전한 통제가 어려울 수 있습니다.</p></article>
-        <article class="card"><h3>연락처와 전체 기기 콘텐츠</h3><p>연락처, 통화 기록, 메시지 목록, 전체 사진 라이브러리 같은 정보는 수집하지 않습니다. 사진 접근은 커스텀 배경 선택 시 사용자가 직접 고른 이미지에 한해서만 이뤄집니다.</p></article>
+        <article class="card">
+          <h3>민감 입력 필드</h3>
+          <p>운영체제가 비밀번호, 결제 정보, 기타 민감 필드로 표시한 입력창의 텍스트는 AI 처리 대상으로 전송하지 않도록 제한합니다. 다만 외부 앱이 민감 필드를 올바르게 표시하지 않는 경우 운영체제 한계로 인해 완전한 통제가 어려울 수 있습니다.</p>
+        </article>
+        <article class="card">
+          <h3>연락처와 전체 기기 콘텐츠</h3>
+          <p>연락처, 통화 기록, 메시지 목록, 전체 사진 라이브러리 같은 정보는 수집하지 않습니다. 사진 접근은 커스텀 배경 선택 시 사용자가 직접 고른 이미지에 한해서만 이뤄집니다.</p>
+        </article>
       </div>
     </div>
   </section>
+
   <section class="section section-gray">
     <div class="section-inner">
       <p class="section-label">Purpose</p>
       <h2>정보를 사용하는 목적</h2>
       <div class="card-grid">
-        <article class="card"><h3>문장 처리 기능 제공</h3><p>맞춤법 및 띄어쓰기 교정, 번역, 상황별 말투 변환 같은 AI 기능을 제공하기 위해 요청 텍스트를 처리합니다.</p></article>
-        <article class="card"><h3>무료 사용량과 보상 관리</h3><p>매일 무료 크레딧 제공, 광고 보상 50크레딧 지급, 중복 보상 방지, 잔여 크레딧 계산을 위해 기기 식별자와 크레딧 정보를 사용합니다.</p></article>
+        <article class="card">
+          <h3>문장 처리 기능 제공</h3>
+          <p>맞춤법 및 띄어쓰기 교정, 번역, 상황별 말투 변환 같은 AI 기능을 제공하기 위해 요청 텍스트를 처리합니다.</p>
+        </article>
+        <article class="card">
+          <h3>무료 사용량과 보상 관리</h3>
+          <p>매일 무료 크레딧 제공, 광고 보상 50크레딧 지급, 중복 보상 방지, 잔여 크레딧 계산을 위해 기기 식별자와 크레딧 정보를 사용합니다.</p>
+        </article>
       </div>
     </div>
   </section>
+
   <section class="section section-light" id="third-party">
     <div class="section-inner">
       <p class="section-label">Third Parties</p>
       <h2>제3자 서비스 이용 및 국외 이전</h2>
       <p class="section-copy">서비스 제공을 위해 아래 제3자 서비스를 사용합니다. 각 업체의 처리 방식은 해당 업체의 정책을 따릅니다.</p>
       <div class="card-grid">
-        <article class="card"><h3>OpenAI</h3><ul class="list"><li><strong>이용 목적</strong>교정, 번역, 말투 변환을 위한 AI 문장 처리</li><li><strong>전달 정보</strong>사용자가 요청한 입력 텍스트와 요청 유형</li><li><strong>국외 이전</strong>AI 처리 인프라 운영 과정에서 국외 이전이 발생할 수 있습니다.</li></ul></article>
-        <article class="card"><h3>Supabase</h3><ul class="list"><li><strong>이용 목적</strong>서버 함수 실행, 요청 중계, 크레딧 정보 저장, 광고 보상 처리</li><li><strong>전달 정보</strong>기기 식별자, 크레딧 정보, 광고 보상 요청 정보, 기능 요청 데이터</li><li><strong>비고</strong>서버 비밀값과 API 인프라 관리에 사용됩니다.</li></ul></article>
-        <article class="card"><h3>Google AdMob</h3><ul class="list"><li><strong>이용 목적</strong>리워드 광고 제공 및 측정</li><li><strong>전달 정보</strong>광고 식별 관련 정보, 기기 정보, 광고 시청 이벤트 정보가 Google 정책에 따라 처리될 수 있습니다.</li><li><strong>국외 이전</strong>광고 서비스 운영 과정에서 국외 이전이 발생할 수 있습니다.</li></ul></article>
-        <article class="card"><h3>결제 제공자</h3><ul class="list"><li><strong>이용 목적</strong>구독 또는 인앱 결제 처리</li><li><strong>전달 정보</strong>결제 정보는 Google Play가 직접 처리하며, 앱은 카드번호 같은 민감 결제 정보를 직접 수집하거나 저장하지 않습니다.</li><li><strong>비고</strong>결제 관련 정책은 Google Play 정책을 따릅니다.</li></ul></article>
+        <article class="card">
+          <h3>OpenAI</h3>
+          <ul class="list">
+            <li><strong>이용 목적</strong>교정, 번역, 말투 변환을 위한 AI 문장 처리</li>
+            <li><strong>전달 정보</strong>사용자가 요청한 입력 텍스트와 요청 유형</li>
+            <li><strong>국외 이전</strong>AI 처리 인프라 운영 과정에서 국외 이전이 발생할 수 있습니다.</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>Supabase</h3>
+          <ul class="list">
+            <li><strong>이용 목적</strong>서버 함수 실행, 요청 중계, 크레딧 정보 저장, 광고 보상 처리</li>
+            <li><strong>전달 정보</strong>기기 식별자, 크레딧 정보, 광고 보상 요청 정보, 기능 요청 데이터</li>
+            <li><strong>비고</strong>서버 비밀값과 API 인프라 관리에 사용됩니다.</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>Google AdMob</h3>
+          <ul class="list">
+            <li><strong>이용 목적</strong>리워드 광고 제공 및 측정</li>
+            <li><strong>전달 정보</strong>광고 식별 관련 정보, 기기 정보, 광고 시청 이벤트 정보가 Google 정책에 따라 처리될 수 있습니다.</li>
+            <li><strong>국외 이전</strong>광고 서비스 운영 과정에서 국외 이전이 발생할 수 있습니다.</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>결제 제공자</h3>
+          <ul class="list">
+            <li><strong>이용 목적</strong>구독 또는 인앱 결제 처리</li>
+            <li><strong>전달 정보</strong>결제 정보는 Google Play가 직접 처리하며, 앱은 카드번호 같은 민감 결제 정보를 직접 수집하거나 저장하지 않습니다.</li>
+            <li><strong>비고</strong>결제 관련 정책은 Google Play 정책을 따릅니다.</li>
+          </ul>
+        </article>
       </div>
     </div>
   </section>
+
   <section class="section section-dark">
     <div class="section-inner">
       <p class="section-label">Retention & Security</p>
       <h2>보관 기간과 보호 조치</h2>
       <div class="card-grid">
-        <article class="card"><h3>보관 기간</h3><ul class="list"><li><strong>입력 텍스트</strong>기능 요청 처리 목적에 한해 일시적으로 전송되며, 서비스 운영을 위한 별도 저장소에 보관하지 않습니다.</li><li><strong>기기 내 설정</strong>앱 삭제 또는 데이터 초기화 전까지 사용자의 기기에 남습니다.</li><li><strong>크레딧 정보</strong>무료 사용량 제공, 부정 사용 방지, 광고 보상 중복 방지에 필요한 범위에서 보관되며, 삭제 요청 시 검토 후 처리할 수 있습니다.</li></ul></article>
-        <article class="card"><h3>보호 조치</h3><ul class="list"><li><strong>암호화 전송</strong>앱과 서버 간 통신에는 HTTPS/TLS를 사용합니다.</li><li><strong>최소 수집 원칙</strong>서비스 제공과 운영에 필요한 최소 정보만 처리합니다.</li><li><strong>로컬 저장 우선</strong>테마, 입력 옵션, 배경 경로 등 민감도가 낮은 설정은 기기 내부 저장을 우선합니다.</li></ul></article>
+        <article class="card">
+          <h3>보관 기간</h3>
+          <ul class="list">
+            <li><strong>입력 텍스트</strong>기능 요청 처리 목적에 한해 일시적으로 전송되며, 서비스 운영을 위한 별도 저장소에 보관하지 않습니다.</li>
+            <li><strong>기기 내 설정</strong>앱 삭제 또는 데이터 초기화 전까지 사용자의 기기에 남습니다.</li>
+            <li><strong>크레딧 정보</strong>무료 사용량 제공, 부정 사용 방지, 광고 보상 중복 방지에 필요한 범위에서 보관되며, 삭제 요청 시 검토 후 처리할 수 있습니다.</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>보호 조치</h3>
+          <ul class="list">
+            <li><strong>암호화 전송</strong>앱과 서버 간 통신에는 HTTPS/TLS를 사용합니다.</li>
+            <li><strong>최소 수집 원칙</strong>서비스 제공과 운영에 필요한 최소 정보만 처리합니다.</li>
+            <li><strong>로컬 저장 우선</strong>테마, 입력 옵션, 배경 경로 등 민감도가 낮은 설정은 기기 내부 저장을 우선합니다.</li>
+          </ul>
+        </article>
       </div>
     </div>
   </section>
+
   <section class="section section-gray" id="rights">
     <div class="section-inner">
       <p class="section-label">Rights</p>
       <h2>이용자 권리와 문의처</h2>
       <p class="section-copy">이용자는 앱 삭제 또는 데이터 초기화를 통해 기기 내 설정 정보를 제거할 수 있으며, 서버에 저장된 크레딧 관련 정보 삭제나 개인정보 문의는 아래 연락처로 요청할 수 있습니다.</p>
       <div class="card-grid">
-        <article class="card"><h3>이용자 권리</h3><ul class="list"><li><strong>삭제 요청</strong>서버에 저장된 기기 식별자 및 크레딧 정보 삭제를 요청할 수 있습니다.</li><li><strong>아동 보호</strong>본 서비스는 만 14세 미만 아동을 대상으로 하지 않으며, 관련 정보를 의도적으로 수집하지 않습니다.</li><li><strong>정책 변경</strong>본 방침이 중요한 방식으로 변경되면 웹 페이지 또는 앱 내 공지를 통해 안내할 수 있습니다.</li></ul></article>
-        <article class="card"><h3>문의처</h3><p>개인정보처리방침, 데이터 삭제, 서비스 운영과 관련한 문의는 아래 메일로 보내실 수 있습니다.</p><div class="contact-card" style="margin-top:18px;"><p>개인정보 문의 및 삭제 요청</p><a href="mailto:ehdtjq1622@naver.com">ehdtjq1622@naver.com</a></div></article>
+        <article class="card">
+          <h3>이용자 권리</h3>
+          <ul class="list">
+            <li><strong>삭제 요청</strong>서버에 저장된 기기 식별자 및 크레딧 정보 삭제를 요청할 수 있습니다.</li>
+            <li><strong>아동 보호</strong>본 서비스는 만 14세 미만 아동을 대상으로 하지 않으며, 관련 정보를 의도적으로 수집하지 않습니다.</li>
+            <li><strong>정책 변경</strong>본 방침이 중요한 방식으로 변경되면 웹 페이지 또는 앱 내 공지를 통해 안내할 수 있습니다.</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>문의처</h3>
+          <p>개인정보처리방침, 데이터 삭제, 서비스 운영과 관련한 문의는 아래 메일로 보내실 수 있습니다.</p>
+          <div class="contact-card">
+            <p>개인정보 문의 및 삭제 요청</p>
+            <a href="mailto:ehdtjq1622@naver.com">ehdtjq1622@naver.com</a>
+          </div>
+        </article>
       </div>
     </div>
   </section>
+
   <section class="section section-dark">
     <div class="section-inner">
       <p class="section-label">Links</p>
@@ -185,6 +622,7 @@
       </div>
     </div>
   </section>
+
   <footer class="footer">
     <p>© 2026 맞춤법 키보드 · <a href="./index.html">홈으로</a></p>
   </footer>

@@ -5,66 +5,530 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>맞춤법 키보드</title>
   <style>
-    :root{--black:#000;--near-black:#1d1d1f;--light-gray:#f5f5f7;--white:#fff;--apple-blue:#0071e3;--link-blue:#0066cc;--link-blue-dark:#2997ff;--body-light:rgba(0,0,0,.8);--body-dark:rgba(255,255,255,.82);--muted-light:rgba(0,0,0,.56);--muted-dark:rgba(255,255,255,.6);--surface-dark:#272729;--surface-dark-2:#2a2a2d;--hairline-light:rgba(0,0,0,.1);--shadow-card:rgba(0,0,0,.22) 3px 5px 30px 0;--nav-bg:rgba(0,0,0,.8);--font-display:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Apple SD Gothic Neo","Helvetica Neue",Helvetica,Arial,sans-serif;--font-text:-apple-system,BlinkMacSystemFont,"SF Pro Text","Apple SD Gothic Neo","Helvetica Neue",Helvetica,Arial,sans-serif}
-    *{box-sizing:border-box;margin:0;padding:0}
-    html{scroll-behavior:smooth}
-    body{font-family:var(--font-text);font-size:17px;line-height:1.47;letter-spacing:-.374px;color:var(--near-black);background:var(--white);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
-    a{color:inherit}
-    .nav{position:sticky;top:0;z-index:100;height:48px;background:var(--nav-bg);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px)}
-    .nav-inner{max-width:1120px;height:100%;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;gap:20px}
-    .brand{font-size:12px;font-weight:600;letter-spacing:-.12px;color:var(--white);text-decoration:none;white-space:nowrap}
-    .nav-links{list-style:none;display:flex;align-items:center;gap:22px}
-    .nav-links a{font-size:12px;font-weight:400;color:rgba(255,255,255,.82);text-decoration:none}
-    .nav-cta{display:inline-flex;align-items:center;justify-content:center;min-height:28px;padding:0 12px;border-radius:980px;background:var(--apple-blue);color:var(--white);font-size:12px;text-decoration:none;white-space:nowrap}
-    .hero{background:var(--light-gray);padding:96px 24px 72px;text-align:center}
-    .hero-inner,.section-inner{max-width:980px;margin:0 auto}
-    .eyebrow{font-size:21px;font-weight:600;line-height:1.24;letter-spacing:.231px;color:var(--apple-blue);margin-bottom:12px}
-    h1{font-family:var(--font-display);font-size:56px;font-weight:600;line-height:1.07;letter-spacing:-.28px;color:var(--near-black);margin-bottom:16px}
-    .hero-copy{max-width:720px;margin:0 auto 12px;font-size:28px;font-weight:400;line-height:1.14;letter-spacing:.196px;color:var(--near-black)}
-    .hero-subcopy{max-width:720px;margin:0 auto 32px;color:var(--body-light)}
-    .hero-highlight{display:inline-block;margin-bottom:28px;font-size:17px;font-weight:600;line-height:1.24;letter-spacing:-.374px;color:var(--near-black)}
-    .hero-actions,.hero-meta,.pricing-actions,.link-row{display:flex;justify-content:center;flex-wrap:wrap;gap:14px}
-    .btn-primary,.btn-secondary{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 22px;border-radius:980px;font-size:17px;font-weight:400;text-decoration:none}
-    .btn-primary{background:var(--apple-blue);color:var(--white)}
-    .btn-secondary{border:1px solid var(--apple-blue);color:var(--apple-blue);background:transparent}
-    .hero-meta{gap:10px}
-    .meta-pill{padding:8px 14px;border-radius:980px;background:var(--white);color:var(--muted-light);font-size:14px;line-height:1.43;letter-spacing:-.224px;box-shadow:0 0 0 1px rgba(0,0,0,.04)}
-    .section{padding:72px 24px}
-    .section-light{background:var(--white)}
-    .section-gray{background:var(--light-gray)}
-    .section-dark{background:var(--black);color:var(--white)}
-    .section-label{font-size:12px;font-weight:600;line-height:1.33;letter-spacing:.5px;text-transform:uppercase;color:var(--muted-light);margin-bottom:10px}
-    .section-dark .section-label{color:var(--muted-dark)}
-    h2{font-family:var(--font-display);font-size:40px;font-weight:600;line-height:1.1;letter-spacing:-.28px;margin-bottom:16px}
-    .section-copy{max-width:720px;color:var(--body-light);margin-bottom:32px}
-    .section-dark .section-copy{color:var(--body-dark)}
-    .feature-grid,.detail-grid,.pricing-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
-    .feature-card,.detail-card{border-radius:18px;padding:28px 24px}
-    .feature-card{background:var(--surface-dark);box-shadow:var(--shadow-card)}
-    .feature-card.alt{background:var(--surface-dark-2)}
-    .feature-card h3,.detail-card h3,.pricing-card h3{font-family:var(--font-display);font-size:28px;font-weight:400;line-height:1.14;letter-spacing:.196px;margin-bottom:8px}
-    .feature-card p{color:var(--body-dark)}
-    .detail-card{background:var(--white);box-shadow:0 0 0 1px var(--hairline-light)}
-    .detail-card p,.detail-list li,.pricing-item span,.link-item{color:var(--body-light)}
-    .detail-list{list-style:none;display:grid;gap:14px;margin-top:12px}
-    .detail-list li{padding-top:14px;border-top:1px solid rgba(0,0,0,.08)}
-    .detail-list strong,.pricing-item strong{display:block;margin-bottom:2px;font-size:17px;font-weight:600;line-height:1.24;color:var(--near-black)}
-    .pricing-wrap{display:flex;justify-content:center}
-    .pricing-card{width:100%;max-width:720px;border-radius:24px;padding:34px 32px;background:var(--white);color:var(--near-black);box-shadow:var(--shadow-card)}
-    .pricing-badge{display:inline-flex;align-items:center;justify-content:center;min-height:28px;padding:0 12px;border-radius:980px;background:rgba(0,113,227,.1);color:var(--apple-blue);font-size:12px;font-weight:600;margin-bottom:20px}
-    .price-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin-bottom:12px}
-    .price{font-family:var(--font-display);font-size:56px;font-weight:600;line-height:1.07;letter-spacing:-.28px}
-    .price-note{font-size:21px;font-weight:400;line-height:1.19;letter-spacing:.231px;color:var(--muted-light)}
-    .pricing-copy{font-size:21px;font-weight:400;line-height:1.19;letter-spacing:.231px;color:var(--near-black);margin-bottom:22px}
-    .pricing-item{padding:18px 18px 16px;border-radius:16px;background:var(--light-gray)}
-    .link-item{text-decoration:none;font-size:17px;line-height:1.47}
-    .section-dark .link-item{color:var(--link-blue-dark)}
-    .footer{padding:28px 24px 40px;text-align:center;background:var(--light-gray);color:var(--muted-light);font-size:12px;line-height:1.33;letter-spacing:-.12px}
-    .footer a{color:var(--link-blue);text-decoration:none}
-    .btn-primary:hover,.btn-secondary:hover,.nav-cta:hover,.link-item:hover,.footer a:hover,.nav-links a:hover{opacity:.88}
-    .btn-primary:focus-visible,.btn-secondary:focus-visible,.nav-cta:focus-visible,.nav-links a:focus-visible,.link-item:focus-visible,.footer a:focus-visible{outline:2px solid var(--apple-blue);outline-offset:2px}
-    @media (max-width:834px){h1,.price{font-size:40px}.hero-copy,.pricing-copy{font-size:24px}h2{font-size:32px}.feature-grid,.detail-grid,.pricing-grid{grid-template-columns:1fr}}
-    @media (max-width:720px){.nav-links{display:none}.hero{padding-top:80px}.hero-copy{font-size:21px;line-height:1.19;letter-spacing:.231px}}
+    :root {
+      --black: #000000;
+      --near-black: #1d1d1f;
+      --light-gray: #f5f5f7;
+      --white: #ffffff;
+      --apple-blue: #0071e3;
+      --link-blue: #0066cc;
+      --link-blue-dark: #2997ff;
+      --body-light: rgba(0, 0, 0, 0.78);
+      --body-dark: rgba(255, 255, 255, 0.82);
+      --muted-light: rgba(0, 0, 0, 0.56);
+      --muted-dark: rgba(255, 255, 255, 0.62);
+      --surface-dark: #272729;
+      --surface-dark-2: #2a2a2d;
+      --hairline-light: rgba(0, 0, 0, 0.08);
+      --shadow-card: rgba(0, 0, 0, 0.2) 3px 5px 30px 0;
+      --nav-bg: rgba(0, 0, 0, 0.8);
+      --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Apple SD Gothic Neo", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      --font-text: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--font-text);
+      font-size: 17px;
+      line-height: 1.7;
+      letter-spacing: -0.01em;
+      color: var(--near-black);
+      background: var(--white);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+      line-break: strict;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    p,
+    li,
+    span,
+    a,
+    input,
+    textarea,
+    button {
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+      line-break: strict;
+      text-wrap: pretty;
+    }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 48px;
+      background: var(--nav-bg);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+    }
+
+    .nav-inner {
+      max-width: 1160px;
+      height: 100%;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .brand {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--white);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .nav-links {
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .nav-links a {
+      font-size: 12px;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.82);
+      text-decoration: none;
+    }
+
+    .nav-cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 28px;
+      padding: 0 12px;
+      border-radius: 980px;
+      background: var(--apple-blue);
+      color: var(--white);
+      font-size: 12px;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .hero {
+      background: var(--light-gray);
+      padding: 112px 28px 92px;
+      text-align: center;
+    }
+
+    .hero-inner,
+    .section-inner {
+      max-width: 1040px;
+      margin: 0 auto;
+    }
+
+    .eyebrow {
+      font-size: 20px;
+      font-weight: 600;
+      line-height: 1.5;
+      letter-spacing: -0.02em;
+      color: var(--apple-blue);
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      font-family: var(--font-display);
+      font-size: 56px;
+      font-weight: 600;
+      line-height: 1.18;
+      letter-spacing: -0.03em;
+      color: var(--near-black);
+      margin-bottom: 20px;
+      text-wrap: balance;
+    }
+
+    .hero-copy {
+      max-width: 860px;
+      margin: 0 auto 18px;
+      font-size: 24px;
+      font-weight: 400;
+      line-height: 1.58;
+      letter-spacing: -0.015em;
+      color: var(--near-black);
+    }
+
+    .hero-subcopy {
+      max-width: 860px;
+      margin: 0 auto 38px;
+      font-size: 18px;
+      line-height: 1.78;
+      color: var(--body-light);
+    }
+
+    .hero-highlight {
+      display: inline-block;
+      margin-bottom: 34px;
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 1.7;
+      letter-spacing: -0.015em;
+      color: var(--near-black);
+    }
+
+    .hero-actions,
+    .hero-meta,
+    .pricing-actions,
+    .link-row {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 24px;
+      border-radius: 980px;
+      font-size: 17px;
+      font-weight: 400;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--apple-blue);
+      color: var(--white);
+    }
+
+    .btn-secondary {
+      border: 1px solid var(--apple-blue);
+      color: var(--apple-blue);
+      background: transparent;
+    }
+
+    .hero-meta {
+      gap: 12px;
+    }
+
+    .meta-pill {
+      padding: 10px 16px;
+      border-radius: 980px;
+      background: var(--white);
+      color: var(--muted-light);
+      font-size: 14px;
+      line-height: 1.6;
+      letter-spacing: -0.01em;
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.04);
+    }
+
+    .section {
+      padding: 96px 28px;
+    }
+
+    .section-light {
+      background: var(--white);
+    }
+
+    .section-gray {
+      background: var(--light-gray);
+    }
+
+    .section-dark {
+      background: var(--black);
+      color: var(--white);
+    }
+
+    .section-label {
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.5;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted-light);
+      margin-bottom: 12px;
+    }
+
+    .section-dark .section-label {
+      color: var(--muted-dark);
+    }
+
+    h2 {
+      font-family: var(--font-display);
+      font-size: 44px;
+      font-weight: 600;
+      line-height: 1.24;
+      letter-spacing: -0.03em;
+      margin-bottom: 18px;
+      text-wrap: balance;
+    }
+
+    .section-copy {
+      max-width: 840px;
+      color: var(--body-light);
+      margin-bottom: 38px;
+      font-size: 18px;
+      line-height: 1.8;
+    }
+
+    .section-dark .section-copy {
+      color: var(--body-dark);
+    }
+
+    .feature-grid,
+    .detail-grid,
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 22px;
+    }
+
+    .feature-card,
+    .detail-card {
+      border-radius: 22px;
+      padding: 32px 30px;
+    }
+
+    .feature-card {
+      background: var(--surface-dark);
+      box-shadow: var(--shadow-card);
+    }
+
+    .feature-card.alt {
+      background: var(--surface-dark-2);
+    }
+
+    .feature-card h3,
+    .detail-card h3,
+    .pricing-card h3 {
+      font-family: var(--font-display);
+      font-size: 30px;
+      font-weight: 400;
+      line-height: 1.28;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+
+    .feature-card p {
+      color: var(--body-dark);
+      font-size: 17px;
+      line-height: 1.8;
+    }
+
+    .detail-card {
+      background: var(--white);
+      box-shadow: 0 0 0 1px var(--hairline-light);
+    }
+
+    .detail-card p,
+    .detail-list li,
+    .pricing-item span,
+    .link-item {
+      color: var(--body-light);
+    }
+
+    .detail-list {
+      list-style: none;
+      display: grid;
+      gap: 18px;
+      margin-top: 12px;
+    }
+
+    .detail-list li {
+      padding-top: 18px;
+      border-top: 1px solid rgba(0, 0, 0, 0.08);
+      line-height: 1.8;
+    }
+
+    .detail-list strong,
+    .pricing-item strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 1.5;
+      color: var(--near-black);
+    }
+
+    .pricing-wrap {
+      display: flex;
+      justify-content: center;
+    }
+
+    .pricing-card {
+      width: 100%;
+      max-width: 760px;
+      border-radius: 28px;
+      padding: 38px 36px;
+      background: var(--white);
+      color: var(--near-black);
+      box-shadow: var(--shadow-card);
+    }
+
+    .pricing-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 30px;
+      padding: 0 13px;
+      border-radius: 980px;
+      background: rgba(0, 113, 227, 0.1);
+      color: var(--apple-blue);
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 22px;
+    }
+
+    .price-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .price {
+      font-family: var(--font-display);
+      font-size: 56px;
+      font-weight: 600;
+      line-height: 1.18;
+      letter-spacing: -0.03em;
+    }
+
+    .price-note {
+      font-size: 22px;
+      font-weight: 400;
+      line-height: 1.5;
+      letter-spacing: -0.015em;
+      color: var(--muted-light);
+    }
+
+    .pricing-copy {
+      font-size: 22px;
+      font-weight: 400;
+      line-height: 1.65;
+      letter-spacing: -0.02em;
+      color: var(--near-black);
+      margin-bottom: 26px;
+    }
+
+    .pricing-item {
+      padding: 22px 20px 20px;
+      border-radius: 18px;
+      background: var(--light-gray);
+    }
+
+    .pricing-item span {
+      display: block;
+      font-size: 16px;
+      line-height: 1.78;
+    }
+
+    .link-row {
+      gap: 28px;
+    }
+
+    .link-item {
+      text-decoration: none;
+      font-size: 18px;
+      line-height: 1.7;
+    }
+
+    .section-dark .link-item {
+      color: var(--link-blue-dark);
+    }
+
+    .footer {
+      padding: 32px 24px 42px;
+      text-align: center;
+      background: var(--light-gray);
+      color: var(--muted-light);
+      font-size: 12px;
+      line-height: 1.6;
+      letter-spacing: -0.01em;
+    }
+
+    .footer a {
+      color: var(--link-blue);
+      text-decoration: none;
+    }
+
+    .btn-primary:hover,
+    .btn-secondary:hover,
+    .nav-cta:hover,
+    .link-item:hover,
+    .footer a:hover,
+    .nav-links a:hover {
+      opacity: 0.88;
+    }
+
+    .btn-primary:focus-visible,
+    .btn-secondary:focus-visible,
+    .nav-cta:focus-visible,
+    .nav-links a:focus-visible,
+    .link-item:focus-visible,
+    .footer a:focus-visible {
+      outline: 2px solid var(--apple-blue);
+      outline-offset: 2px;
+    }
+
+    @media (max-width: 834px) {
+      h1,
+      .price {
+        font-size: 42px;
+      }
+
+      .hero-copy,
+      .pricing-copy {
+        font-size: 22px;
+      }
+
+      h2 {
+        font-size: 34px;
+      }
+
+      .feature-grid,
+      .detail-grid,
+      .pricing-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .nav-links {
+        display: none;
+      }
+
+      .hero {
+        padding-top: 86px;
+      }
+
+      h1 {
+        font-size: 36px;
+      }
+
+      .hero-copy {
+        font-size: 21px;
+      }
+
+      .section,
+      .hero {
+        padding-left: 22px;
+        padding-right: 22px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -81,11 +545,12 @@
       <a class="nav-cta" href="https://play.google.com/store/apps/details?id=com.spellcheck.keyboard">다운로드</a>
     </div>
   </nav>
+
   <header class="hero">
     <div class="hero-inner">
       <p class="eyebrow">안드로이드 AI 키보드</p>
       <h1>맞춤법부터 말투까지.<br>키보드 안에서 끝냅니다.</h1>
-      <p class="hero-copy">문장을 고치는 일도, 분위기를 바꾸는 일도 앱을 옮겨 다닐 필요 없이 바로 처리합니다.</p>
+      <p class="hero-copy">문장을 고치는 일도, 분위기를 바꾸는 일도<br>앱을 옮겨 다닐 필요 없이 바로 처리합니다.</p>
       <p class="hero-subcopy">실시간 교정, 번역, 상황별 말투 변환, 두벌식과 천지인 입력까지 한국어 중심 흐름에 맞춰 설계한 키보드입니다.</p>
       <p class="hero-highlight">천 원으로 문장의 인상을 바꿔 보세요.</p>
       <div class="hero-actions">
@@ -99,19 +564,33 @@
       </div>
     </div>
   </header>
+
   <section class="section section-dark" id="features">
     <div class="section-inner">
       <p class="section-label">Features</p>
       <h2>자주 쓰는 문장 작업을<br>하나의 키보드로 모았습니다.</h2>
       <p class="section-copy">단순한 입력 도구가 아니라, 문장을 바로 다듬고 상대에 맞는 톤으로 바꾸는 작업 흐름까지 한 번에 담았습니다.</p>
       <div class="feature-grid">
-        <article class="feature-card"><h3>실시간 교정</h3><p>맞춤법과 띄어쓰기를 빠르게 다듬어 대화 흐름을 끊지 않도록 돕습니다.</p></article>
-        <article class="feature-card alt"><h3>키보드 안 번역</h3><p>입력 중인 문장을 바로 번역해 메시지 앱을 오갈 필요를 줄였습니다.</p></article>
-        <article class="feature-card alt"><h3>말투 변환</h3><p>회사용, 고객용, 학부모용, 소개팅 톤처럼 상황에 맞는 인상을 빠르게 고를 수 있습니다.</p></article>
-        <article class="feature-card"><h3>입력 방식 선택</h3><p>두벌식과 천지인을 지원해 익숙한 입력 습관을 그대로 유지할 수 있습니다.</p></article>
+        <article class="feature-card">
+          <h3>실시간 교정</h3>
+          <p>맞춤법과 띄어쓰기를 빠르게 다듬어 대화 흐름을 끊지 않도록 돕습니다.</p>
+        </article>
+        <article class="feature-card alt">
+          <h3>키보드 안 번역</h3>
+          <p>입력 중인 문장을 바로 번역해 메시지 앱을 오갈 필요를 줄였습니다.</p>
+        </article>
+        <article class="feature-card alt">
+          <h3>말투 변환</h3>
+          <p>회사용, 고객용, 학부모용, 소개팅 톤처럼 상황에 맞는 인상을 빠르게 고를 수 있습니다.</p>
+        </article>
+        <article class="feature-card">
+          <h3>입력 방식 선택</h3>
+          <p>두벌식과 천지인을 지원해 익숙한 입력 습관을 그대로 유지할 수 있습니다.</p>
+        </article>
       </div>
     </div>
   </section>
+
   <section class="section section-light" id="credits">
     <div class="section-inner">
       <p class="section-label">Credits</p>
@@ -137,6 +616,7 @@
       </div>
     </div>
   </section>
+
   <section class="section section-gray" id="pricing">
     <div class="section-inner">
       <p class="section-label">Pricing</p>
@@ -146,13 +626,28 @@
         <article class="pricing-card">
           <p class="pricing-badge">단일 플랜</p>
           <h3>500크레딧 플랜</h3>
-          <div class="price-row"><p class="price">1,000원</p><p class="price-note">500크레딧</p></div>
+          <div class="price-row">
+            <p class="price">1,000원</p>
+            <p class="price-note">500크레딧</p>
+          </div>
           <p class="pricing-copy">천 원으로 인상을 바꿔 보세요. 교정은 가볍게, 번역과 말투 변환은 필요할 때 확실하게 쓸 수 있는 구성이에요.</p>
           <div class="pricing-grid">
-            <div class="pricing-item"><strong>문장 다듬기</strong><span>교정 1크레딧 기준으로 넉넉하게 사용 가능합니다.</span></div>
-            <div class="pricing-item"><strong>상황별 말투</strong><span>회사용, 고객용, 학부모용, 소개팅 톤을 빠르게 전환할 수 있습니다.</span></div>
-            <div class="pricing-item"><strong>무료 시작 가능</strong><span>매일 무료 5크레딧과 광고 보상 50크레딧으로 먼저 체감해 볼 수 있습니다.</span></div>
-            <div class="pricing-item"><strong>복잡한 선택 없음</strong><span>고민 없이 하나의 플랜만 고르면 됩니다.</span></div>
+            <div class="pricing-item">
+              <strong>문장 다듬기</strong>
+              <span>교정 1크레딧 기준으로 넉넉하게 사용 가능합니다.</span>
+            </div>
+            <div class="pricing-item">
+              <strong>상황별 말투</strong>
+              <span>회사용, 고객용, 학부모용, 소개팅 톤을 빠르게 전환할 수 있습니다.</span>
+            </div>
+            <div class="pricing-item">
+              <strong>무료 시작 가능</strong>
+              <span>매일 무료 5크레딧과 광고 보상 50크레딧으로 먼저 체감해 볼 수 있습니다.</span>
+            </div>
+            <div class="pricing-item">
+              <strong>복잡한 선택 없음</strong>
+              <span>고민 없이 하나의 플랜만 고르면 됩니다.</span>
+            </div>
           </div>
           <div class="pricing-actions">
             <a class="btn-primary" href="https://play.google.com/store/apps/details?id=com.spellcheck.keyboard">Google Play에서 다운로드</a>
@@ -162,6 +657,7 @@
       </div>
     </div>
   </section>
+
   <section class="section section-dark">
     <div class="section-inner">
       <p class="section-label">Links</p>
@@ -174,6 +670,7 @@
       </div>
     </div>
   </section>
+
   <footer class="footer">
     <p>© 2026 맞춤법 키보드 · <a href="./privacy.html">개인정보처리방침</a></p>
   </footer>
