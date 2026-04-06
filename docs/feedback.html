@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>건의사항 - 맞춤법 키보드</title>
+  <title>건의사항 - 킹보드: 맞춤법·말투 AI 키보드</title>
   <style>
     :root {
       --black: #000000;
@@ -500,7 +500,7 @@
 <body>
   <nav class="nav">
     <div class="nav-inner">
-      <a class="brand" href="./index.html">맞춤법 키보드</a>
+      <a class="brand" href="./index.html">킹보드</a>
       <ul class="nav-links">
         <li><a href="#categories">유형</a></li>
         <li><a href="#form">작성</a></li>
@@ -595,7 +595,7 @@
   </section>
 
   <footer class="footer">
-    <p>© 2026 맞춤법 키보드 · <a href="./privacy.html">개인정보처리방침</a></p>
+    <p>© 2026 킹보드 · <a href="./privacy.html">개인정보처리방침</a></p>
   </footer>
 
   <script>
@@ -625,7 +625,7 @@
         return;
       }
 
-      const subject = encodeURIComponent(`[맞춤법 키보드 건의] [${selectedCategory}] ${title}`);
+      const subject = encodeURIComponent(`[킹보드 건의] [${selectedCategory}] ${title}`);
       const body = encodeURIComponent(`유형: ${selectedCategory}\n제목: ${title}\n\n내용:\n${content}${email ? `\n\n연락처: ${email}` : ""}`);
       window.location.href = `mailto:ehdtjq1622@naver.com?subject=${subject}&body=${body}`;
 
