@@ -5,295 +5,177 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>맞춤법 키보드</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
-      background: #000;
-      color: #f5f5f7;
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
-
-    /* 배경 그라디언트 (iOS 26 Liquid Glass) */
-    .bg {
-      position: fixed;
-      inset: 0;
-      background:
-        radial-gradient(ellipse at 20% 20%, rgba(52, 199, 89, 0.25) 0%, transparent 60%),
-        radial-gradient(ellipse at 80% 80%, rgba(0, 122, 255, 0.2) 0%, transparent 60%),
-        #0a0a0a;
-      z-index: 0;
-    }
-
-    .container {
-      position: relative;
-      z-index: 1;
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 80px 24px 100px;
-      text-align: center;
-    }
-
-    /* 앱 아이콘 */
-    .app-icon {
-      width: 100px;
-      height: 100px;
-      background: linear-gradient(145deg, #34c759, #30b350);
-      border-radius: 24px;
-      margin: 0 auto 28px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 48px;
-      box-shadow: 0 20px 60px rgba(52, 199, 89, 0.4);
-    }
-
-    h1 {
-      font-size: 48px;
-      font-weight: 700;
-      letter-spacing: -1px;
-      margin-bottom: 12px;
-      background: linear-gradient(135deg, #fff 0%, #a0a0a0 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .subtitle {
-      font-size: 19px;
-      color: #8e8e93;
-      margin-bottom: 48px;
-      line-height: 1.5;
-    }
-
-    /* 기능 카드들 */
-    .features {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 48px;
-      text-align: left;
-    }
-
-    .feature-card {
-      background: rgba(255,255,255,0.07);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 20px;
-      padding: 20px;
-    }
-
-    .feature-icon {
-      font-size: 28px;
-      margin-bottom: 10px;
-    }
-
-    .feature-title {
-      font-size: 15px;
-      font-weight: 600;
-      color: #f5f5f7;
-      margin-bottom: 4px;
-    }
-
-    .feature-desc {
-      font-size: 13px;
-      color: #8e8e93;
-      line-height: 1.4;
-    }
-
-    /* 버튼 */
-    .btn-group {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      align-items: center;
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      width: 100%;
-      max-width: 320px;
-      padding: 16px 32px;
-      border-radius: 14px;
-      font-size: 17px;
-      font-weight: 600;
-      text-decoration: none;
-      transition: opacity 0.2s;
-    }
-
-    .btn:active { opacity: 0.8; }
-
-    .btn-primary {
-      background: #34c759;
-      color: white;
-      box-shadow: 0 8px 32px rgba(52, 199, 89, 0.4);
-    }
-
-    .btn-glass {
-      background: rgba(255,255,255,0.1);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255,255,255,0.15);
-      color: #f5f5f7;
-    }
-
-    /* 구독 플랜 */
-    .plans {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 48px;
-    }
-
-    .plan-card {
-      background: rgba(255,255,255,0.07);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 20px;
-      padding: 20px;
-      text-align: left;
-    }
-
-    .plan-card.featured {
-      border-color: rgba(52, 199, 89, 0.5);
-      background: rgba(52, 199, 89, 0.08);
-    }
-
-    .plan-badge {
-      display: inline-block;
-      background: #34c759;
-      color: white;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 6px;
-      margin-bottom: 10px;
-    }
-
-    .plan-name {
-      font-size: 17px;
-      font-weight: 700;
-      color: #f5f5f7;
-      margin-bottom: 4px;
-    }
-
-    .plan-price {
-      font-size: 26px;
-      font-weight: 700;
-      color: #34c759;
-      margin-bottom: 4px;
-    }
-
-    .plan-price span {
-      font-size: 14px;
-      color: #8e8e93;
-      font-weight: 400;
-    }
-
-    .plan-limit {
-      font-size: 13px;
-      color: #8e8e93;
-    }
-
-    /* 섹션 타이틀 */
-    .section-title {
-      font-size: 13px;
-      font-weight: 600;
-      color: #8e8e93;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      margin-bottom: 16px;
-      text-align: left;
-    }
-
-    /* 하단 */
-    .footer {
-      margin-top: 60px;
-      font-size: 13px;
-      color: #48484a;
-    }
-
-    .footer a { color: #636366; text-decoration: none; }
-
-    @media (max-width: 400px) {
-      h1 { font-size: 36px; }
-      .features { grid-template-columns: 1fr; }
-      .plans { grid-template-columns: 1fr; }
-    }
+    :root{--black:#000;--near-black:#1d1d1f;--light-gray:#f5f5f7;--white:#fff;--apple-blue:#0071e3;--link-blue:#0066cc;--link-blue-dark:#2997ff;--body-light:rgba(0,0,0,.8);--body-dark:rgba(255,255,255,.82);--muted-light:rgba(0,0,0,.56);--muted-dark:rgba(255,255,255,.6);--surface-dark:#272729;--surface-dark-2:#2a2a2d;--hairline-light:rgba(0,0,0,.1);--shadow-card:rgba(0,0,0,.22) 3px 5px 30px 0;--nav-bg:rgba(0,0,0,.8);--font-display:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Apple SD Gothic Neo","Helvetica Neue",Helvetica,Arial,sans-serif;--font-text:-apple-system,BlinkMacSystemFont,"SF Pro Text","Apple SD Gothic Neo","Helvetica Neue",Helvetica,Arial,sans-serif}
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--font-text);font-size:17px;line-height:1.47;letter-spacing:-.374px;color:var(--near-black);background:var(--white);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+    a{color:inherit}
+    .nav{position:sticky;top:0;z-index:100;height:48px;background:var(--nav-bg);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px)}
+    .nav-inner{max-width:1120px;height:100%;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+    .brand{font-size:12px;font-weight:600;letter-spacing:-.12px;color:var(--white);text-decoration:none;white-space:nowrap}
+    .nav-links{list-style:none;display:flex;align-items:center;gap:22px}
+    .nav-links a{font-size:12px;font-weight:400;color:rgba(255,255,255,.82);text-decoration:none}
+    .nav-cta{display:inline-flex;align-items:center;justify-content:center;min-height:28px;padding:0 12px;border-radius:980px;background:var(--apple-blue);color:var(--white);font-size:12px;text-decoration:none;white-space:nowrap}
+    .hero{background:var(--light-gray);padding:96px 24px 72px;text-align:center}
+    .hero-inner,.section-inner{max-width:980px;margin:0 auto}
+    .eyebrow{font-size:21px;font-weight:600;line-height:1.24;letter-spacing:.231px;color:var(--apple-blue);margin-bottom:12px}
+    h1{font-family:var(--font-display);font-size:56px;font-weight:600;line-height:1.07;letter-spacing:-.28px;color:var(--near-black);margin-bottom:16px}
+    .hero-copy{max-width:720px;margin:0 auto 12px;font-size:28px;font-weight:400;line-height:1.14;letter-spacing:.196px;color:var(--near-black)}
+    .hero-subcopy{max-width:720px;margin:0 auto 32px;color:var(--body-light)}
+    .hero-highlight{display:inline-block;margin-bottom:28px;font-size:17px;font-weight:600;line-height:1.24;letter-spacing:-.374px;color:var(--near-black)}
+    .hero-actions,.hero-meta,.pricing-actions,.link-row{display:flex;justify-content:center;flex-wrap:wrap;gap:14px}
+    .btn-primary,.btn-secondary{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 22px;border-radius:980px;font-size:17px;font-weight:400;text-decoration:none}
+    .btn-primary{background:var(--apple-blue);color:var(--white)}
+    .btn-secondary{border:1px solid var(--apple-blue);color:var(--apple-blue);background:transparent}
+    .hero-meta{gap:10px}
+    .meta-pill{padding:8px 14px;border-radius:980px;background:var(--white);color:var(--muted-light);font-size:14px;line-height:1.43;letter-spacing:-.224px;box-shadow:0 0 0 1px rgba(0,0,0,.04)}
+    .section{padding:72px 24px}
+    .section-light{background:var(--white)}
+    .section-gray{background:var(--light-gray)}
+    .section-dark{background:var(--black);color:var(--white)}
+    .section-label{font-size:12px;font-weight:600;line-height:1.33;letter-spacing:.5px;text-transform:uppercase;color:var(--muted-light);margin-bottom:10px}
+    .section-dark .section-label{color:var(--muted-dark)}
+    h2{font-family:var(--font-display);font-size:40px;font-weight:600;line-height:1.1;letter-spacing:-.28px;margin-bottom:16px}
+    .section-copy{max-width:720px;color:var(--body-light);margin-bottom:32px}
+    .section-dark .section-copy{color:var(--body-dark)}
+    .feature-grid,.detail-grid,.pricing-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+    .feature-card,.detail-card{border-radius:18px;padding:28px 24px}
+    .feature-card{background:var(--surface-dark);box-shadow:var(--shadow-card)}
+    .feature-card.alt{background:var(--surface-dark-2)}
+    .feature-card h3,.detail-card h3,.pricing-card h3{font-family:var(--font-display);font-size:28px;font-weight:400;line-height:1.14;letter-spacing:.196px;margin-bottom:8px}
+    .feature-card p{color:var(--body-dark)}
+    .detail-card{background:var(--white);box-shadow:0 0 0 1px var(--hairline-light)}
+    .detail-card p,.detail-list li,.pricing-item span,.link-item{color:var(--body-light)}
+    .detail-list{list-style:none;display:grid;gap:14px;margin-top:12px}
+    .detail-list li{padding-top:14px;border-top:1px solid rgba(0,0,0,.08)}
+    .detail-list strong,.pricing-item strong{display:block;margin-bottom:2px;font-size:17px;font-weight:600;line-height:1.24;color:var(--near-black)}
+    .pricing-wrap{display:flex;justify-content:center}
+    .pricing-card{width:100%;max-width:720px;border-radius:24px;padding:34px 32px;background:var(--white);color:var(--near-black);box-shadow:var(--shadow-card)}
+    .pricing-badge{display:inline-flex;align-items:center;justify-content:center;min-height:28px;padding:0 12px;border-radius:980px;background:rgba(0,113,227,.1);color:var(--apple-blue);font-size:12px;font-weight:600;margin-bottom:20px}
+    .price-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin-bottom:12px}
+    .price{font-family:var(--font-display);font-size:56px;font-weight:600;line-height:1.07;letter-spacing:-.28px}
+    .price-note{font-size:21px;font-weight:400;line-height:1.19;letter-spacing:.231px;color:var(--muted-light)}
+    .pricing-copy{font-size:21px;font-weight:400;line-height:1.19;letter-spacing:.231px;color:var(--near-black);margin-bottom:22px}
+    .pricing-item{padding:18px 18px 16px;border-radius:16px;background:var(--light-gray)}
+    .link-item{text-decoration:none;font-size:17px;line-height:1.47}
+    .section-dark .link-item{color:var(--link-blue-dark)}
+    .footer{padding:28px 24px 40px;text-align:center;background:var(--light-gray);color:var(--muted-light);font-size:12px;line-height:1.33;letter-spacing:-.12px}
+    .footer a{color:var(--link-blue);text-decoration:none}
+    .btn-primary:hover,.btn-secondary:hover,.nav-cta:hover,.link-item:hover,.footer a:hover,.nav-links a:hover{opacity:.88}
+    .btn-primary:focus-visible,.btn-secondary:focus-visible,.nav-cta:focus-visible,.nav-links a:focus-visible,.link-item:focus-visible,.footer a:focus-visible{outline:2px solid var(--apple-blue);outline-offset:2px}
+    @media (max-width:834px){h1,.price{font-size:40px}.hero-copy,.pricing-copy{font-size:24px}h2{font-size:32px}.feature-grid,.detail-grid,.pricing-grid{grid-template-columns:1fr}}
+    @media (max-width:720px){.nav-links{display:none}.hero{padding-top:80px}.hero-copy{font-size:21px;line-height:1.19;letter-spacing:.231px}}
   </style>
 </head>
 <body>
-  <div class="bg"></div>
-  <div class="container">
-
-    <div class="app-icon">✍️</div>
-    <h1>맞춤법 키보드</h1>
-    <p class="subtitle">AI가 실시간으로 맞춤법을 교정해주는<br>스마트 안드로이드 키보드</p>
-
-    <!-- 기능 -->
-    <p class="section-title">주요 기능</p>
-    <div class="features">
-      <div class="feature-card">
-        <div class="feature-icon">✅</div>
-        <div class="feature-title">실시간 맞춤법 교정</div>
-        <div class="feature-desc">타이핑하면 자동으로 교정</div>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="./index.html">맞춤법 키보드</a>
+      <ul class="nav-links">
+        <li><a href="#features">기능</a></li>
+        <li><a href="#credits">크레딧</a></li>
+        <li><a href="#pricing">요금</a></li>
+        <li><a href="./feedback.html">건의사항</a></li>
+        <li><a href="./privacy.html">개인정보처리방침</a></li>
+      </ul>
+      <a class="nav-cta" href="https://play.google.com/store/apps/details?id=com.spellcheck.keyboard">다운로드</a>
+    </div>
+  </nav>
+  <header class="hero">
+    <div class="hero-inner">
+      <p class="eyebrow">안드로이드 AI 키보드</p>
+      <h1>맞춤법부터 말투까지.<br>키보드 안에서 끝냅니다.</h1>
+      <p class="hero-copy">문장을 고치는 일도, 분위기를 바꾸는 일도 앱을 옮겨 다닐 필요 없이 바로 처리합니다.</p>
+      <p class="hero-subcopy">실시간 교정, 번역, 상황별 말투 변환, 두벌식과 천지인 입력까지 한국어 중심 흐름에 맞춰 설계한 키보드입니다.</p>
+      <p class="hero-highlight">천 원으로 문장의 인상을 바꿔 보세요.</p>
+      <div class="hero-actions">
+        <a class="btn-primary" href="https://play.google.com/store/apps/details?id=com.spellcheck.keyboard">Google Play에서 시작하기</a>
+        <a class="btn-secondary" href="./privacy.html">개인정보처리방침 보기</a>
       </div>
-      <div class="feature-card">
-        <div class="feature-icon">🌐</div>
-        <div class="feature-title">한/영/중/일 번역</div>
-        <div class="feature-desc">키보드에서 바로 번역</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">💼</div>
-        <div class="feature-title">회사말투 변환</div>
-        <div class="feature-desc">격식체로 자동 변환</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">⌨️</div>
-        <div class="feature-title">두벌식 + 천지인</div>
-        <div class="feature-desc">원하는 키보드 선택</div>
+      <div class="hero-meta">
+        <span class="meta-pill">매일 무료 5크레딧</span>
+        <span class="meta-pill">광고 보상 50크레딧</span>
+        <span class="meta-pill">500크레딧 · 1,000원</span>
       </div>
     </div>
-
-    <!-- 구독 플랜 -->
-    <p class="section-title">구독 플랜</p>
-    <div class="plans">
-      <div class="plan-card">
-        <div class="plan-name">베이직</div>
-        <div class="plan-price">1,000<span>원/월</span></div>
-        <div class="plan-limit">하루 100번</div>
-      </div>
-      <div class="plan-card featured">
-        <div class="plan-badge">추천</div>
-        <div class="plan-name">프로</div>
-        <div class="plan-price">2,000<span>원/월</span></div>
-        <div class="plan-limit">하루 300번</div>
+  </header>
+  <section class="section section-dark" id="features">
+    <div class="section-inner">
+      <p class="section-label">Features</p>
+      <h2>자주 쓰는 문장 작업을<br>하나의 키보드로 모았습니다.</h2>
+      <p class="section-copy">단순한 입력 도구가 아니라, 문장을 바로 다듬고 상대에 맞는 톤으로 바꾸는 작업 흐름까지 한 번에 담았습니다.</p>
+      <div class="feature-grid">
+        <article class="feature-card"><h3>실시간 교정</h3><p>맞춤법과 띄어쓰기를 빠르게 다듬어 대화 흐름을 끊지 않도록 돕습니다.</p></article>
+        <article class="feature-card alt"><h3>키보드 안 번역</h3><p>입력 중인 문장을 바로 번역해 메시지 앱을 오갈 필요를 줄였습니다.</p></article>
+        <article class="feature-card alt"><h3>말투 변환</h3><p>회사용, 고객용, 학부모용, 소개팅 톤처럼 상황에 맞는 인상을 빠르게 고를 수 있습니다.</p></article>
+        <article class="feature-card"><h3>입력 방식 선택</h3><p>두벌식과 천지인을 지원해 익숙한 입력 습관을 그대로 유지할 수 있습니다.</p></article>
       </div>
     </div>
-
-    <!-- 버튼 -->
-    <div class="btn-group">
-      <a href="https://play.google.com/store/apps/details?id=com.spellcheck.keyboard" class="btn btn-primary">
-        Google Play에서 다운로드
-      </a>
-      <a href="./feedback.html" class="btn btn-glass">
-        건의사항 보내기
-      </a>
-      <a href="./privacy.html" class="btn btn-glass" style="font-size:14px; padding: 12px 32px;">
-        개인정보처리방침
-      </a>
+  </section>
+  <section class="section section-light" id="credits">
+    <div class="section-inner">
+      <p class="section-label">Credits</p>
+      <h2>사용량은 단순하게,<br>기대값은 명확하게.</h2>
+      <p class="section-copy">어떤 기능이 얼마나 소모되는지 바로 이해할 수 있게 정리했습니다. 무료로 시작하고, 필요할 때만 더 쓰면 됩니다.</p>
+      <div class="detail-grid">
+        <article class="detail-card">
+          <h3>소모 기준</h3>
+          <ul class="detail-list">
+            <li><strong>교정 1크레딧</strong>짧은 문장부터 메신저 문장 정리까지 부담 없이 사용할 수 있습니다.</li>
+            <li><strong>번역 2크레딧</strong>입력 중인 문장을 다른 언어로 빠르게 바꿉니다.</li>
+            <li><strong>말투 변환 3크레딧</strong>상황에 맞는 어조와 인상을 더 강하게 정리합니다.</li>
+          </ul>
+        </article>
+        <article class="detail-card">
+          <h3>시작 방식</h3>
+          <ul class="detail-list">
+            <li><strong>매일 무료 5크레딧</strong>가볍게 써 보고 판단할 수 있도록 기본 사용량을 제공합니다.</li>
+            <li><strong>광고 보상 50크레딧</strong>필요한 날에는 리워드 광고로 여유 있게 이어서 사용할 수 있습니다.</li>
+            <li><strong>하나의 플랜</strong>요금제를 여러 개 두지 않고, 가장 이해하기 쉬운 1가지 플랜만 제공합니다.</li>
+          </ul>
+        </article>
+      </div>
     </div>
-
-    <div class="footer">
-      <p>© 2026 맞춤법 키보드 · <a href="./privacy.html">개인정보처리방침</a></p>
-      <p style="margin-top:6px;">1주일 무료 체험 후 구독</p>
+  </section>
+  <section class="section section-gray" id="pricing">
+    <div class="section-inner">
+      <p class="section-label">Pricing</p>
+      <h2>구독 플랜은 하나면 충분합니다.</h2>
+      <p class="section-copy">복잡한 선택 대신, 가장 바로 이해되는 가격으로 정리했습니다. 천 원으로 문장의 인상을 바꾸고 싶은 분을 위한 단일 플랜입니다.</p>
+      <div class="pricing-wrap">
+        <article class="pricing-card">
+          <p class="pricing-badge">단일 플랜</p>
+          <h3>500크레딧 플랜</h3>
+          <div class="price-row"><p class="price">1,000원</p><p class="price-note">500크레딧</p></div>
+          <p class="pricing-copy">천 원으로 인상을 바꿔 보세요. 교정은 가볍게, 번역과 말투 변환은 필요할 때 확실하게 쓸 수 있는 구성이에요.</p>
+          <div class="pricing-grid">
+            <div class="pricing-item"><strong>문장 다듬기</strong><span>교정 1크레딧 기준으로 넉넉하게 사용 가능합니다.</span></div>
+            <div class="pricing-item"><strong>상황별 말투</strong><span>회사용, 고객용, 학부모용, 소개팅 톤을 빠르게 전환할 수 있습니다.</span></div>
+            <div class="pricing-item"><strong>무료 시작 가능</strong><span>매일 무료 5크레딧과 광고 보상 50크레딧으로 먼저 체감해 볼 수 있습니다.</span></div>
+            <div class="pricing-item"><strong>복잡한 선택 없음</strong><span>고민 없이 하나의 플랜만 고르면 됩니다.</span></div>
+          </div>
+          <div class="pricing-actions">
+            <a class="btn-primary" href="https://play.google.com/store/apps/details?id=com.spellcheck.keyboard">Google Play에서 다운로드</a>
+            <a class="btn-secondary" href="./feedback.html">건의사항 보내기</a>
+          </div>
+        </article>
+      </div>
     </div>
-
-  </div>
+  </section>
+  <section class="section section-dark">
+    <div class="section-inner">
+      <p class="section-label">Links</p>
+      <h2>필요한 링크만 남겼습니다.</h2>
+      <p class="section-copy">다운로드, 개인정보처리방침, 건의사항 페이지로 바로 이동할 수 있습니다.</p>
+      <div class="link-row">
+        <a class="link-item" href="https://play.google.com/store/apps/details?id=com.spellcheck.keyboard">Google Play에서 다운로드</a>
+        <a class="link-item" href="./privacy.html">개인정보처리방침</a>
+        <a class="link-item" href="./feedback.html">건의사항 보내기</a>
+      </div>
+    </div>
+  </section>
+  <footer class="footer">
+    <p>© 2026 맞춤법 키보드 · <a href="./privacy.html">개인정보처리방침</a></p>
+  </footer>
 </body>
 </html>
