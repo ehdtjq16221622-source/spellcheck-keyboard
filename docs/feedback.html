@@ -248,11 +248,6 @@
       transform: translateY(-1px);
     }
 
-    .category-icon {
-      font-size: 24px;
-      margin-bottom: 12px;
-    }
-
     .category-name,
     .summary-card h3,
     .contact-card h3 {
@@ -528,22 +523,18 @@
       <p class="section-copy">유형을 고르면 메일 제목에 함께 들어가서, 나중에 정리하고 확인하기 더 쉬워집니다.</p>
       <div class="grid">
         <button class="category-btn" type="button" onclick="selectCategory(this, '버그 신고')">
-          <div class="category-icon">🐛</div>
           <div class="category-name">버그 신고</div>
           <div class="category-desc">오류, 오작동, 입력 문제처럼 바로 확인이 필요한 이슈</div>
         </button>
         <button class="category-btn alt" type="button" onclick="selectCategory(this, '기능 요청')">
-          <div class="category-icon">✨</div>
           <div class="category-name">기능 요청</div>
           <div class="category-desc">있으면 더 자주 쓰게 될 기능이나 개선 아이디어</div>
         </button>
         <button class="category-btn alt" type="button" onclick="selectCategory(this, '교정 품질')">
-          <div class="category-icon">✍️</div>
           <div class="category-name">교정 품질</div>
           <div class="category-desc">맞춤법, 번역, 말투 변환 결과가 어색했던 사례</div>
         </button>
         <button class="category-btn" type="button" onclick="selectCategory(this, '기타')">
-          <div class="category-icon">💬</div>
           <div class="category-name">기타</div>
           <div class="category-desc">칭찬, 아쉬운 점, 제안처럼 분류하기 어려운 의견</div>
         </button>
