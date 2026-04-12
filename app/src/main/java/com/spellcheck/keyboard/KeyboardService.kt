@@ -190,18 +190,34 @@ class KeyboardService : InputMethodService() {
     private val vibrator by lazy { getSystemService(Context.VIBRATOR_SERVICE) as Vibrator }
     private val audioManager by lazy { getSystemService(Context.AUDIO_SERVICE) as AudioManager }
 
-    // ACTION_DOWN에서 처리 + isPressed 직접 관리
+    // 키별 마지막 입력 시간 (동일 키 연속 중복 방지)
+    private val keyLastInputTime = HashMap<Int, Long>()
+    private val keyDebounceMs = 40L
+
+    // ACTION_DOWN에서만 처리 (POINTER_DOWN 제외 → 멀티터치 이중입력 방지)
     private fun View.onKeyDown(block: (View) -> Unit) {
         setOnTouchListener { v, event ->
             when (event.actionMasked) {
-                MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
+                MotionEvent.ACTION_DOWN -> {
                     val now = System.currentTimeMillis()
+                    // 같은 키가 debounce 시간 내 다시 눌리면 무시 (하드웨어 바운스 방지)
+                    val lastTime = keyLastInputTime[v.id] ?: 0L
+                    if (now - lastTime < keyDebounceMs) {
+                        v.isPressed = true
+                        return@setOnTouchListener true
+                    }
+                    keyLastInputTime[v.id] = now
                     if (now - lastKeyDownTime < rapidTypingThresholdMs) {
                         rapidTypingBurstUntil = now + rapidTypingBurstHoldMs
                     }
                     lastKeyDownTime = now
                     v.isPressed = true
                     block(v)
+                    true
+                }
+                MotionEvent.ACTION_POINTER_DOWN -> {
+                    // 멀티터치 시 이 뷰에 추가 포인터가 내려와도 입력 무시
+                    // (두 손가락 빠른 타이핑 시 첫 번째 키 이중입력 방지)
                     true
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
@@ -1167,10 +1183,14 @@ class KeyboardService : InputMethodService() {
     private fun setupDeleteButton(id: Int) {
         keyboardView.findViewById<View>(id)?.setOnTouchListener { _, event ->
             when (event.actionMasked) {
-                MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
+                MotionEvent.ACTION_DOWN -> {
                     vibrateKey()
                     onBackspace()
                     handler.postDelayed(deleteRepeatRunnable, deleteRepeatStartDelayMs)
+                    true
+                }
+                MotionEvent.ACTION_POINTER_DOWN -> {
+                    // 멀티터치 무시 (삭제 이중 발동 방지)
                     true
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
