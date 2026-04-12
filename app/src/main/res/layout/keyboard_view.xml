@@ -16,7 +16,8 @@
         android:paddingStart="8dp"
         android:paddingEnd="8dp"
         android:gravity="center_vertical"
-        android:visibility="gone">
+        android:visibility="gone"
+        android:splitMotionEvents="true">
 
         <TextView
             android:id="@+id/tvSuggestion"
@@ -90,7 +91,8 @@
         android:paddingBottom="6dp"
         android:background="#EBEEF7"
         android:gravity="center_vertical"
-        android:visibility="gone">
+        android:visibility="gone"
+        android:splitMotionEvents="true">
 
         <Button android:id="@+id/btn_lang_ko" android:layout_width="wrap_content" android:layout_height="24dp" android:text="한국어" android:textSize="10sp" android:paddingStart="10dp" android:paddingEnd="10dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginEnd="4dp" android:minWidth="0dp" android:textStyle="normal" android:stateListAnimator="@null" />
         <Button android:id="@+id/btn_lang_en" android:layout_width="wrap_content" android:layout_height="24dp" android:text="영어" android:textSize="10sp" android:paddingStart="10dp" android:paddingEnd="10dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginEnd="4dp" android:minWidth="0dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -109,7 +111,8 @@
         android:paddingEnd="8dp"
         android:background="#F9F9FE"
         android:gravity="center_vertical"
-        android:elevation="0dp">
+        android:elevation="0dp"
+        android:splitMotionEvents="true">
 
         <TextView
             android:id="@+id/toolbarStatusDot"
@@ -182,7 +185,8 @@
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:gravity="center_vertical"
+        android:splitMotionEvents="true">
 
             <Button
                 android:id="@+id/btnFormal_jondaemal"
@@ -303,7 +307,8 @@
         android:paddingEnd="4dp"
         android:paddingTop="4dp"
         android:paddingBottom="2dp"
-        android:background="#F9F9FE">
+        android:background="#F9F9FE"
+        android:splitMotionEvents="true">
         <Button android:id="@+id/key_num_1" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="1" android:textSize="15sp" android:padding="0dp" android:background="@drawable/key_num" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
         <Button android:id="@+id/key_num_2" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="2" android:textSize="15sp" android:padding="0dp" android:background="@drawable/key_num" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
         <Button android:id="@+id/key_num_3" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="3" android:textSize="15sp" android:padding="0dp" android:background="@drawable/key_num" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -325,7 +330,8 @@
         android:background="#F9F9FE">
 
         <!-- 1행: ㅂ ㅈ ㄷ ㄱ ㅅ ㅛ ㅕ ㅑ ㅐ ㅔ -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="2dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="2dp"
+        android:splitMotionEvents="true">
             <Button android:id="@+id/key_bieup"  android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="ㅂ" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/key_jieut"  android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="ㅈ" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/key_digeut" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="ㄷ" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -339,7 +345,8 @@
         </LinearLayout>
 
         <!-- 2행: ㅁ ㄴ ㅇ ㄹ ㅎ ㅗ ㅓ ㅏ ㅣ -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="2dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="2dp"
+        android:splitMotionEvents="true">
             <View android:layout_width="0dp" android:layout_weight="0.5" android:layout_height="match_parent" />
             <Button android:id="@+id/key_mieum" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="ㅁ" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/key_nieun" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="ㄴ" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -354,7 +361,8 @@
         </LinearLayout>
 
         <!-- 3행: ⇧ ㅋ ㅌ ㅊ ㅍ ㅠ ㅜ ㅡ ⌫ -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="4dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="4dp"
+        android:splitMotionEvents="true">
             <ImageButton android:id="@+id/key_shift" android:layout_width="0dp" android:layout_weight="1.5" android:layout_height="match_parent" android:padding="0dp" android:background="@drawable/key_func" android:src="@drawable/ic_key_shift" android:tint="#2C333D" android:scaleType="center" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:contentDescription="Shift" android:stateListAnimator="@null" />
             <Button android:id="@+id/key_kieuk"  android:layout_width="0dp" android:layout_weight="1"   android:layout_height="match_parent" android:text="ㅋ" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/key_tieut"  android:layout_width="0dp" android:layout_weight="1"   android:layout_height="match_parent" android:text="ㅌ" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -378,7 +386,8 @@
         android:visibility="gone">
 
         <!-- 1행: ㅣ ㆍ ㅡ ⌫ -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="2dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="2dp"
+        android:splitMotionEvents="true">
             <Button android:id="@+id/key_cj_i"      android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="ㅣ" android:textSize="18sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/key_cj_dot"    android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="ㆍ" android:textSize="18sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/key_cj_eu"     android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="ㅡ" android:textSize="18sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -386,7 +395,8 @@
         </LinearLayout>
 
         <!-- 2행: ㄱ/ㅋ ㄴ/ㄹ ㄷ/ㅌ ⏎ -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="2dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="2dp"
+        android:splitMotionEvents="true">
             <FrameLayout android:id="@+id/key_cj_gk" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:background="@drawable/key_letter" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:stateListAnimator="@null" android:clickable="true" android:focusable="true">
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="top|center_horizontal" android:layout_marginTop="8dp" android:text="ㄱ" android:textSize="15sp" android:textColor="#1A1A1A"/>
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="bottom|end" android:layout_marginEnd="8dp" android:layout_marginBottom="6dp" android:text="ㅋ" android:textSize="10sp" android:textColor="#838A95"/></FrameLayout>
@@ -400,7 +410,8 @@
         </LinearLayout>
 
         <!-- 3행: ㅂ/ㅍ ㅅ/ㅎ ㅈ/ㅊ .,?! -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="2dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="2dp"
+        android:splitMotionEvents="true">
             <FrameLayout android:id="@+id/key_cj_bp" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:background="@drawable/key_letter" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:stateListAnimator="@null" android:clickable="true" android:focusable="true">
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="top|center_horizontal" android:layout_marginTop="8dp" android:text="ㅂ" android:textSize="15sp" android:textColor="#1A1A1A"/>
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="bottom|end" android:layout_marginEnd="8dp" android:layout_marginBottom="6dp" android:text="ㅍ" android:textSize="10sp" android:textColor="#838A95"/></FrameLayout>
@@ -414,7 +425,8 @@
         </LinearLayout>
 
         <!-- 4행: !#1 한/영 ㅇ/ㅁ [space] ' -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="4dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="4dp"
+        android:splitMotionEvents="true">
             <Button android:id="@+id/key_cj_num"   android:layout_width="0dp" android:layout_weight="0.5" android:layout_height="match_parent" android:text="!#1" android:textSize="10sp" android:padding="0dp" android:background="@drawable/key_func" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="bold" android:stateListAnimator="@null" />
             <ImageButton android:id="@+id/key_cj_mode" android:layout_width="0dp" android:layout_weight="0.5" android:layout_height="match_parent" android:padding="0dp" android:background="@drawable/key_func" android:src="@drawable/ic_key_globe" android:tint="#595F6A" android:scaleType="center" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:contentDescription="입력 모드 전환" android:stateListAnimator="@null" />
             <FrameLayout android:id="@+id/key_cj_om" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:background="@drawable/key_letter" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:stateListAnimator="@null" android:clickable="true" android:focusable="true">
@@ -436,7 +448,8 @@
         android:visibility="gone">
 
         <!-- q w e r t y u i o p -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="2dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="2dp"
+        android:splitMotionEvents="true">
             <Button android:id="@+id/key_en_q" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="q" android:textSize="15sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/key_en_w" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="w" android:textSize="15sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/key_en_e" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="e" android:textSize="15sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -450,7 +463,8 @@
         </LinearLayout>
 
         <!-- a s d f g h j k l -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="2dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="2dp"
+        android:splitMotionEvents="true">
             <View android:layout_width="0dp" android:layout_weight="0.5" android:layout_height="match_parent" />
             <Button android:id="@+id/key_en_a" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="a" android:textSize="15sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/key_en_s" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="s" android:textSize="15sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -465,7 +479,8 @@
         </LinearLayout>
 
         <!-- ⇧ z x c v b n m ⌫ -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="4dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="4dp"
+        android:splitMotionEvents="true">
             <ImageButton android:id="@+id/key_en_shift" android:layout_width="0dp" android:layout_weight="1.5" android:layout_height="match_parent" android:padding="0dp" android:background="@drawable/key_func" android:src="@drawable/ic_key_shift" android:tint="#2C333D" android:scaleType="center" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:contentDescription="English Shift" android:stateListAnimator="@null" />
             <Button android:id="@+id/key_en_z" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="z" android:textSize="15sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/key_en_x" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="x" android:textSize="15sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -482,7 +497,8 @@
     <!-- ===== 특수문자 키보드 (페이지 1/3) ===== -->
     <LinearLayout android:id="@+id/container_symbols" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:background="#E0E0E4" android:visibility="gone">
         <!-- 1행: ! ? . , ( ) ⌫ -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="52dp" android:orientation="horizontal" android:paddingStart="4dp" android:paddingEnd="4dp" android:paddingTop="5dp" android:paddingBottom="4dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="52dp" android:orientation="horizontal" android:paddingStart="4dp" android:paddingEnd="4dp" android:paddingTop="5dp" android:paddingBottom="4dp"
+        android:splitMotionEvents="true">
             <Button android:id="@+id/sym_excl"   android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="!" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/sym_ques"   android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="?" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/sym_period" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="." android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -492,7 +508,8 @@
             <Button android:id="@+id/sym_del"    android:layout_width="0dp" android:layout_weight="1.5" android:layout_height="match_parent" android:text="⌫" android:textSize="17sp" android:padding="0dp" android:background="@drawable/key_func" android:textColor="#FFFFFF" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
         </LinearLayout>
         <!-- 2행: @ : ; / - ♡ ⏎ -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="52dp" android:orientation="horizontal" android:paddingStart="4dp" android:paddingEnd="4dp" android:paddingTop="5dp" android:paddingBottom="4dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="52dp" android:orientation="horizontal" android:paddingStart="4dp" android:paddingEnd="4dp" android:paddingTop="5dp" android:paddingBottom="4dp"
+        android:splitMotionEvents="true">
             <Button android:id="@+id/sym_at"     android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="@" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/sym_colon"  android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text=":" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/sym_semi"   android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text=";" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -502,7 +519,8 @@
             <Button android:id="@+id/sym_enter"  android:layout_width="0dp" android:layout_weight="1.5" android:layout_height="match_parent" android:text="⏎" android:textSize="17sp" android:padding="0dp" android:background="@drawable/key_func" android:textColor="#FFFFFF" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
         </LinearLayout>
         <!-- 3행: * _ % ~ ^ # .,?! -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="52dp" android:orientation="horizontal" android:paddingStart="4dp" android:paddingEnd="4dp" android:paddingTop="5dp" android:paddingBottom="4dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="52dp" android:orientation="horizontal" android:paddingStart="4dp" android:paddingEnd="4dp" android:paddingTop="5dp" android:paddingBottom="4dp"
+        android:splitMotionEvents="true">
             <Button android:id="@+id/sym_star"   android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="*" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/sym_under"  android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="_" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/sym_pct"    android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="%" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -512,7 +530,8 @@
             <Button android:id="@+id/sym_punct"  android:layout_width="0dp" android:layout_weight="1.5" android:layout_height="match_parent" android:text=".,?!" android:textSize="11sp" android:padding="0dp" android:background="@drawable/key_func" android:textColor="#FFFFFF" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
         </LinearLayout>
         <!-- 4행: 123 가 1/3 space ' -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="52dp" android:orientation="horizontal" android:paddingStart="4dp" android:paddingEnd="4dp" android:paddingTop="5dp" android:paddingBottom="5dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="52dp" android:orientation="horizontal" android:paddingStart="4dp" android:paddingEnd="4dp" android:paddingTop="5dp" android:paddingBottom="5dp"
+        android:splitMotionEvents="true">
             <Button android:id="@+id/sym_abc"    android:layout_width="0dp" android:layout_weight="1.5" android:layout_height="match_parent" android:text="123" android:textSize="13sp" android:padding="0dp" android:background="@drawable/key_func" android:textColor="#FFFFFF" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/sym_ko"     android:layout_width="0dp" android:layout_weight="1.5" android:layout_height="match_parent" android:text="가" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_func" android:textColor="#FFFFFF" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/sym_page"   android:layout_width="0dp" android:layout_weight="1.5" android:layout_height="match_parent" android:text="1/3" android:textSize="13sp" android:padding="0dp" android:background="@drawable/key_func" android:textColor="#FFFFFF" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -524,7 +543,8 @@
     <!-- ===== 특수문자 키보드 (페이지 2/3) ===== -->
     <LinearLayout android:id="@+id/container_symbols2" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:background="#E0E0E4" android:visibility="gone">
         <!-- 1행: + × ÷ = " ' ⌫ -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="52dp" android:orientation="horizontal" android:paddingStart="4dp" android:paddingEnd="4dp" android:paddingTop="5dp" android:paddingBottom="4dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="52dp" android:orientation="horizontal" android:paddingStart="4dp" android:paddingEnd="4dp" android:paddingTop="5dp" android:paddingBottom="4dp"
+        android:splitMotionEvents="true">
             <Button android:id="@+id/sym2_plus"  android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="+" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/sym2_times" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="×" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/sym2_div"   android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="÷" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -534,7 +554,8 @@
             <Button android:id="@+id/sym2_del"   android:layout_width="0dp" android:layout_weight="1.5" android:layout_height="match_parent" android:text="⌫" android:textSize="17sp" android:padding="0dp" android:background="@drawable/key_func" android:textColor="#FFFFFF" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
         </LinearLayout>
         <!-- 2행: & ♠ ☆ ♣ \ ₩ ⏎ -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="52dp" android:orientation="horizontal" android:paddingStart="4dp" android:paddingEnd="4dp" android:paddingTop="5dp" android:paddingBottom="4dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="52dp" android:orientation="horizontal" android:paddingStart="4dp" android:paddingEnd="4dp" android:paddingTop="5dp" android:paddingBottom="4dp"
+        android:splitMotionEvents="true">
             <Button android:id="@+id/sym2_amp"   android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="&amp;" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/sym2_spade" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="♠" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/sym2_fstar" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="☆" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -544,7 +565,8 @@
             <Button android:id="@+id/sym2_enter" android:layout_width="0dp" android:layout_weight="1.5" android:layout_height="match_parent" android:text="⏎" android:textSize="17sp" android:padding="0dp" android:background="@drawable/key_func" android:textColor="#FFFFFF" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
         </LinearLayout>
         <!-- 3행: < > { } [ ] .,?! -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="52dp" android:orientation="horizontal" android:paddingStart="4dp" android:paddingEnd="4dp" android:paddingTop="5dp" android:paddingBottom="4dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="52dp" android:orientation="horizontal" android:paddingStart="4dp" android:paddingEnd="4dp" android:paddingTop="5dp" android:paddingBottom="4dp"
+        android:splitMotionEvents="true">
             <Button android:id="@+id/sym2_lt"    android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="&lt;" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/sym2_gt"    android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="&gt;" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/sym2_lcurl" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="{" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -554,7 +576,8 @@
             <Button android:id="@+id/sym2_punct" android:layout_width="0dp" android:layout_weight="1.5" android:layout_height="match_parent" android:text=".,?!" android:textSize="11sp" android:padding="0dp" android:background="@drawable/key_func" android:textColor="#FFFFFF" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
         </LinearLayout>
         <!-- 4행: 123 가 2/3 space ' -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="52dp" android:orientation="horizontal" android:paddingStart="4dp" android:paddingEnd="4dp" android:paddingTop="5dp" android:paddingBottom="5dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="52dp" android:orientation="horizontal" android:paddingStart="4dp" android:paddingEnd="4dp" android:paddingTop="5dp" android:paddingBottom="5dp"
+        android:splitMotionEvents="true">
             <Button android:id="@+id/sym2_abc"   android:layout_width="0dp" android:layout_weight="1.5" android:layout_height="match_parent" android:text="123" android:textSize="13sp" android:padding="0dp" android:background="@drawable/key_func" android:textColor="#FFFFFF" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/sym2_ko"    android:layout_width="0dp" android:layout_weight="1.5" android:layout_height="match_parent" android:text="가" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_func" android:textColor="#FFFFFF" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/sym2_page"  android:layout_width="0dp" android:layout_weight="1.5" android:layout_height="match_parent" android:text="2/3" android:textSize="13sp" android:padding="0dp" android:background="@drawable/key_func" android:textColor="#FFFFFF" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -566,7 +589,8 @@
     <!-- ===== 특수문자 키보드 (페이지 3/3) ===== -->
     <LinearLayout android:id="@+id/container_symbols3" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:background="#E0E0E4" android:visibility="gone">
         <!-- 1행: ` | $ € £ ¥ ⌫ -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="52dp" android:orientation="horizontal" android:paddingStart="4dp" android:paddingEnd="4dp" android:paddingTop="5dp" android:paddingBottom="4dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="52dp" android:orientation="horizontal" android:paddingStart="4dp" android:paddingEnd="4dp" android:paddingTop="5dp" android:paddingBottom="4dp"
+        android:splitMotionEvents="true">
             <Button android:id="@+id/sym3_grave"    android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="`" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/sym3_pipe"     android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="|" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/sym3_dollar"   android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="$" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -576,7 +600,8 @@
             <Button android:id="@+id/sym3_del"      android:layout_width="0dp" android:layout_weight="1.5" android:layout_height="match_parent" android:text="⌫" android:textSize="17sp" android:padding="0dp" android:background="@drawable/key_func" android:textColor="#FFFFFF" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
         </LinearLayout>
         <!-- 2행: ° ○ ● □ ■ ◇ ⏎ -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="52dp" android:orientation="horizontal" android:paddingStart="4dp" android:paddingEnd="4dp" android:paddingTop="5dp" android:paddingBottom="4dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="52dp" android:orientation="horizontal" android:paddingStart="4dp" android:paddingEnd="4dp" android:paddingTop="5dp" android:paddingBottom="4dp"
+        android:splitMotionEvents="true">
             <Button android:id="@+id/sym3_degree"   android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="°" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/sym3_wcirc"    android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="○" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/sym3_bcirc"    android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="●" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -586,7 +611,8 @@
             <Button android:id="@+id/sym3_enter"    android:layout_width="0dp" android:layout_weight="1.5" android:layout_height="match_parent" android:text="⏎" android:textSize="17sp" android:padding="0dp" android:background="@drawable/key_func" android:textColor="#FFFFFF" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
         </LinearLayout>
         <!-- 3행: ※ « » ¤ ı ¿ .,?! -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="52dp" android:orientation="horizontal" android:paddingStart="4dp" android:paddingEnd="4dp" android:paddingTop="5dp" android:paddingBottom="4dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="52dp" android:orientation="horizontal" android:paddingStart="4dp" android:paddingEnd="4dp" android:paddingTop="5dp" android:paddingBottom="4dp"
+        android:splitMotionEvents="true">
             <Button android:id="@+id/sym3_ref"      android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="※" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/sym3_lguil"    android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="«" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/sym3_rguil"    android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="»" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -596,7 +622,8 @@
             <Button android:id="@+id/sym3_punct"    android:layout_width="0dp" android:layout_weight="1.5" android:layout_height="match_parent" android:text=".,?!" android:textSize="11sp" android:padding="0dp" android:background="@drawable/key_func" android:textColor="#FFFFFF" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
         </LinearLayout>
         <!-- 4행: 123 가 3/3 space ' -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="52dp" android:orientation="horizontal" android:paddingStart="4dp" android:paddingEnd="4dp" android:paddingTop="5dp" android:paddingBottom="5dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="52dp" android:orientation="horizontal" android:paddingStart="4dp" android:paddingEnd="4dp" android:paddingTop="5dp" android:paddingBottom="5dp"
+        android:splitMotionEvents="true">
             <Button android:id="@+id/sym3_abc"   android:layout_width="0dp" android:layout_weight="1.5" android:layout_height="match_parent" android:text="123" android:textSize="13sp" android:padding="0dp" android:background="@drawable/key_func" android:textColor="#FFFFFF" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/sym3_ko"    android:layout_width="0dp" android:layout_weight="1.5" android:layout_height="match_parent" android:text="가" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_func" android:textColor="#FFFFFF" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/sym3_page"  android:layout_width="0dp" android:layout_weight="1.5" android:layout_height="match_parent" android:text="3/3" android:textSize="13sp" android:padding="0dp" android:background="@drawable/key_func" android:textColor="#FFFFFF" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -608,7 +635,8 @@
     <!-- ===== 두벌식 특수문자 키보드 (페이지 1/2) ===== -->
     <LinearLayout android:id="@+id/container_dubeol_sym1" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:background="#E0E0E4" android:visibility="gone">
         <!-- 1행: 1 2 3 4 5 6 7 8 9 0 -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="38dp" android:orientation="horizontal" android:paddingStart="4dp" android:paddingEnd="4dp" android:paddingTop="4dp" android:paddingBottom="2dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="38dp" android:orientation="horizontal" android:paddingStart="4dp" android:paddingEnd="4dp" android:paddingTop="4dp" android:paddingBottom="2dp"
+        android:splitMotionEvents="true">
             <Button android:id="@+id/dsym_n1" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="1" android:textSize="15sp" android:padding="0dp" android:background="@drawable/key_num" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/dsym_n2" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="2" android:textSize="15sp" android:padding="0dp" android:background="@drawable/key_num" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/dsym_n3" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="3" android:textSize="15sp" android:padding="0dp" android:background="@drawable/key_num" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -621,7 +649,8 @@
             <Button android:id="@+id/dsym_n0" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="0" android:textSize="15sp" android:padding="0dp" android:background="@drawable/key_num" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
         </LinearLayout>
         <!-- 2행: + × ÷ = / _ < > [ ] -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="2dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="2dp"
+        android:splitMotionEvents="true">
             <Button android:id="@+id/dsym_plus"  android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="+" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/dsym_times" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="×" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/dsym_div"   android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="÷" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -634,7 +663,8 @@
             <Button android:id="@+id/dsym_rbr"   android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="]" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
         </LinearLayout>
         <!-- 3행: ! @ # ₩ % ^ & * ( ) -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="2dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="2dp"
+        android:splitMotionEvents="true">
             <Button android:id="@+id/dsym_excl"  android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="!" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/dsym_at"    android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="@" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/dsym_hash"  android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="#" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -647,7 +677,8 @@
             <Button android:id="@+id/dsym_rpar"  android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text=")" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
         </LinearLayout>
         <!-- 4행: [1/2] - ' " : ; , ? [⌫] -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="2dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="2dp"
+        android:splitMotionEvents="true">
             <Button android:id="@+id/dsym_page"  android:layout_width="0dp" android:layout_weight="1.5" android:layout_height="match_parent" android:text="1/2" android:textSize="13sp" android:padding="0dp" android:background="@drawable/key_func" android:textColor="#FFFFFF" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/dsym_minus" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="-" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/dsym_apos"  android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="'" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -659,7 +690,8 @@
             <Button android:id="@+id/dsym_del"   android:layout_width="0dp" android:layout_weight="1.5" android:layout_height="match_parent" android:text="⌫" android:textSize="17sp" android:padding="0dp" android:background="@drawable/key_func" android:textColor="#FFFFFF" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
         </LinearLayout>
         <!-- 5행: 가 한/영 ' space . ⏎ -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="4dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="4dp"
+        android:splitMotionEvents="true">
             <Button android:id="@+id/dsym_ko"        android:layout_width="0dp" android:layout_weight="1.5" android:layout_height="match_parent" android:text="가" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_func" android:textColor="#FFFFFF" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/dsym_mode"      android:layout_width="0dp" android:layout_weight="1.5" android:layout_height="match_parent" android:text="한/영" android:textSize="12sp" android:padding="0dp" android:background="@drawable/key_func" android:textColor="#FFFFFF" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/dsym_apos_bt"   android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="'" android:textSize="20sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -672,7 +704,8 @@
     <!-- ===== 두벌식 특수문자 키보드 (페이지 2/2) ===== -->
     <LinearLayout android:id="@+id/container_dubeol_sym2" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:background="#E0E0E4" android:visibility="gone">
         <!-- 1행: 1 2 3 4 5 6 7 8 9 0 -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="38dp" android:orientation="horizontal" android:paddingStart="4dp" android:paddingEnd="4dp" android:paddingTop="4dp" android:paddingBottom="2dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="38dp" android:orientation="horizontal" android:paddingStart="4dp" android:paddingEnd="4dp" android:paddingTop="4dp" android:paddingBottom="2dp"
+        android:splitMotionEvents="true">
             <Button android:id="@+id/dsym2_n1" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="1" android:textSize="15sp" android:padding="0dp" android:background="@drawable/key_num" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/dsym2_n2" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="2" android:textSize="15sp" android:padding="0dp" android:background="@drawable/key_num" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/dsym2_n3" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="3" android:textSize="15sp" android:padding="0dp" android:background="@drawable/key_num" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -685,7 +718,8 @@
             <Button android:id="@+id/dsym2_n0" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="0" android:textSize="15sp" android:padding="0dp" android:background="@drawable/key_num" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
         </LinearLayout>
         <!-- 2행: ` ~ \ | { } € £ ¥ $ -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="2dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="2dp"
+        android:splitMotionEvents="true">
             <Button android:id="@+id/dsym2_grave"  android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="`" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/dsym2_tilde"  android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="~" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/dsym2_bslash" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="\" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -698,7 +732,8 @@
             <Button android:id="@+id/dsym2_dollar" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="$" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
         </LinearLayout>
         <!-- 3행: ° • ○ ● □ ■ ♠ ♡ ◇ ♣ -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="2dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="2dp"
+        android:splitMotionEvents="true">
             <Button android:id="@+id/dsym2_degree"  android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="°" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/dsym2_dot"     android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="•" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/dsym2_circle"  android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="○" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -711,7 +746,8 @@
             <Button android:id="@+id/dsym2_club"    android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="♣" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
         </LinearLayout>
         <!-- 4행: [2/2] ☆ ▪ ¤ « » ¡ ¿ [⌫] -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="2dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="2dp"
+        android:splitMotionEvents="true">
             <Button android:id="@+id/dsym2_page"    android:layout_width="0dp" android:layout_weight="1.5" android:layout_height="match_parent" android:text="2/2" android:textSize="13sp" android:padding="0dp" android:background="@drawable/key_func" android:textColor="#FFFFFF" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/dsym2_starout" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="☆" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/dsym2_smallsq" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="▪" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -723,7 +759,8 @@
             <Button android:id="@+id/dsym2_del"     android:layout_width="0dp" android:layout_weight="1.5" android:layout_height="match_parent" android:text="⌫" android:textSize="17sp" android:padding="0dp" android:background="@drawable/key_func" android:textColor="#FFFFFF" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
         </LinearLayout>
         <!-- 5행: 가 한/영 ' space . ⏎ -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="4dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="46dp" android:orientation="horizontal" android:paddingStart="2dp" android:paddingEnd="2dp" android:paddingTop="4dp" android:paddingBottom="4dp"
+        android:splitMotionEvents="true">
             <Button android:id="@+id/dsym2_ko"       android:layout_width="0dp" android:layout_weight="1.5" android:layout_height="match_parent" android:text="가" android:textSize="16sp" android:padding="0dp" android:background="@drawable/key_func" android:textColor="#FFFFFF" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/dsym2_mode"     android:layout_width="0dp" android:layout_weight="1.5" android:layout_height="match_parent" android:text="한/영" android:textSize="12sp" android:padding="0dp" android:background="@drawable/key_func" android:textColor="#FFFFFF" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
             <Button android:id="@+id/dsym2_apos_bt"  android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="'" android:textSize="20sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:elevation="2dp" android:textStyle="normal" android:stateListAnimator="@null" />
@@ -743,7 +780,8 @@
         android:paddingEnd="2dp"
         android:paddingTop="4dp"
         android:paddingBottom="4dp"
-        android:background="#F9F9FE">
+        android:background="#F9F9FE"
+        android:splitMotionEvents="true">
         <Button android:id="@+id/key_num_mode" android:layout_width="0dp" android:layout_weight="1.2" android:layout_height="match_parent" android:text="!#1" android:textSize="10sp" android:padding="0dp" android:background="@drawable/key_func" android:textColor="#1A1A1A" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:textStyle="bold" android:stateListAnimator="@null" />
         <ImageButton android:id="@+id/key_mode" android:layout_width="0dp" android:layout_weight="1.2" android:layout_height="match_parent" android:padding="0dp" android:background="@drawable/key_func" android:src="@drawable/ic_key_globe" android:tint="#595F6A" android:scaleType="center" android:layout_marginStart="2dp" android:layout_marginEnd="2dp" android:contentDescription="입력 모드 전환" android:stateListAnimator="@null" />
         <Button android:id="@+id/key_quote" android:layout_width="0dp" android:layout_weight="0.01" android:layout_height="match_parent" android:text="&#39;" android:textSize="20sp" android:padding="0dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginStart="0dp" android:layout_marginEnd="0dp" android:elevation="2dp" android:textStyle="normal" android:visibility="gone" android:stateListAnimator="@null" />
