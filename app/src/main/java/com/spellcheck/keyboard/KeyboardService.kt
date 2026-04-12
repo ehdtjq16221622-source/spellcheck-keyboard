@@ -190,34 +190,18 @@ class KeyboardService : InputMethodService() {
     private val vibrator by lazy { getSystemService(Context.VIBRATOR_SERVICE) as Vibrator }
     private val audioManager by lazy { getSystemService(Context.AUDIO_SERVICE) as AudioManager }
 
-    // 키별 마지막 입력 시간 (동일 키 연속 중복 방지)
-    private val keyLastInputTime = HashMap<Int, Long>()
-    private val keyDebounceMs = 40L
-
-    // ACTION_DOWN에서만 처리 (POINTER_DOWN 제외 → 멀티터치 이중입력 방지)
+    // ACTION_DOWN + POINTER_DOWN 처리 (멀티터치 타이핑 지원)
     private fun View.onKeyDown(block: (View) -> Unit) {
         setOnTouchListener { v, event ->
             when (event.actionMasked) {
-                MotionEvent.ACTION_DOWN -> {
+                MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
                     val now = System.currentTimeMillis()
-                    // 같은 키가 debounce 시간 내 다시 눌리면 무시 (하드웨어 바운스 방지)
-                    val lastTime = keyLastInputTime[v.id] ?: 0L
-                    if (now - lastTime < keyDebounceMs) {
-                        v.isPressed = true
-                        return@setOnTouchListener true
-                    }
-                    keyLastInputTime[v.id] = now
                     if (now - lastKeyDownTime < rapidTypingThresholdMs) {
                         rapidTypingBurstUntil = now + rapidTypingBurstHoldMs
                     }
                     lastKeyDownTime = now
                     v.isPressed = true
                     block(v)
-                    true
-                }
-                MotionEvent.ACTION_POINTER_DOWN -> {
-                    // 멀티터치 시 이 뷰에 추가 포인터가 내려와도 입력 무시
-                    // (두 손가락 빠른 타이핑 시 첫 번째 키 이중입력 방지)
                     true
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
@@ -1183,14 +1167,10 @@ class KeyboardService : InputMethodService() {
     private fun setupDeleteButton(id: Int) {
         keyboardView.findViewById<View>(id)?.setOnTouchListener { _, event ->
             when (event.actionMasked) {
-                MotionEvent.ACTION_DOWN -> {
+                MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
                     vibrateKey()
                     onBackspace()
                     handler.postDelayed(deleteRepeatRunnable, deleteRepeatStartDelayMs)
-                    true
-                }
-                MotionEvent.ACTION_POINTER_DOWN -> {
-                    // 멀티터치 무시 (삭제 이중 발동 방지)
                     true
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
@@ -1277,17 +1257,21 @@ class KeyboardService : InputMethodService() {
         vibrateKey()
         anchor?.let { showKeyPreview(it, key.toString()) }
         val result = cheonjiinComposer.input(key)
-        val ic = currentInputConnection ?: return
-        ic.beginBatchEdit()
-        try {
-            when {
-                result.committed == "\b" -> ic.deleteSurroundingText(1, 0)
-                result.committed.isNotEmpty() -> ic.commitText(result.committed, 1)
+        val committed = result.committed
+        val composing = result.composing?.toString()
+        postIC {
+            val ic = currentInputConnection ?: return@postIC
+            ic.beginBatchEdit()
+            try {
+                when {
+                    committed == "\b" -> ic.deleteSurroundingText(1, 0)
+                    committed.isNotEmpty() -> ic.commitText(committed, 1)
+                }
+                if (composing != null) ic.setComposingText(composing, 1)
+                else ic.finishComposingText()
+            } finally {
+                ic.endBatchEdit()
             }
-            if (result.composing != null) ic.setComposingText(result.composing.toString(), 1)
-            else ic.finishComposingText()
-        } finally {
-            ic.endBatchEdit()
         }
         scheduleAutoCorrect()
     }
@@ -1325,16 +1309,25 @@ class KeyboardService : InputMethodService() {
     }
 
     private fun onHangulInput(jamo: Char, composer: HangulComposer) {
+        // 컴포저는 메인 스레드에서 즉시 처리 (상태 업데이트)
         val result = composer.input(jamo)
-        val ic = currentInputConnection ?: return
-        ic.beginBatchEdit()
-        when {
-            result.committed == "\b" -> ic.deleteSurroundingText(1, 0)
-            result.committed.isNotEmpty() -> ic.commitText(result.committed, 1)
+        val committed = result.committed
+        val composing = result.composing?.toString()
+        // IC IPC는 백그라운드 스레드로 → 메인 스레드 블로킹 제거로 빠른 연타 누락 방지
+        postIC {
+            val ic = currentInputConnection ?: return@postIC
+            ic.beginBatchEdit()
+            try {
+                when {
+                    committed == "\b" -> ic.deleteSurroundingText(1, 0)
+                    committed.isNotEmpty() -> ic.commitText(committed, 1)
+                }
+                if (composing != null) ic.setComposingText(composing, 1)
+                else ic.finishComposingText()
+            } finally {
+                ic.endBatchEdit()
+            }
         }
-        if (result.composing != null) ic.setComposingText(result.composing.toString(), 1)
-        else ic.finishComposingText()
-        ic.endBatchEdit()
     }
 
     private fun onBackspace() {
