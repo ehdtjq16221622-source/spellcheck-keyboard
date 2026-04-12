@@ -7,6 +7,50 @@ object SettingsManager {
     private const val PREFS_NAME = "settings"
     private var prefs: SharedPreferences? = null
 
+    private fun normalizeDefaultMode(value: String): String = when {
+        value.contains("천") -> "천지인"
+        else -> "두벌식"
+    }
+
+    fun normalizeFormalLevel(level: String): String = when {
+        level.contains("격") -> "격식체"
+        level.contains("사내") -> "사내 메시지"
+        level.contains("고객") -> "고객 안내"
+        level.contains("공문") || level.contains("학부모") -> "공문 안내"
+        level.contains("친근") || level.contains("소개팅") -> "친근체"
+        else -> "존댓말"
+    }
+
+    private fun normalizeKeyboardTheme(value: String): String = when {
+        value.contains("커") -> "커스텀"
+        value.contains("핑") -> "핑크"
+        value.contains("블") -> "블랙"
+        else -> "화이트"
+    }
+
+    private fun normalizeCustomImageMode(value: String): String = when {
+        value.contains("블") -> "블러"
+        value.contains("바") -> "바둑판"
+        value.contains("타") -> "타일"
+        else -> "꽉채우기"
+    }
+
+    private fun normalizeCustomKeyTextColor(value: String): String = when {
+        value.contains("밝") -> "밝음"
+        else -> "어둠"
+    }
+
+    private fun normalizeChromeTheme(value: String): String = when {
+        value.contains("블") -> "블랙"
+        else -> "화이트"
+    }
+
+    private fun normalizeAppTheme(value: String): String = when {
+        value.contains("라") -> "라이트"
+        value.contains("다") -> "다크"
+        else -> "시스템"
+    }
+
     fun init(context: Context) {
         if (prefs == null) {
             prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -30,51 +74,82 @@ object SettingsManager {
         set(v) { prefs?.edit()?.putBoolean("formal_default", v)?.apply() }
 
     var defaultMode: String
-        get() = prefs?.getString("default_mode", "두벌식") ?: "두벌식"
-        set(v) { prefs?.edit()?.putString("default_mode", v)?.apply() }
+        get() = normalizeDefaultMode(prefs?.getString("default_mode", "두벌식") ?: "두벌식")
+        set(v) { prefs?.edit()?.putString("default_mode", normalizeDefaultMode(v))?.apply() }
 
-    // 교정 수준: 구두점(쉼표·마침표) 포함 여부 (기본: 포함)
     var includePunct: Boolean
         get() = prefs?.getBoolean("include_punct", true) ?: true
         set(v) { prefs?.edit()?.putBoolean("include_punct", v)?.apply() }
 
-    // 교정 수준: 사투리 표준어 교정 포함 여부 (기본: 제외)
     var includeDialect: Boolean
         get() = prefs?.getBoolean("include_dialect", false) ?: false
         set(v) { prefs?.edit()?.putBoolean("include_dialect", v)?.apply() }
 
-    // 말투 교정 레벨: "적당한 존댓말" / "엄격 격식체" / "사내 메시지" / "고객 응대" / "학부모 안내" / "소개팅"
     var formalLevel: String
-        get() = prefs?.getString("formal_level", "적당한 존댓말") ?: "적당한 존댓말"
-        set(v) { prefs?.edit()?.putString("formal_level", v)?.apply() }
+        get() = normalizeFormalLevel(prefs?.getString("formal_level", "존댓말") ?: "존댓말")
+        set(v) { prefs?.edit()?.putString("formal_level", normalizeFormalLevel(v))?.apply() }
 
-    // 회사말투 사용 시 구두점 교정 포함 여부 (기본: 포함)
     var formalIncludePunct: Boolean
         get() = prefs?.getBoolean("formal_include_punct", true) ?: true
         set(v) { prefs?.edit()?.putBoolean("formal_include_punct", v)?.apply() }
 
-    // 키보드 테마: "화이트" / "블랙" / "핑크" / "커스텀"
     var keyboardTheme: String
-        get() = prefs?.getString("keyboard_theme", "화이트") ?: "화이트"
-        set(v) { prefs?.edit()?.putString("keyboard_theme", v)?.apply() }
+        get() = normalizeKeyboardTheme(prefs?.getString("keyboard_theme", "화이트") ?: "화이트")
+        set(v) { prefs?.edit()?.putString("keyboard_theme", normalizeKeyboardTheme(v))?.apply() }
 
-    // 커스텀 배경 이미지 파일 경로
     var customImagePath: String
         get() = prefs?.getString("custom_image_path", "") ?: ""
         set(v) { prefs?.edit()?.putString("custom_image_path", v)?.apply() }
 
-    // 커스텀 배경 표시 모드: "꽉채우기" / "타일" / "미러타일" / "늘리기" / "가운데" / "블러"
     var customImageMode: String
-        get() = prefs?.getString("custom_image_mode", "꽉채우기") ?: "꽉채우기"
-        set(v) { prefs?.edit()?.putString("custom_image_mode", v)?.apply() }
+        get() = normalizeCustomImageMode(prefs?.getString("custom_image_mode", "꽉채우기") ?: "꽉채우기")
+        set(v) { prefs?.edit()?.putString("custom_image_mode", normalizeCustomImageMode(v))?.apply() }
 
-    // 오버레이 투명도 (0~100, 기본 30 = 30% 어두운 레이어)
     var customImageOverlay: Int
         get() = prefs?.getInt("custom_image_overlay", 30) ?: 30
         set(v) { prefs?.edit()?.putInt("custom_image_overlay", v)?.apply() }
 
-    // 커스텀 배경 사용 시 키 텍스트 색상: "어둠" / "밝음"
     var customKeyTextColor: String
-        get() = prefs?.getString("custom_key_text_color", "어둠") ?: "어둠"
-        set(v) { prefs?.edit()?.putString("custom_key_text_color", v)?.apply() }
+        get() = normalizeCustomKeyTextColor(prefs?.getString("custom_key_text_color", "어둠") ?: "어둠")
+        set(v) { prefs?.edit()?.putString("custom_key_text_color", normalizeCustomKeyTextColor(v))?.apply() }
+
+    var customButtonOpacity: Int
+        get() = prefs?.getInt("custom_button_opacity", 30) ?: 30
+        set(v) { prefs?.edit()?.putInt("custom_button_opacity", v)?.apply() }
+
+    var customChromeTheme: String
+        get() = normalizeChromeTheme(prefs?.getString("custom_chrome_theme", "화이트") ?: "화이트")
+        set(v) { prefs?.edit()?.putString("custom_chrome_theme", normalizeChromeTheme(v))?.apply() }
+
+    var customImageScale: Float
+        get() = prefs?.getFloat("custom_image_scale", 1.0f) ?: 1.0f
+        set(v) { prefs?.edit()?.putFloat("custom_image_scale", v)?.apply() }
+
+    var customBlurAmount: Int
+        get() = prefs?.getInt("custom_blur_amount", 12) ?: 12
+        set(v) { prefs?.edit()?.putInt("custom_blur_amount", v)?.apply() }
+
+    var customImageOffsetX: Float
+        get() = prefs?.getFloat("custom_image_offset_x", 0f) ?: 0f
+        set(v) { prefs?.edit()?.putFloat("custom_image_offset_x", v)?.apply() }
+
+    var customImageOffsetY: Float
+        get() = prefs?.getFloat("custom_image_offset_y", 0f) ?: 0f
+        set(v) { prefs?.edit()?.putFloat("custom_image_offset_y", v)?.apply() }
+
+    var soundEnabled: Boolean
+        get() = prefs?.getBoolean("sound_enabled", false) ?: false
+        set(v) { prefs?.edit()?.putBoolean("sound_enabled", v)?.apply() }
+
+    var appTheme: String
+        get() = normalizeAppTheme(prefs?.getString("app_theme", "시스템") ?: "시스템")
+        set(v) { prefs?.edit()?.putString("app_theme", normalizeAppTheme(v))?.apply() }
+
+    var keyboardBodyWidthPx: Int
+        get() = prefs?.getInt("keyboard_body_width_px", 0) ?: 0
+        set(v) { prefs?.edit()?.putInt("keyboard_body_width_px", v)?.apply() }
+
+    var keyboardBodyHeightPx: Int
+        get() = prefs?.getInt("keyboard_body_height_px", 0) ?: 0
+        set(v) { prefs?.edit()?.putInt("keyboard_body_height_px", v)?.apply() }
 }

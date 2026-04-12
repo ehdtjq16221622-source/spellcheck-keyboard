@@ -4,10 +4,9 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.VIBRATE" />
-    <!-- 갤러리 접근 (Android 13+) -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <!-- 갤러리 접근 (Android 12 이하) -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
 
     <application
@@ -16,7 +15,6 @@
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.맞춤법키보드">
 
@@ -31,9 +29,23 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".RewardedAdActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <activity
+            android:name=".CropImageActivity"
+            android:exported="false"
+            android:theme="@style/Theme.맞춤법키보드" />
+
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-6287915588339288~8057469512" />
+
         <service
             android:name=".KeyboardService"
-            android:label="맞춤법 키보드"
+            android:label="킹보드 키보드"
             android:permission="android.permission.BIND_INPUT_METHOD"
             android:exported="true">
             <intent-filter>

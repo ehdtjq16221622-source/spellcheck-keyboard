@@ -67,7 +67,9 @@ class CheonjiinComposer {
             "ㅣㆍㅡㅣ" to 'ㅙ',
             "ㅡㆍㅣ" to 'ㅟ',
             "ㅡㆍㅣㆍ" to 'ㅝ',
-            "ㅡㆍㅣㆍㅣ" to 'ㅞ'
+            "ㅡㆍㅣㆍㅣ" to 'ㅞ',
+            // ㅜ(ㅡㆍ) + ㅓ(ㆍㅣ) 방식으로 입력해도 ㅝ 되도록 (대안 입력 경로)
+            "ㅡㆍㆍㅣ" to 'ㅝ'
         )
 
         val VOWEL_KEYS = setOf('ㆍ', 'ㅡ', 'ㅣ')
@@ -237,6 +239,15 @@ class CheonjiinComposer {
         val result = getCurrentChar()?.toString() ?: ""
         reset()
         return result
+    }
+
+    // 천지인 SPACE: 받침이 있을 때 → 글자 확정만, 공백 미삽입
+    // 받침 없으면 null 반환 → 일반 space 처리 (공백 삽입)
+    fun flushIfJong(): String? {
+        if (jong == 0) return null
+        val committed = getCurrentChar()?.toString() ?: ""
+        reset()
+        return committed
     }
 
     private fun reset() { cho = -1; jung = -1; jong = 0; vowelSeq = "" }

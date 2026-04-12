@@ -125,7 +125,7 @@ class HangulComposer {
                 val currentVowel = JUNGSEONG[jung]
                 val compound = COMPOUND_VOWEL[Pair(currentVowel, vowel)]
                 if (compound != null) {
-                    jung = VOWEL_TO_JUNG[compound] ?: vIdx
+                    jung = JUNGSEONG.indexOf(compound).takeIf { it >= 0 } ?: vIdx
                     InputResult(composing = getCurrentChar())
                 } else {
                     val committed = compose(cho, jung).toString()
