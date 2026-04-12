@@ -966,6 +966,7 @@ class KeyboardService : InputMethodService() {
         keyboardView.findViewById<Button>(R.id.key_cj_space)?.onKeyDown {
             vibrateKey(); lastCJKeyId = 0
             val now = System.currentTimeMillis()
+            // 종성 플러시 후에도 반드시 스페이스 커밋 (네이버 동작과 동일)
             val flushed = cheonjiinComposer.flushIfJong()
             if (flushed != null) {
                 val ic = currentInputConnection ?: return@onKeyDown
@@ -973,12 +974,15 @@ class KeyboardService : InputMethodService() {
                 try {
                     ic.commitText(flushed, 1)
                     ic.finishComposingText()
+                    ic.commitText(" ", 1)
                 } finally {
                     ic.endBatchEdit()
                 }
+                lastSpaceTime = now
+                scheduleAutoCorrect()
                 return@onKeyDown
             }
-            if (SettingsManager.doubleSpacePeriod && now - lastSpaceTime < 600L) {
+            if (SettingsManager.doubleSpacePeriod && now - lastSpaceTime < 300L) {
                 commitComposing()
                 currentInputConnection?.deleteSurroundingText(1, 0)
                 currentInputConnection?.commitText(". ", 1)
@@ -1042,7 +1046,7 @@ class KeyboardService : InputMethodService() {
         keyboardView.findViewById<Button>(R.id.key_space).onKeyDown {
             vibrateKey()
             val now = System.currentTimeMillis()
-            if (SettingsManager.doubleSpacePeriod && now - lastSpaceTime < 600L) {
+            if (SettingsManager.doubleSpacePeriod && now - lastSpaceTime < 300L) {
                 commitComposing()
                 currentInputConnection?.deleteSurroundingText(1, 0)
                 currentInputConnection?.commitText(". ", 1)
