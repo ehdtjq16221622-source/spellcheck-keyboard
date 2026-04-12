@@ -65,6 +65,8 @@ class KeyboardService : InputMethodService() {
     private var isServiceActive = false
     private var isFormalMode = false
     private var isShiftOn = false       // English shift
+    private var isCapsLock = false      // English caps lock (shift 더블탭)
+    private var lastShiftTapTime = 0L   // 더블탭 감지용
     private var isDubeolShift = false   // Dubeolsik double-consonant shift
     private var correctedText = ""
     private var translatedText = ""
@@ -1030,14 +1032,31 @@ class KeyboardService : InputMethodService() {
                     val ch = if (isShiftOn) letter.uppercaseChar() else letter
                     showKeyPreview(view, ch.toString())
                     currentInputConnection?.commitText(ch.toString(), 1)
-                    if (isShiftOn) { isShiftOn = false; updateEnglishShift() }
+                    if (isShiftOn && !isCapsLock) { isShiftOn = false; updateEnglishShift() }
                     scheduleAutoCorrect()
                 }
             }
         }
         keyboardView.findViewById<ImageButton>(R.id.key_en_shift).onKeyDown {
             vibrateKey()
-            isShiftOn = !isShiftOn
+            val now = System.currentTimeMillis()
+            when {
+                isCapsLock -> {
+                    // CapsLock 해제
+                    isCapsLock = false
+                    isShiftOn = false
+                }
+                isShiftOn && now - lastShiftTapTime < 300L -> {
+                    // 300ms 내 두 번째 탭 → CapsLock 활성화
+                    isCapsLock = true
+                    isShiftOn = true
+                }
+                else -> {
+                    // 일반 Shift 토글
+                    isShiftOn = !isShiftOn
+                }
+            }
+            lastShiftTapTime = now
             updateEnglishShift()
         }
         setupDeleteButton(R.id.key_en_delete)
@@ -1601,8 +1620,9 @@ class KeyboardService : InputMethodService() {
     }
 
     private fun updateKeyboardMode() {
-        if (inputMode != InputMode.ENGLISH && isShiftOn) {
+        if (inputMode != InputMode.ENGLISH && (isShiftOn || isCapsLock)) {
             isShiftOn = false
+            isCapsLock = false
         }
 
         keyboardView.findViewById<View>(R.id.container_dubeolsik).visibility =
@@ -1664,14 +1684,26 @@ class KeyboardService : InputMethodService() {
     private fun updateEnglishShift() {
         val btn = keyboardView.findViewById<ImageButton>(R.id.key_en_shift)
         val spec = currentThemeSpec()
-        if (isShiftOn) {
-            btn.background = createKeyDrawable(spec.selectedFill, spec.selectedPressedFill)
-            btn.backgroundTintList = null
-            btn.imageTintList = ColorStateList.valueOf(spec.selectedText)
-        } else {
-            btn.background = createKeyDrawable(spec.functionFill, spec.functionPressedFill)
-            btn.backgroundTintList = null
-            btn.imageTintList = ColorStateList.valueOf(spec.functionText)
+        when {
+            isCapsLock -> {
+                // CapsLock: 선택색 + 테두리로 일반 Shift와 구분
+                btn.background = createKeyDrawable(spec.selectedFill, spec.selectedPressedFill)
+                btn.backgroundTintList = null
+                btn.imageTintList = ColorStateList.valueOf(spec.selectedText)
+                btn.alpha = 1.0f
+            }
+            isShiftOn -> {
+                btn.background = createKeyDrawable(spec.selectedFill, spec.selectedPressedFill)
+                btn.backgroundTintList = null
+                btn.imageTintList = ColorStateList.valueOf(spec.selectedText)
+                btn.alpha = 0.7f  // 일반 Shift는 살짝 투명하게 → CapsLock과 구분
+            }
+            else -> {
+                btn.background = createKeyDrawable(spec.functionFill, spec.functionPressedFill)
+                btn.backgroundTintList = null
+                btn.imageTintList = ColorStateList.valueOf(spec.functionText)
+                btn.alpha = 1.0f
+            }
         }
 
         val englishMap = mapOf(
