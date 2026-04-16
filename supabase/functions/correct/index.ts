@@ -13,6 +13,7 @@ Deno.serve(async (req: Request) => {
     const {
       text,
       formalMode,
+      removePunct,
       includePunct,
       includeDialect,
       formalLevel,
@@ -22,7 +23,7 @@ Deno.serve(async (req: Request) => {
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     )
 
     const cost = formalMode ? 30 : 10
@@ -30,18 +31,31 @@ Deno.serve(async (req: Request) => {
 
     if (!credit.allowed) {
       return new Response(
-        JSON.stringify({ error: 'NO_CREDITS', remaining: credit.snapshot.remaining }),
-        { status: 429, headers: { ...cors, 'Content-Type': 'application/json' } }
+        JSON.stringify({
+          error: 'NO_CREDITS',
+          remaining: credit.snapshot.remaining,
+          free_credits_remaining: credit.snapshot.freeCredits,
+          paid_credits_remaining: credit.snapshot.paidCredits,
+          credits_remaining: credit.snapshot.remaining,
+        }),
+        { status: 429, headers: { ...cors, 'Content-Type': 'application/json' } },
       )
     }
+
+    const normalizedFormalLevel = normalizeFormalLevel(formalLevel ?? '')
+    const shouldRemovePunct =
+      typeof removePunct === 'boolean'
+        ? removePunct
+        : formalMode
+          ? formalIncludePunct === false
+          : includePunct === false
 
     const result = await callGPT(
       text,
       formalMode,
-      includePunct,
-      includeDialect,
-      formalLevel,
-      formalIncludePunct
+      shouldRemovePunct,
+      includeDialect ?? false,
+      normalizedFormalLevel,
     )
 
     return new Response(
@@ -51,65 +65,57 @@ Deno.serve(async (req: Request) => {
         paid_credits_remaining: credit.snapshot.paidCredits,
         credits_remaining: credit.snapshot.remaining,
       }),
-      { headers: { ...cors, 'Content-Type': 'application/json' } }
+      { headers: { ...cors, 'Content-Type': 'application/json' } },
     )
   } catch (e) {
     return new Response(
       JSON.stringify({ error: String(e) }),
-      { status: 500, headers: { ...cors, 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...cors, 'Content-Type': 'application/json' } },
     )
   }
 })
 
 function buildSystemPrompt(
   formalMode: boolean,
-  includePunct: boolean,
+  removePunct: boolean,
   includeDialect: boolean,
   formalLevel: string,
-  formalIncludePunct: boolean
 ): string {
   let system =
-    '당신은 한국어 맞춤법과 문장 다듬기를 돕는 편집기입니다. ' +
-    '입력된 문장의 의미는 유지하고, 결과 문장만 출력하세요. ' +
-    '설명, 머리말, 따옴표, 불릿, 메모를 붙이지 마세요.'
+    '당신은 한국어 맞춤법과 문장 다듬기를 돕는 교정기입니다. ' +
+    '입력된 문장을 자연스럽고 정확하게 다듬고 결과 문장만 출력하세요. ' +
+    '설명, 머리말, 인사말, 불릿, 메모를 붙이지 마세요.'
 
-  if (!includePunct) {
-    system += ' 마침표, 쉼표, 물음표 같은 구두점은 새로 손대지 마세요.'
+  if (removePunct) {
+    system += ' 마침표, 쉼표, 물음표 같은 구두점을 새로 추가하지 말고, 기존 구두점도 제거하세요.'
   }
+
   if (!includeDialect) {
-    system += ' 사투리나 구어체를 억지로 표준어로 바꾸지 말고, 문법적으로 어색한 부분만 정리하세요.'
+    system += ' 사투리나 구어체를 표준어로 과하게 바꾸지 말고, 문법적으로 어색한 부분만 정리하세요.'
   }
 
   if (!formalMode) {
     return system
   }
 
-  if (!formalIncludePunct) {
-    system += ' 말투를 바꾸더라도 구두점은 가능하면 유지하세요.'
-  }
-
   const modePrompt: Record<string, string> = {
-    '적당한 존댓말':
-      '적당한 존댓말로 바꾸세요. 지나치게 딱딱하지 않게, 자연스러운 -요체를 우선하세요.',
-    '엄격 격식체':
-      '엄격한 격식체로 바꾸세요. 공문이나 보고에 어울리는 -습니다체를 사용하세요.',
-    '사내 메시지':
-      '사내 메시지 톤으로 바꾸세요. 업무용으로 자연스럽고 신뢰감 있게 정리하되, 길이를 억지로 줄이지 마세요. ' +
-      '자기 자신에게 높임말을 쓰지 말고, 원문에 없는 이름·직함·부서명·일정은 만들어내지 마세요. ' +
-      '과한 인사말이나 감사말은 꼭 필요할 때만 넣으세요.',
-    '고객 응대':
-      '고객 응대 톤으로 바꾸세요. 정중하고 분명하게 안내하되, 약한 공감 표현은 허용하세요. ' +
-      '예: 기다리셨죠, 불편을 드려 죄송합니다, 걱정되셨을 것 같습니다. ' +
-      '다만 과한 감정 표현이나 지나치게 AI 같은 문장은 피하세요.',
+    존댓말:
+      '부드러운 존댓말로 바꾸세요. 지나치게 딱딱하지 않게, 자연스러운 -요체를 우선 사용하세요.',
+    격식체:
+      '격식 있는 문체로 바꾸세요. 공문이나 보고서에 어울리는 -습니다체를 사용하세요.',
+    비즈니스:
+      '사내 메시지 톤으로 바꾸세요. 업무적으로 자연스럽고 명확하게 정리하되, 길이를 임의로 줄이지 마세요. ' +
+      '없는 이름, 직함, 부서명, 일정 같은 정보를 새로 만들지 마세요. ' +
+      '과한 인사말이나 감사 표현은 꼭 필요할 때만 넣으세요.',
+    '고객 안내':
+      '고객 안내 톤으로 바꾸세요. 정중하고 분명하게 안내하되, 사려와 공감 표현을 사용할 수 있습니다. ' +
+      '다만 과한 감정 표현이나 과장된 AI스러운 문장은 피하세요.',
     '학부모 안내':
-      '학부모 안내 톤으로 바꾸세요. 아이를 세심하게 챙겨주는 느낌이 들도록 따뜻하고 안정적인 표현을 사용하세요. ' +
-      '원문 의미 범위 안에서 배려와 관찰의 뉘앙스를 조금 확장해도 됩니다. ' +
-      '다만 원문에 없는 구체적 사실, 일정, 약속, 평가를 새로 만들지는 마세요.',
-    '소개팅':
-      '소개팅 이후 카톡처럼 자연스럽고 단정한 존댓말로 바꾸세요. ' +
-      '너무 문어체인 -습니다체보다 부드러운 -요체를 우선하세요. ' +
-      'ㅎㅎ, ... 같은 잡음은 정리하되 실제 채팅처럼 읽히게 유지하세요. ' +
-      '화자 관점을 뒤집지 말고, 원문에 없는 사과나 감정 고백을 새로 만들지 마세요.',
+      '안내문이나 공지문처럼 차분하고 안정적인 표현으로 바꾸세요. ' +
+      '전달 정보가 잘 전달되도록 정리하되, 없는 사실이나 일정, 조건을 만들어내지 마세요.',
+    소개팅체:
+      '친구에게 보내는 카톡처럼 자연스럽고 편한 존댓말로 바꾸세요. ' +
+      '지나치게 가볍거나 수위에 치우치지 말고, 실제 대화체를 부드럽게 다듬으세요.',
   }
 
   system += ` ${modePrompt[formalLevel] ?? '자연스럽고 읽기 좋은 한국어 문장으로 다듬으세요.'}`
@@ -119,17 +125,15 @@ function buildSystemPrompt(
 async function callGPT(
   text: string,
   formalMode: boolean,
-  includePunct: boolean,
+  removePunct: boolean,
   includeDialect: boolean,
   formalLevel: string,
-  formalIncludePunct: boolean
 ): Promise<string> {
   const system = buildSystemPrompt(
     formalMode,
-    includePunct,
+    removePunct,
     includeDialect,
     formalLevel,
-    formalIncludePunct
   )
 
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -152,4 +156,13 @@ async function callGPT(
   const data = await res.json()
   if (!res.ok) throw new Error(data.error?.message ?? '교정 실패')
   return data.choices[0].message.content.trim()
+}
+
+function normalizeFormalLevel(value: string): string {
+  if (value.includes('격')) return '격식체'
+  if (value.includes('비즈') || value.includes('사내') || value.includes('회사')) return '비즈니스'
+  if (value.includes('고객')) return '고객 안내'
+  if (value.includes('공문') || value.includes('학부모')) return '학부모 안내'
+  if (value.includes('친근') || value.includes('소개팅')) return '소개팅체'
+  return '존댓말'
 }
