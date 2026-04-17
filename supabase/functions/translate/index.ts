@@ -1,5 +1,13 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { checkAndDeduct } from '../_shared/credits.ts'
+import {
+  UserFacingError,
+  assertMeaningfulText,
+  enforceRateLimit,
+  fetchWithTimeoutRetry,
+  requireNonEmptyText,
+  requireTextDeviceId,
+} from '../_shared/usage_guard.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -11,22 +19,43 @@ Deno.serve(async (req: Request) => {
 
   try {
     const { text, targetLang, deviceId } = await req.json()
+    const normalizedText = requireNonEmptyText(text, '번역할 문장')
+    const normalizedDeviceId = requireTextDeviceId(deviceId)
+    assertMeaningfulText(normalizedText, 2)
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     )
 
-    const credit = await checkAndDeduct(supabase, deviceId, 20)
-
-    if (!credit.allowed) {
+    const rateLimit = await enforceRateLimit(supabase, 'translate', normalizedDeviceId, 15, 60_000)
+    if (!rateLimit.allowed) {
       return new Response(
-        JSON.stringify({ error: 'NO_CREDITS', remaining: credit.snapshot.remaining }),
-        { status: 429, headers: { ...cors, 'Content-Type': 'application/json' } }
+        JSON.stringify({
+          error: 'RATE_LIMITED',
+          message: '번역 요청이 잠시 많아요. 잠시 후 다시 시도해 주세요.',
+          reset_at: rateLimit.resetAt,
+        }),
+        { status: 429, headers: { ...cors, 'Content-Type': 'application/json' } },
       )
     }
 
-    const result = await callGPT(text, targetLang)
+    const credit = await checkAndDeduct(supabase, normalizedDeviceId, 20)
+
+    if (!credit.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: 'NO_CREDITS',
+          remaining: credit.snapshot.remaining,
+          free_credits_remaining: credit.snapshot.freeCredits,
+          paid_credits_remaining: credit.snapshot.paidCredits,
+          credits_remaining: credit.snapshot.remaining,
+        }),
+        { status: 429, headers: { ...cors, 'Content-Type': 'application/json' } },
+      )
+    }
+
+    const result = await callGPT(normalizedText, targetLang)
 
     return new Response(
       JSON.stringify({
@@ -35,12 +64,19 @@ Deno.serve(async (req: Request) => {
         paid_credits_remaining: credit.snapshot.paidCredits,
         credits_remaining: credit.snapshot.remaining,
       }),
-      { headers: { ...cors, 'Content-Type': 'application/json' } }
+      { headers: { ...cors, 'Content-Type': 'application/json' } },
     )
   } catch (e) {
+    if (e instanceof UserFacingError) {
+      return new Response(
+        JSON.stringify({ error: e.message }),
+        { status: e.status, headers: { ...cors, 'Content-Type': 'application/json' } },
+      )
+    }
+
     return new Response(
       JSON.stringify({ error: String(e) }),
-      { status: 500, headers: { ...cors, 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...cors, 'Content-Type': 'application/json' } },
     )
   }
 })
@@ -54,27 +90,40 @@ async function callGPT(text: string, targetLang: string): Promise<string> {
   }
   const lang = langNames[targetLang] ?? targetLang
 
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: `다음 텍스트를 ${lang}로 번역하세요. 번역 결과만 출력하고 설명은 붙이지 마세요.`,
+  try {
+    const res = await fetchWithTimeoutRetry(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+          'Content-Type': 'application/json',
         },
-        { role: 'user', content: text },
-      ],
-      temperature: 0.3,
-      max_tokens: 1000,
-    }),
-  })
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: `다음 텍스트를 ${lang}로 번역하세요. 번역 결과만 출력하고 설명은 붙이지 마세요.`,
+            },
+            { role: 'user', content: text },
+          ],
+          temperature: 0.3,
+          max_tokens: 1000,
+        }),
+      },
+      8000,
+      1,
+    )
 
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.error?.message ?? '번역 실패')
-  return data.choices[0].message.content.trim()
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error?.message ?? '번역 실패')
+    return data.choices[0].message.content.trim()
+  } catch (e) {
+    const message = String(e)
+    if (message.includes('timeout') || message.toLowerCase().includes('abort')) {
+      throw new UserFacingError('번역 서버 응답이 지연되고 있어요. 잠시 후 다시 시도해 주세요.', 503)
+    }
+    throw new UserFacingError('번역 요청 처리 중 문제가 생겼어요. 잠시 후 다시 시도해 주세요.', 503)
+  }
 }
