@@ -73,9 +73,19 @@ async function ensureCreditRow(
       paid_credits: 0,
       last_reset_date: today,
     }
-    const { error: insertError } = await supabase.from('device_credits').insert(row)
+    const { error: insertError } = await supabase
+      .from('device_credits')
+      .upsert(row, { onConflict: 'device_id', ignoreDuplicates: true })
     if (insertError) throw insertError
-    return row
+
+    const { data: insertedRow, error: refetchError } = await supabase
+      .from('device_credits')
+      .select('device_id, free_credits, paid_credits, last_reset_date')
+      .eq('device_id', deviceId)
+      .single()
+
+    if (refetchError) throw refetchError
+    return insertedRow
   }
 
   if (data.last_reset_date < today) {
@@ -112,29 +122,60 @@ export async function checkAndDeduct(
   cost: number
 ): Promise<{ allowed: boolean; snapshot: CreditSnapshot }> {
   // row 보장 + 일 리셋 처리 (멱등)
-  await ensureCreditRow(supabase, deviceId)
+  const row = await ensureCreditRow(supabase, deviceId)
 
-  // atomic UPDATE: 잔액 검사 + 차감을 단일 SQL로 처리 (race-condition safe)
-  const { data, error } = await supabase.rpc('deduct_credits', {
-    p_device_id: deviceId,
-    p_cost: cost,
-  })
-  if (error) throw error
+  try {
+    // atomic UPDATE: 잔액 검사 + 차감을 단일 SQL로 처리 (race-condition safe)
+    const { data, error } = await supabase.rpc('deduct_credits', {
+      p_device_id: deviceId,
+      p_cost: cost,
+    })
+    if (error) throw error
 
-  const result = data as {
-    ok: boolean
-    free_credits: number
-    paid_credits: number
-    remaining: number
-  }
+    const result = data as {
+      ok: boolean
+      free_credits: number
+      paid_credits: number
+      remaining: number
+    }
 
-  return {
-    allowed: result.ok,
-    snapshot: {
-      freeCredits: result.free_credits,
-      paidCredits: result.paid_credits,
-      remaining: result.remaining,
-    },
+    return {
+      allowed: result.ok,
+      snapshot: {
+        freeCredits: result.free_credits,
+        paidCredits: result.paid_credits,
+        remaining: result.remaining,
+      },
+    }
+  } catch (_error) {
+    const snapshot = toSnapshot(row)
+    if (snapshot.remaining < cost) {
+      return { allowed: false, snapshot }
+    }
+
+    let remainingCost = cost
+    const nextFree = Math.max(row.free_credits - remainingCost, 0)
+    remainingCost = Math.max(remainingCost - row.free_credits, 0)
+    const nextPaid = Math.max(row.paid_credits - remainingCost, 0)
+
+    const { error } = await supabase
+      .from('device_credits')
+      .update({
+        free_credits: nextFree,
+        paid_credits: nextPaid,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('device_id', deviceId)
+    if (error) throw error
+
+    return {
+      allowed: true,
+      snapshot: {
+        freeCredits: nextFree,
+        paidCredits: nextPaid,
+        remaining: nextFree + nextPaid,
+      },
+    }
   }
 }
 
