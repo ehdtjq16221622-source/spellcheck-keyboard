@@ -202,41 +202,20 @@ export function subscriptionCreditsForProduct(productId: string): number {
 export async function recordRewardAdClaim(
   supabase: SupabaseClient,
   deviceId: string,
-  cooldownMinutes = 5,
-  dailyLimit = 20
+  cooldownMinutes = 0,
+  dailyLimit = 10
 ): Promise<{ allowed: boolean; reason?: 'cooldown' | 'daily_limit'; retryAfterSeconds?: number }> {
   try {
     const now = new Date()
-    const cooldownCutoff = new Date(now.getTime() - cooldownMinutes * 60_000).toISOString()
     const dayStart = new Date(now.toLocaleString('sv-SE', { timeZone: 'Asia/Seoul' }).replace(' ', 'T') + '+09:00')
     const dayStartIso = new Date(dayStart.setHours(0, 0, 0, 0)).toISOString()
 
-    const [{ data: recent, error: recentError }, { count, error: countError }] = await Promise.all([
-      supabase
-        .from('reward_ad_log')
-        .select('rewarded_at')
-        .eq('device_id', deviceId)
-        .gte('rewarded_at', cooldownCutoff)
-        .order('rewarded_at', { ascending: false })
-        .limit(1),
-      supabase
+    const { count, error: countError } = await supabase
         .from('reward_ad_log')
         .select('*', { count: 'exact', head: true })
         .eq('device_id', deviceId)
-        .gte('rewarded_at', dayStartIso),
-    ])
-
-    if (recentError) throw recentError
+        .gte('rewarded_at', dayStartIso)
     if (countError) throw countError
-
-    if (recent && recent.length > 0) {
-      const last = new Date(recent[0].rewarded_at)
-      const retryAfterSeconds = Math.max(
-        1,
-        Math.ceil((last.getTime() + cooldownMinutes * 60_000 - now.getTime()) / 1000),
-      )
-      return { allowed: false, reason: 'cooldown', retryAfterSeconds }
-    }
 
     if ((count ?? 0) >= dailyLimit) {
       return { allowed: false, reason: 'daily_limit' }
