@@ -345,11 +345,15 @@ object KeyboardThemeApplicator {
             button.background = createKeyDrawable(density, fill, pressedFill)
             button.backgroundTintList = null
             button.setTextColor(textColor)
-            val fontSize = when (role) {
-                KeyRole.LETTER -> 16f
-                KeyRole.NUMBER -> 15f
-                KeyRole.FUNCTION -> 15f
-                KeyRole.SPACE -> 12f
+            val fontSize = when {
+                button.id == R.id.key_quote || button.id == R.id.key_period -> 20f
+                button.id == R.id.key_delete || button.id == R.id.key_en_delete || button.id == R.id.key_enter -> 17f
+                button.id == R.id.key_mode -> 12f
+                button.id == R.id.key_num_mode -> 14f
+                role == KeyRole.LETTER -> 16f
+                role == KeyRole.NUMBER -> 15f
+                role == KeyRole.FUNCTION -> 15f
+                else -> 12f
             }
             button.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSize)
             button.stateListAnimator = null
@@ -430,15 +434,25 @@ object KeyboardThemeApplicator {
             }
         }
 
+        fun styleSymbolContainerRows(containerId: Int, firstRowHeightDp: Float, otherRowHeightDp: Float) {
+            val container = rootView.findViewById<ViewGroup>(containerId) ?: return
+            for (i in 0 until container.childCount) {
+                val child = container.getChildAt(i)
+                if (child is LinearLayout) {
+                    styleRow(child, if (i == 0) firstRowHeightDp else otherRowHeightDp)
+                }
+            }
+        }
+
         styleRow(rootView.findViewById(R.id.toolbar), 38f, padXDp = 8f, padTopDp = 0f, padBottomDp = 0f)
         styleRow(rootView.findViewById(R.id.rowNumbers), 34f)
         styleContainerRows(R.id.container_dubeolsik, 42f)
         styleContainerRows(R.id.container_english, 42f)
-        styleContainerRows(R.id.container_symbols, 42f)
-        styleContainerRows(R.id.container_symbols2, 42f)
-        styleContainerRows(R.id.container_symbols3, 42f)
-        styleContainerRows(R.id.container_dubeol_sym1, 42f)
-        styleContainerRows(R.id.container_dubeol_sym2, 42f)
+        styleSymbolContainerRows(R.id.container_symbols, 34f, 42f)
+        styleSymbolContainerRows(R.id.container_symbols2, 34f, 42f)
+        styleSymbolContainerRows(R.id.container_symbols3, 34f, 42f)
+        styleSymbolContainerRows(R.id.container_dubeol_sym1, 34f, 42f)
+        styleSymbolContainerRows(R.id.container_dubeol_sym2, 34f, 42f)
         styleRow(rootView.findViewById(R.id.bottomRow), 42f)
 
         fun setSpacerWeight(containerId: Int, rowIndex: Int, weight: Float) {
@@ -458,11 +472,38 @@ object KeyboardThemeApplicator {
         setSpacerWeight(R.id.container_dubeolsik, 1, 0.7f)
         setSpacerWeight(R.id.container_english, 1, 0.7f)
 
-        listOf(R.id.key_shift, R.id.key_delete, R.id.key_en_shift, R.id.key_en_delete).forEach { id ->
+        listOf(R.id.key_shift, R.id.key_en_shift).forEach { id ->
             val view = rootView.findViewById<View>(id) ?: return@forEach
             val params = view.layoutParams
             if (params is LinearLayout.LayoutParams) {
                 params.weight = 1.2f
+                params.width = 0
+                view.layoutParams = params
+            }
+        }
+
+        listOf(R.id.key_delete, R.id.key_en_delete).forEach { id ->
+            val view = rootView.findViewById<View>(id) ?: return@forEach
+            val params = view.layoutParams
+            if (params is LinearLayout.LayoutParams) {
+                params.weight = 1.8f
+                params.width = 0
+                view.layoutParams = params
+            }
+        }
+
+        listOf(
+            R.id.key_num_mode to 1.5f,
+            R.id.key_mode to 1.5f,
+            R.id.key_quote to 1f,
+            R.id.key_space to 4f,
+            R.id.key_period to 1f,
+            R.id.key_enter to 1.8f,
+        ).forEach { (id, weight) ->
+            val view = rootView.findViewById<View>(id) ?: return@forEach
+            val params = view.layoutParams
+            if (params is LinearLayout.LayoutParams) {
+                params.weight = weight
                 params.width = 0
                 view.layoutParams = params
             }

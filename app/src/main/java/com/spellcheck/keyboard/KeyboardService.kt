@@ -1707,14 +1707,15 @@ class KeyboardService : InputMethodService() {
         }
 
         // ?낅젰 紐⑤뱶 踰꾪듉 ?됱긽: ?곸뼱 紐⑤뱶????媛뺤“
-        val keyMode = keyboardView.findViewById<ImageButton>(R.id.key_mode)
+        val keyMode = keyboardView.findViewById<Button>(R.id.key_mode)
         keyMode?.apply {
+            text = "한/영"
             if (inputMode == InputMode.ENGLISH) {
                 background = createKeyDrawable(spec.selectedFill, spec.selectedPressedFill)
-                imageTintList = ColorStateList.valueOf(spec.selectedText)
+                setTextColor(spec.selectedText)
             } else {
                 background = createKeyDrawable(spec.functionFill, spec.functionPressedFill)
-                imageTintList = ColorStateList.valueOf(spec.secondaryIconTint)
+                setTextColor(spec.functionText)
             }
         }
 
