@@ -275,8 +275,8 @@
     .row{
       display:grid;
       align-items:stretch;
-      padding-left:var(--row-pad-x);
-      padding-right:var(--row-pad-x);
+      padding-left:var(--body-row-pad-x);
+      padding-right:var(--body-row-pad-x);
       padding-top:var(--row-pad-top);
       padding-bottom:var(--row-pad-bottom);
       gap:var(--key-gap);
@@ -285,8 +285,8 @@
     .row-flex{
       display:flex;
       align-items:stretch;
-      padding-left:var(--row-pad-x);
-      padding-right:var(--row-pad-x);
+      padding-left:var(--body-row-pad-x);
+      padding-right:var(--body-row-pad-x);
       padding-top:var(--row-pad-top);
       padding-bottom:var(--row-pad-bottom);
       gap:var(--key-gap);
@@ -329,8 +329,8 @@
     .bottom-row{
       display:flex;
       align-items:stretch;
-      padding-left:var(--row-pad-x);
-      padding-right:var(--row-pad-x);
+      padding-left:var(--body-row-pad-x);
+      padding-right:var(--body-row-pad-x);
       padding-top:var(--bottom-pad-top);
       padding-bottom:var(--bottom-pad-bottom);
       gap:var(--key-gap);
@@ -512,7 +512,8 @@
       ["symbolRowHeight", "기호 row 높이", 32, 68, 1],
       ["symbolTopRowHeight", "기호 첫 row 높이", 32, 68, 1],
       ["bottomRowHeight", "공통 하단줄 높이", 32, 64, 1],
-      ["rowPadX", "행 좌우 padding", 0, 16, 1],
+      ["numberRowPadX", "숫자줄 좌우 padding", 0, 16, 1],
+      ["bodyRowPadX", "본문/하단 좌우 padding", 0, 16, 1],
       ["rowPadTop", "행 상단 padding", 0, 12, 1],
       ["rowPadBottom", "행 하단 padding", 0, 12, 1],
       ["bottomPadTop", "하단줄 상단 padding", 0, 12, 1],
@@ -610,7 +611,8 @@
       symbolRowHeight: 46,
       symbolTopRowHeight: 52,
       bottomRowHeight: 46,
-      rowPadX: 4,
+      numberRowPadX: 4,
+      bodyRowPadX: 2,
       rowPadTop: 4,
       rowPadBottom: 2,
       bottomPadTop: 4,
@@ -704,7 +706,8 @@
       root.setProperty("--shadow-y", `${state.shadowY}px`);
       root.setProperty("--shadow-blur", `${state.shadowBlur}px`);
       root.setProperty("--shadow", `rgba(15,23,42,${state.shadowOpacity})`);
-      root.setProperty("--row-pad-x", `${state.rowPadX}px`);
+      root.setProperty("--number-row-pad-x", `${state.numberRowPadX}px`);
+      root.setProperty("--body-row-pad-x", `${state.bodyRowPadX}px`);
       root.setProperty("--row-pad-top", `${state.rowPadTop}px`);
       root.setProperty("--row-pad-bottom", `${state.rowPadBottom}px`);
       root.setProperty("--bottom-pad-top", `${state.bottomPadTop}px`);
@@ -856,7 +859,10 @@
 
     function numberRow(labels){
       const cols = "repeat(10, minmax(0, 1fr))";
-      return row(cols, state.numberRowHeight, "numbers", labels.map((label) => key(label, "number", state.numberRowHeight, state.numberFont)));
+      const el = row(cols, state.numberRowHeight, "numbers", labels.map((label) => key(label, "number", state.numberRowHeight, state.numberFont)));
+      el.style.paddingLeft = `${state.numberRowPadX}px`;
+      el.style.paddingRight = `${state.numberRowPadX}px`;
+      return el;
     }
 
     function letterSimpleRow(labels, height){
@@ -897,6 +903,8 @@
       const second = document.createElement("div");
       second.className = "row-flex";
       second.style.height = `${state.letterRowHeight + state.rowPadTop + state.rowPadBottom}px`;
+      second.style.paddingLeft = `${state.bodyRowPadX}px`;
+      second.style.paddingRight = `${state.bodyRowPadX}px`;
       second.appendChild(spacer(state.dubeolSecondSpacer, state.letterRowHeight));
       ["ㅁ","ㄴ","ㅇ","ㄹ","ㅎ","ㅗ","ㅓ","ㅏ","ㅣ"].forEach((label) => {
         second.appendChild(flexWeight({weight:1, el:key(label, "letter", state.letterRowHeight, state.letterFont)}));
@@ -929,6 +937,8 @@
       const second = document.createElement("div");
       second.className = "row-flex";
       second.style.height = `${state.letterRowHeight + state.rowPadTop + state.rowPadBottom}px`;
+      second.style.paddingLeft = `${state.bodyRowPadX}px`;
+      second.style.paddingRight = `${state.bodyRowPadX}px`;
       second.appendChild(spacer(state.englishSecondSpacer, state.letterRowHeight));
       (state.shift ? "A S D F G H J K L" : "a s d f g h j k l").split(" ").forEach((label) => {
         second.appendChild(flexWeight({weight:1, el:key(label, "letter", state.letterRowHeight, state.letterFont)}));
@@ -961,6 +971,8 @@
       const second = document.createElement("div");
       second.className = "row-flex";
       second.style.height = `${state.cheonjiinRowHeight + state.rowPadTop + state.rowPadBottom}px`;
+      second.style.paddingLeft = `${state.bodyRowPadX}px`;
+      second.style.paddingRight = `${state.bodyRowPadX}px`;
       [["ㄱㅋ","ㄱ"],["ㄴㄹ","ㄴ"],["ㄷㅌ","ㄷ"],["⏎",""]].forEach(([main, sub], index) => {
         const el = index === 3 ? iconKey("⏎", "function", state.cheonjiinRowHeight) : frameKey(main, sub, state.cheonjiinRowHeight);
         second.appendChild(flexWeight({weight:1, el}));
@@ -970,6 +982,8 @@
       const third = document.createElement("div");
       third.className = "row-flex";
       third.style.height = `${state.cheonjiinRowHeight + state.rowPadTop + state.rowPadBottom}px`;
+      third.style.paddingLeft = `${state.bodyRowPadX}px`;
+      third.style.paddingRight = `${state.bodyRowPadX}px`;
       [["ㅂㅍ","ㅂ"],["ㅅㅎ","ㅅ"],["ㅈㅊ","ㅈ"],[".",""]].forEach(([main, sub], index) => {
         const el = index === 3 ? key(".", "letter", state.cheonjiinRowHeight, state.letterFont) : frameKey(main, sub, state.cheonjiinRowHeight);
         third.appendChild(flexWeight({weight:1, el}));
@@ -979,6 +993,8 @@
       const bottom = document.createElement("div");
       bottom.className = "bottom-row";
       bottom.style.height = `${state.bottomRowHeight + state.bottomPadTop + state.bottomPadBottom}px`;
+      bottom.style.paddingLeft = `${state.bodyRowPadX}px`;
+      bottom.style.paddingRight = `${state.bodyRowPadX}px`;
       bottom.appendChild(flexWeight({weight:1.4, el:key("!#1", "function", state.bottomRowHeight, state.functionFont)}));
       bottom.appendChild(flexWeight({weight:1.1, el:key("한/영", "function", state.bottomRowHeight, state.functionFont)}));
       bottom.appendChild(flexWeight({weight:3.2, el:key("space", "space", state.bottomRowHeight, state.spaceFont)}));
@@ -1052,7 +1068,7 @@
         toolbarHeight: 36, suggestionHeight: 36, langHeight: 36, formalHeight: 36,
         numberRowHeight: 38, letterRowHeight: 46, cheonjiinRowHeight: 46,
         symbolRowHeight: 46, symbolTopRowHeight: 52, bottomRowHeight: 46,
-        rowPadX: 4, rowPadTop: 4, rowPadBottom: 2, bottomPadTop: 4, bottomPadBottom: 4,
+        numberRowPadX: 4, bodyRowPadX: 2, rowPadTop: 4, rowPadBottom: 2, bottomPadTop: 4, bottomPadBottom: 4,
         keyGap: 4, dubeolSecondSpacer: 0.5, englishSecondSpacer: 0.5,
         shiftWeight: 1.5, deleteWeight: 1.5, modeWeight: 1.5, globeWeight: 1,
         spaceWeight: 5.4, enterWeight: 2.2, symbolDeleteWeight: 1.5, symbolEnterWeight: 1.5,
