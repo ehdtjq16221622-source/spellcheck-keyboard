@@ -370,7 +370,7 @@ object KeyboardThemeApplicator {
             button.stateListAnimator = null
             button.elevation = density * 1.0f
             updateHorizontalMargins(button, density)
-            val iconInset = (11f * density).toInt()
+            val iconInset = (9f * density).toInt()
             button.setPadding(iconInset, iconInset, iconInset, iconInset)
         }
 
