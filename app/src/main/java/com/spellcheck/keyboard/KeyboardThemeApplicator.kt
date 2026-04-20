@@ -416,7 +416,7 @@ object KeyboardThemeApplicator {
 
         fun styleRow(row: View?, heightDp: Float, padXDp: Float = 4f, padTopDp: Float = 5f, padBottomDp: Float = 5f) {
             row ?: return
-            row.layoutParams = row.layoutParams?.also { it.height = dp(heightDp) }
+            row.layoutParams = row.layoutParams?.also { it.height = dp(heightDp + padTopDp + padBottomDp) }
             row.setPaddingRelative(dp(padXDp), dp(padTopDp), dp(padXDp), dp(padBottomDp))
         }
 
@@ -446,6 +446,7 @@ object KeyboardThemeApplicator {
             val params = view.layoutParams
             if (params is LinearLayout.LayoutParams) {
                 params.weight = 2f
+                params.width = 0
                 view.layoutParams = params
             }
         }
