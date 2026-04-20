@@ -7,6 +7,7 @@ import android.graphics.BitmapFactory
 import android.graphics.BitmapShader
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.RenderEffect
@@ -37,6 +38,7 @@ import android.animation.AnimatorListenerAdapter
 import android.animation.ObjectAnimator
 import android.util.TypedValue
 import android.widget.TextView
+import android.view.WindowManager
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -421,6 +423,18 @@ class KeyboardService : InputMethodService() {
         }
     }
 
+    private fun applyImeWindowBackground(color: Int) {
+        val imeWindow = window.window ?: return
+        imeWindow.setBackgroundDrawable(ColorDrawable(color))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            imeWindow.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+            imeWindow.navigationBarColor = color
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                imeWindow.isNavigationBarContrastEnforced = false
+            }
+        }
+    }
+
     private fun applyTheme() {
         val theme = SettingsManager.keyboardTheme
         if (theme == "커스텀") {
@@ -432,6 +446,7 @@ class KeyboardService : InputMethodService() {
         clearAppliedBackgroundBitmap()
 
         val spec = builtInThemeSpec(theme)
+        applyImeWindowBackground(spec.background)
         keyboardView.setBackgroundColor(spec.background)
         keyboardBackgroundHost().setBackgroundColor(spec.background)
         applyContainerBackgrounds(spec.background, includeBody = true)
@@ -449,8 +464,10 @@ class KeyboardService : InputMethodService() {
         val path = SettingsManager.customImagePath
         if (path.isEmpty()) {
             clearAppliedBackgroundBitmap()
-            keyboardView.setBackgroundColor(Color.parseColor("#F9F9FE"))
-            keyboardBackgroundHost().setBackgroundColor(Color.parseColor("#F9F9FE"))
+            val fallbackColor = Color.parseColor("#F9F9FE")
+            applyImeWindowBackground(fallbackColor)
+            keyboardView.setBackgroundColor(fallbackColor)
+            keyboardBackgroundHost().setBackgroundColor(fallbackColor)
             return
         }
 
@@ -471,8 +488,10 @@ class KeyboardService : InputMethodService() {
             val bmp = decodeSampledBitmap(this, path, targetWidth * 2, targetHeight * 2)
             if (bmp == null) {
                 clearAppliedBackgroundBitmap()
-                keyboardView.setBackgroundColor(Color.parseColor("#F9F9FE"))
-                keyboardBackgroundHost().setBackgroundColor(Color.parseColor("#F9F9FE"))
+                val fallbackColor = Color.parseColor("#F9F9FE")
+                applyImeWindowBackground(fallbackColor)
+                keyboardView.setBackgroundColor(fallbackColor)
+                keyboardBackgroundHost().setBackgroundColor(fallbackColor)
                 return
             }
             cachedBitmapPath = path
@@ -536,7 +555,9 @@ class KeyboardService : InputMethodService() {
                             recycleBitmap(finalBitmap)
                             return@post
                         }
-                        keyboardView.setBackgroundColor(Color.parseColor("#F9F9FE"))
+                        val chromeColor = customThemeSpec(textColor, btnAlpha, SettingsManager.customChromeTheme).chromeBackground
+                        applyImeWindowBackground(chromeColor)
+                        keyboardView.setBackgroundColor(chromeColor)
                         setKeyboardBackgroundBitmap(finalBitmap)
                         applyContainerBackgrounds(Color.TRANSPARENT, includeBody = false)
                         val spec = customThemeSpec(textColor, btnAlpha, SettingsManager.customChromeTheme)
