@@ -4,6 +4,7 @@ import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.StateListDrawable
+import android.util.TypedValue
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
@@ -130,9 +131,9 @@ object KeyboardThemeApplicator {
             outlineText = Color.parseColor("#9D174D")
         )
         else -> Spec(
-            background = Color.parseColor("#F9F9FE"),
+            background = Color.parseColor("#E4E4E6"),
             chromeBackground = Color.parseColor("#EBEEF7"),
-            toolbarBackground = Color.parseColor("#F9F9FE"),
+            toolbarBackground = Color.parseColor("#E4E4E6"),
             toolbarStatusText = Color.parseColor("#848A95"),
             toolbarDivider = Color.parseColor("#EBEEF7"),
             toolbarChipFill = Color.parseColor("#EDF4FF"),
@@ -222,7 +223,7 @@ object KeyboardThemeApplicator {
         density: Float,
         fill: Int,
         pressedFill: Int,
-        radiusDp: Float = 6f,
+        radiusDp: Float = 5f,
         strokeColor: Int? = null,
         strokeWidthDp: Float = 0f
     ): StateListDrawable {
@@ -336,8 +337,10 @@ object KeyboardThemeApplicator {
             button.background = createKeyDrawable(density, fill, pressedFill)
             button.backgroundTintList = null
             button.setTextColor(textColor)
+            button.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
             button.stateListAnimator = null
-            button.elevation = density
+            button.elevation = density * 0.7f
+            updateHorizontalMargins(button, density)
         }
 
         fun styleImageButton(button: ImageButton, role: KeyRole) {
@@ -351,18 +354,26 @@ object KeyboardThemeApplicator {
             button.backgroundTintList = null
             button.imageTintList = ColorStateList.valueOf(iconTint)
             button.stateListAnimator = null
-            button.elevation = density
+            button.elevation = density * 0.7f
+            updateHorizontalMargins(button, density)
+            val iconInset = (11f * density).toInt()
+            button.setPadding(iconInset, iconInset, iconInset, iconInset)
         }
 
         fun styleFrameKey(frame: FrameLayout) {
             frame.background = createKeyDrawable(density, spec.letterFill, spec.letterPressedFill)
             frame.backgroundTintList = null
-            frame.elevation = density
+            frame.elevation = density * 0.7f
+            updateHorizontalMargins(frame, density)
             for (i in 0 until frame.childCount) {
                 val child = frame.getChildAt(i)
                 if (child is TextView) {
-                    if (child.textSize > 13f * density) child.setTextColor(spec.letterText)
-                    else child.setTextColor(spec.letterSubText)
+                    if (child.textSize > 13f * density) {
+                        child.setTextColor(spec.letterText)
+                        child.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+                    } else {
+                        child.setTextColor(spec.letterSubText)
+                    }
                 }
             }
         }
@@ -383,5 +394,17 @@ object KeyboardThemeApplicator {
             }
         }
         applyRecursively(rootView)
+    }
+
+    private fun updateHorizontalMargins(view: View, density: Float) {
+        val params = view.layoutParams
+        if (params is ViewGroup.MarginLayoutParams) {
+            if (params.marginStart > 0 || params.marginEnd > 0) {
+                val margin = (3f * density).toInt()
+                params.marginStart = margin
+                params.marginEnd = margin
+                view.layoutParams = params
+            }
+        }
     }
 }
