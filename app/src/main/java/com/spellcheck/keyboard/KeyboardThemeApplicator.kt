@@ -462,7 +462,7 @@ object KeyboardThemeApplicator {
             val view = rootView.findViewById<View>(id) ?: return@forEach
             val params = view.layoutParams
             if (params is LinearLayout.LayoutParams) {
-                params.weight = 2.2f
+                params.weight = 1.2f
                 params.width = 0
                 view.layoutParams = params
             }
