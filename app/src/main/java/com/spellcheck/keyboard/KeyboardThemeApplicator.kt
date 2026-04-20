@@ -2,6 +2,7 @@ package com.spellcheck.keyboard
 
 import android.content.res.ColorStateList
 import android.graphics.Color
+import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.StateListDrawable
 import android.util.TypedValue
@@ -12,8 +13,11 @@ import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.core.content.res.ResourcesCompat
 
 object KeyboardThemeApplicator {
+
+    private var cachedPretendard: Typeface? = null
 
     data class Spec(
         val background: Int,
@@ -295,6 +299,7 @@ object KeyboardThemeApplicator {
                 setTextColor(spec.toolbarChipText)
             }
         }
+        applyPretendard(rootView)
     }
 
     fun isDescendantOf(view: View, ancestorId: Int): Boolean {
@@ -394,6 +399,26 @@ object KeyboardThemeApplicator {
             }
         }
         applyRecursively(rootView)
+        applyPretendard(rootView)
+    }
+
+    private fun applyPretendard(rootView: View) {
+        val typeface = cachedPretendard
+            ?: ResourcesCompat.getFont(rootView.context, R.font.pretendard_regular)?.also {
+                cachedPretendard = it
+            }
+            ?: return
+
+        fun visit(view: View) {
+            if (view is TextView) {
+                view.typeface = typeface
+            }
+            if (view is ViewGroup) {
+                for (i in 0 until view.childCount) visit(view.getChildAt(i))
+            }
+        }
+
+        visit(rootView)
     }
 
     private fun updateHorizontalMargins(view: View, density: Float) {
