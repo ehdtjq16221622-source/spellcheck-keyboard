@@ -14,6 +14,7 @@ import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.res.ResourcesCompat
+import kotlin.math.roundToInt
 
 object KeyboardThemeApplicator {
 
@@ -332,6 +333,8 @@ object KeyboardThemeApplicator {
     }
 
     fun applyKeyStyles(rootView: View, spec: Spec, density: Float) {
+        applyLayoutMetrics(rootView, density)
+
         fun styleButton(button: Button, role: KeyRole) {
             val (fill, pressedFill, textColor) = when (role) {
                 KeyRole.LETTER -> Triple(spec.letterFill, spec.letterPressedFill, spec.letterText)
@@ -342,9 +345,15 @@ object KeyboardThemeApplicator {
             button.background = createKeyDrawable(density, fill, pressedFill)
             button.backgroundTintList = null
             button.setTextColor(textColor)
-            button.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+            val fontSize = when (role) {
+                KeyRole.LETTER -> 16f
+                KeyRole.NUMBER -> 14f
+                KeyRole.FUNCTION -> 14f
+                KeyRole.SPACE -> 10f
+            }
+            button.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSize)
             button.stateListAnimator = null
-            button.elevation = density * 0.7f
+            button.elevation = density * 1.0f
             updateHorizontalMargins(button, density)
         }
 
@@ -359,7 +368,7 @@ object KeyboardThemeApplicator {
             button.backgroundTintList = null
             button.imageTintList = ColorStateList.valueOf(iconTint)
             button.stateListAnimator = null
-            button.elevation = density * 0.7f
+            button.elevation = density * 1.0f
             updateHorizontalMargins(button, density)
             val iconInset = (11f * density).toInt()
             button.setPadding(iconInset, iconInset, iconInset, iconInset)
@@ -368,14 +377,14 @@ object KeyboardThemeApplicator {
         fun styleFrameKey(frame: FrameLayout) {
             frame.background = createKeyDrawable(density, spec.letterFill, spec.letterPressedFill)
             frame.backgroundTintList = null
-            frame.elevation = density * 0.7f
+            frame.elevation = density * 1.0f
             updateHorizontalMargins(frame, density)
             for (i in 0 until frame.childCount) {
                 val child = frame.getChildAt(i)
                 if (child is TextView) {
                     if (child.textSize > 13f * density) {
                         child.setTextColor(spec.letterText)
-                        child.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+                        child.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
                     } else {
                         child.setTextColor(spec.letterSubText)
                     }
@@ -402,6 +411,46 @@ object KeyboardThemeApplicator {
         applyPretendard(rootView)
     }
 
+    private fun applyLayoutMetrics(rootView: View, density: Float) {
+        fun dp(value: Float) = (value * density).roundToInt()
+
+        fun styleRow(row: View?, heightDp: Float, padXDp: Float = 4f, padTopDp: Float = 5f, padBottomDp: Float = 5f) {
+            row ?: return
+            row.layoutParams = row.layoutParams?.also { it.height = dp(heightDp) }
+            row.setPaddingRelative(dp(padXDp), dp(padTopDp), dp(padXDp), dp(padBottomDp))
+        }
+
+        fun styleContainerRows(containerId: Int, rowHeightDp: Float) {
+            val container = rootView.findViewById<ViewGroup>(containerId) ?: return
+            for (i in 0 until container.childCount) {
+                val child = container.getChildAt(i)
+                if (child is LinearLayout) {
+                    styleRow(child, rowHeightDp)
+                }
+            }
+        }
+
+        styleRow(rootView.findViewById(R.id.toolbar), 38f, padXDp = 8f, padTopDp = 0f, padBottomDp = 0f)
+        styleRow(rootView.findViewById(R.id.rowNumbers), 36f)
+        styleContainerRows(R.id.container_dubeolsik, 46f)
+        styleContainerRows(R.id.container_english, 46f)
+        styleContainerRows(R.id.container_symbols, 46f)
+        styleContainerRows(R.id.container_symbols2, 46f)
+        styleContainerRows(R.id.container_symbols3, 46f)
+        styleContainerRows(R.id.container_dubeol_sym1, 46f)
+        styleContainerRows(R.id.container_dubeol_sym2, 46f)
+        styleRow(rootView.findViewById(R.id.bottomRow), 46f)
+
+        listOf(R.id.key_shift, R.id.key_delete, R.id.key_en_shift, R.id.key_en_delete).forEach { id ->
+            val view = rootView.findViewById<View>(id) ?: return@forEach
+            val params = view.layoutParams
+            if (params is LinearLayout.LayoutParams) {
+                params.weight = 2f
+                view.layoutParams = params
+            }
+        }
+    }
+
     private fun applyPretendard(rootView: View) {
         val typeface = cachedPretendard
             ?: ResourcesCompat.getFont(rootView.context, R.font.pretendard_regular)?.also {
@@ -425,7 +474,7 @@ object KeyboardThemeApplicator {
         val params = view.layoutParams
         if (params is ViewGroup.MarginLayoutParams) {
             if (params.marginStart > 0 || params.marginEnd > 0) {
-                val margin = (3f * density).toInt()
+                val margin = (2.5f * density).roundToInt()
                 params.marginStart = margin
                 params.marginEnd = margin
                 view.layoutParams = params
