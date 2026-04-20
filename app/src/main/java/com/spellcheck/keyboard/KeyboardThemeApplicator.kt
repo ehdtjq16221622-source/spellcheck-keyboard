@@ -347,13 +347,13 @@ object KeyboardThemeApplicator {
             button.setTextColor(textColor)
             val fontSize = when (role) {
                 KeyRole.LETTER -> 16f
-                KeyRole.NUMBER -> 14f
-                KeyRole.FUNCTION -> 14f
-                KeyRole.SPACE -> 10f
+                KeyRole.NUMBER -> 15f
+                KeyRole.FUNCTION -> 15f
+                KeyRole.SPACE -> 12f
             }
             button.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSize)
             button.stateListAnimator = null
-            button.elevation = density * 1.0f
+            button.elevation = density * 1.25f
             updateHorizontalMargins(button, density)
         }
 
@@ -368,7 +368,7 @@ object KeyboardThemeApplicator {
             button.backgroundTintList = null
             button.imageTintList = ColorStateList.valueOf(iconTint)
             button.stateListAnimator = null
-            button.elevation = density * 1.0f
+            button.elevation = density * 1.25f
             updateHorizontalMargins(button, density)
             val iconInset = (9f * density).toInt()
             button.setPadding(iconInset, iconInset, iconInset, iconInset)
@@ -377,7 +377,7 @@ object KeyboardThemeApplicator {
         fun styleFrameKey(frame: FrameLayout) {
             frame.background = createKeyDrawable(density, spec.letterFill, spec.letterPressedFill)
             frame.backgroundTintList = null
-            frame.elevation = density * 1.0f
+            frame.elevation = density * 1.25f
             updateHorizontalMargins(frame, density)
             for (i in 0 until frame.childCount) {
                 val child = frame.getChildAt(i)
@@ -432,20 +432,37 @@ object KeyboardThemeApplicator {
 
         styleRow(rootView.findViewById(R.id.toolbar), 38f, padXDp = 8f, padTopDp = 0f, padBottomDp = 0f)
         styleRow(rootView.findViewById(R.id.rowNumbers), 36f)
-        styleContainerRows(R.id.container_dubeolsik, 46f)
-        styleContainerRows(R.id.container_english, 46f)
-        styleContainerRows(R.id.container_symbols, 46f)
-        styleContainerRows(R.id.container_symbols2, 46f)
-        styleContainerRows(R.id.container_symbols3, 46f)
-        styleContainerRows(R.id.container_dubeol_sym1, 46f)
-        styleContainerRows(R.id.container_dubeol_sym2, 46f)
-        styleRow(rootView.findViewById(R.id.bottomRow), 46f)
+        styleContainerRows(R.id.container_dubeolsik, 42f)
+        styleContainerRows(R.id.container_english, 42f)
+        styleContainerRows(R.id.container_symbols, 42f)
+        styleContainerRows(R.id.container_symbols2, 42f)
+        styleContainerRows(R.id.container_symbols3, 42f)
+        styleContainerRows(R.id.container_dubeol_sym1, 42f)
+        styleContainerRows(R.id.container_dubeol_sym2, 42f)
+        styleRow(rootView.findViewById(R.id.bottomRow), 42f)
+
+        fun setSpacerWeight(containerId: Int, rowIndex: Int, weight: Float) {
+            val container = rootView.findViewById<ViewGroup>(containerId) ?: return
+            val row = container.getChildAt(rowIndex) as? ViewGroup ?: return
+            val first = row.getChildAt(0)
+            val last = row.getChildAt(row.childCount - 1)
+            listOf(first, last).forEach { spacer ->
+                val params = spacer.layoutParams
+                if (params is LinearLayout.LayoutParams) {
+                    params.weight = weight
+                    spacer.layoutParams = params
+                }
+            }
+        }
+
+        setSpacerWeight(R.id.container_dubeolsik, 1, 0.7f)
+        setSpacerWeight(R.id.container_english, 1, 0.7f)
 
         listOf(R.id.key_shift, R.id.key_delete, R.id.key_en_shift, R.id.key_en_delete).forEach { id ->
             val view = rootView.findViewById<View>(id) ?: return@forEach
             val params = view.layoutParams
             if (params is LinearLayout.LayoutParams) {
-                params.weight = 2f
+                params.weight = 2.2f
                 params.width = 0
                 view.layoutParams = params
             }
