@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Kingboard Android Keyboard Live Preview</title>
   <style>
+    @font-face{
+      font-family:"PretendardPreview";
+      src:url("./app/src/main/res/font/pretendard_regular.otf") format("opentype");
+      font-weight:400;
+      font-style:normal;
+    }
     :root{
       --page-bg:#eef2f8;
       --panel-bg:rgba(255,255,255,.9);
@@ -12,27 +18,27 @@
       --screen:#dbe3ef;
       --composer:#f7f8fb;
       --composer-text:#6b7280;
-      --chrome:#ebeef7;
-      --toolbar:#f9f9fe;
-      --suggest:#d8e2ff;
+      --chrome:#f6f6f8;
+      --toolbar:#f6f6f8;
+      --suggest:#f6f6f8;
       --suggest-text:#004ea8;
       --letter:#ffffff;
       --letter-pressed:#eceff7;
       --number:#ffffff;
       --number-pressed:#eceff7;
-      --function:#e0e2e8;
-      --function-pressed:#d5d9e1;
+      --function:#c9c9cb;
+      --function-pressed:#bbbbbe;
       --space:#ffffff;
       --space-pressed:#eceff7;
       --selected:#0064ff;
       --selected-pressed:#0054d6;
       --outline-fill:transparent;
       --outline-stroke:#d3dae9;
-      --text:#2c333d;
+      --text:#363736;
       --subtext:#838a95;
-      --function-text:#2c333d;
-      --space-text:#8a8f99;
-      --toolbar-text:#848a95;
+      --function-text:#363736;
+      --space-text:#363736;
+      --toolbar-text:#363736;
       --chip-fill:#edf4ff;
       --chip-stroke:#66005bc1;
       --chip-text:#005bc1;
@@ -45,7 +51,7 @@
     body{
       margin:0;
       padding:24px;
-      font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+      font-family:"PretendardPreview",Inter,-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Noto Sans KR",sans-serif;
       background:radial-gradient(circle at top left,#f8fbff 0,#eef2f8 48%,#e6edf5 100%);
       color:#111827;
     }
@@ -568,11 +574,11 @@
 
     const presets = {
       white: {
-        screen:"#dbe3ef", toolbar:"#e4e4e6", chrome:"#ebeef7", suggest:"#d8e2ff", suggestText:"#004ea8",
+        screen:"#dbe3ef", toolbar:"#f6f6f8", chrome:"#f6f6f8", suggest:"#f6f6f8", suggestText:"#004ea8",
         letter:"#ffffff", letterPressed:"#eceff7", number:"#ffffff", numberPressed:"#eceff7",
-        function:"#e0e2e8", functionPressed:"#d5d9e1", space:"#ffffff", spacePressed:"#eceff7",
-        selected:"#0064ff", selectedPressed:"#0054d6", text:"#2c333d", subtext:"#838a95",
-        functionText:"#2c333d", spaceText:"#8a8f99", toolbarText:"#848a95",
+        function:"#c9c9cb", functionPressed:"#bbbbbe", space:"#ffffff", spacePressed:"#eceff7",
+        selected:"#0064ff", selectedPressed:"#0054d6", text:"#363736", subtext:"#838a95",
+        functionText:"#363736", spaceText:"#363736", toolbarText:"#363736",
         chipFill:"#edf4ff", chipStroke:"#97b8ef", chipText:"#005bc1"
       },
       black: {
