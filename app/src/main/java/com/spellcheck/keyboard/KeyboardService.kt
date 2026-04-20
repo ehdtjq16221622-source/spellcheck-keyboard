@@ -235,7 +235,13 @@ class KeyboardService : InputMethodService() {
             } else {
                 insets.systemWindowInsetBottom
             }
-            v.setPadding(0, 0, 0, bottom)
+            val body = v.findViewById<View>(R.id.keyboardBody)
+            v.setPadding(0, 0, 0, 0)
+            if (body != null) {
+                body.setPaddingRelative(body.paddingStart, body.paddingTop, body.paddingEnd, bottom)
+            } else {
+                v.setPadding(0, 0, 0, bottom)
+            }
             insets
         }
         applyAdaptiveKeyboardSizing()
