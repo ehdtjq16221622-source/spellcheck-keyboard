@@ -1,0 +1,1079 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kingboard Android Keyboard Live Preview</title>
+  <style>
+    :root{
+      --page-bg:#eef2f8;
+      --panel-bg:rgba(255,255,255,.9);
+      --panel-stroke:rgba(148,163,184,.18);
+      --screen:#dbe3ef;
+      --composer:#f7f8fb;
+      --composer-text:#6b7280;
+      --chrome:#ebeef7;
+      --toolbar:#f9f9fe;
+      --suggest:#d8e2ff;
+      --suggest-text:#004ea8;
+      --letter:#ffffff;
+      --letter-pressed:#eceff7;
+      --number:#ffffff;
+      --number-pressed:#eceff7;
+      --function:#e0e2e8;
+      --function-pressed:#d5d9e1;
+      --space:#ffffff;
+      --space-pressed:#eceff7;
+      --selected:#0064ff;
+      --selected-pressed:#0054d6;
+      --outline-fill:transparent;
+      --outline-stroke:#d3dae9;
+      --text:#2c333d;
+      --subtext:#838a95;
+      --function-text:#2c333d;
+      --space-text:#8a8f99;
+      --toolbar-text:#848a95;
+      --chip-fill:#edf4ff;
+      --chip-stroke:#66005bc1;
+      --chip-text:#005bc1;
+      --shadow:rgba(15,23,42,.12);
+      --radius:6px;
+      --shadow-y:1px;
+      --shadow-blur:2px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      padding:24px;
+      font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+      background:radial-gradient(circle at top left,#f8fbff 0,#eef2f8 48%,#e6edf5 100%);
+      color:#111827;
+    }
+    .page{
+      max-width:1600px;
+      margin:0 auto;
+      display:grid;
+      grid-template-columns:380px 1fr;
+      gap:24px;
+    }
+    .panel{
+      background:var(--panel-bg);
+      border:1px solid var(--panel-stroke);
+      border-radius:24px;
+      box-shadow:0 18px 40px rgba(15,23,42,.08);
+      backdrop-filter:blur(14px);
+    }
+    .sidebar{
+      padding:24px;
+      position:sticky;
+      top:18px;
+      align-self:start;
+      max-height:calc(100vh - 36px);
+      overflow:auto;
+    }
+    .title{margin:0 0 8px;font-size:24px;font-weight:800}
+    .sub{margin:0 0 16px;color:#667085;font-size:14px;line-height:1.6}
+    .section{margin-top:20px;padding-top:20px;border-top:1px solid rgba(148,163,184,.18)}
+    .section:first-of-type{margin-top:0;padding-top:0;border-top:0}
+    .section h2{margin:0 0 12px;font-size:13px;font-weight:800;color:#475467;letter-spacing:.04em;text-transform:uppercase}
+    .chips,.actions{display:flex;flex-wrap:wrap;gap:10px}
+    .chip,.btn{
+      appearance:none;
+      border:1px solid rgba(148,163,184,.24);
+      background:#fff;
+      color:#1f2937;
+      font:inherit;
+      font-size:14px;
+      font-weight:700;
+      padding:10px 14px;
+      border-radius:999px;
+      cursor:pointer;
+    }
+    .chip.active{background:#0064ff;color:#fff;border-color:#0064ff;box-shadow:0 10px 20px rgba(0,100,255,.24)}
+    .btn.dark{background:#111827;color:#fff;border-color:#111827;border-radius:14px}
+    .btn.blue{background:#0064ff;color:#fff;border-color:#0064ff;border-radius:14px}
+    .group{display:grid;gap:12px}
+    .control{display:grid;gap:6px}
+    .control label{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;color:#475467}
+    .value{font-weight:800;color:#111827}
+    input[type="range"]{width:100%}
+    .colors{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .color-card{
+      border:1px solid rgba(148,163,184,.16);
+      border-radius:16px;
+      padding:12px;
+      background:rgba(255,255,255,.64);
+      display:grid;
+      gap:8px;
+    }
+    .color-card span{font-size:12px;font-weight:700;color:#475467}
+    .color-card input{width:100%;height:40px;padding:0;border:0;background:transparent}
+    .content{display:grid;gap:20px}
+    .preview-panel{padding:24px}
+    .preview-head h2{margin:0;font-size:22px;font-weight:800}
+    .preview-head p{margin:6px 0 0;color:#667085;font-size:14px;line-height:1.55}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+    .box{
+      border-radius:24px;
+      padding:18px;
+      background:rgba(255,255,255,.64);
+      border:1px solid rgba(148,163,184,.18);
+      display:grid;
+      gap:14px;
+    }
+    .box h3{margin:0;font-size:16px;font-weight:800}
+    .box p{margin:4px 0 0;color:#667085;font-size:13px;line-height:1.45}
+    .phone{
+      width:100%;
+      aspect-ratio:412/915;
+      border-radius:30px;
+      overflow:hidden;
+      position:relative;
+      background:#0f131a;
+      border:1px solid rgba(255,255,255,.08);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+    }
+    .stage{
+      position:absolute;
+      inset:0;
+      display:flex;
+      flex-direction:column;
+      justify-content:flex-end;
+      background:var(--screen);
+    }
+    .header{
+      height:96px;
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      padding:16px 18px 12px;
+      color:#fff;
+      background:linear-gradient(180deg,#111827 0,#1f2937 100%);
+    }
+    .header .t{font-size:17px;font-weight:800}
+    .header .ic{display:flex;gap:16px;font-size:19px;color:rgba(255,255,255,.7)}
+    .thread{
+      flex:1;
+      display:grid;
+      align-content:end;
+      gap:12px;
+      padding:18px 16px 10px;
+      background:var(--screen);
+    }
+    .bubble{
+      max-width:78%;
+      border-radius:18px;
+      padding:11px 14px;
+      font-size:13px;
+      line-height:1.35;
+      font-weight:600;
+    }
+    .left{background:rgba(255,255,255,.12);color:rgba(255,255,255,.88)}
+    .right{justify-self:end;background:#ffe057;color:#111827}
+    .composer{
+      display:grid;
+      grid-template-columns:30px 1fr 30px 30px;
+      gap:10px;
+      align-items:center;
+      background:var(--composer);
+      padding:10px 12px;
+      border-top:1px solid rgba(17,24,39,.08);
+    }
+    .circle,.cicon{
+      width:28px;height:28px;border-radius:50%;
+      display:grid;place-items:center;font-size:18px;line-height:1;
+      background:rgba(17,24,39,.06);color:#475467;
+    }
+    .field{
+      height:34px;border-radius:18px;padding:0 14px;
+      display:flex;align-items:center;
+      border:1px solid rgba(17,24,39,.06);
+      color:var(--composer-text);
+      background:#fff;
+      font-size:14px;
+    }
+    .keyboard{
+      background:var(--toolbar);
+      border-top:1px solid rgba(255,255,255,.2);
+      display:grid;
+    }
+    .chrome-row{
+      display:flex;
+      align-items:center;
+      min-width:0;
+      padding:0 8px;
+      overflow:hidden;
+    }
+    .chrome-row.hidden{display:none}
+    .suggest-row{background:var(--suggest)}
+    .toolbar-row{background:var(--toolbar)}
+    .lang-row,.formal-row{background:var(--chrome)}
+    .toolbar-left{display:flex;align-items:center;gap:6px;min-width:0;flex:1}
+    .status-dot{font-size:8px;color:#22c55e}
+    .toolbar-label{font-size:9px;color:var(--toolbar-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .divider{width:1px;height:12px;background:var(--chip-stroke);margin:0 8px}
+    .chip-btn,.suggest-btn,.lang-btn,.formal-btn{
+      border-radius:6px;
+      border:1px solid transparent;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      white-space:nowrap;
+      box-shadow:0 var(--shadow-y) var(--shadow-blur) rgba(15,23,42,.06);
+    }
+    .chip-btn{
+      background:var(--chip-fill);
+      border-color:var(--chip-stroke);
+      color:var(--chip-text);
+      padding:0 10px;
+      font-size:10px;
+      height:24px;
+    }
+    .suggest-text{
+      flex:1;
+      min-width:0;
+      font-size:11px;
+      color:var(--suggest-text);
+      font-weight:700;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      padding-right:10px;
+    }
+    .suggest-btn{
+      background:rgba(0,78,168,.12);
+      color:var(--suggest-text);
+      padding:0 10px;
+      font-size:10px;
+      height:24px;
+      margin-right:2px;
+    }
+    .lang-list,.formal-list{display:flex;gap:4px;align-items:center}
+    .lang-btn,.formal-btn{
+      background:var(--letter);
+      color:var(--text);
+      padding:0 10px;
+      font-size:10px;
+      height:24px;
+    }
+    .lang-btn.active,.formal-btn.active{
+      background:var(--selected);
+      color:#fff;
+    }
+    .close-mini{
+      width:24px;height:24px;border-radius:6px;
+      display:grid;place-items:center;
+      color:#595f6a;font-size:11px;
+      margin-left:4px;
+    }
+    .body{
+      background:var(--toolbar);
+      padding-bottom:4px;
+      display:grid;
+      gap:0;
+    }
+    .row{
+      display:grid;
+      align-items:stretch;
+      padding-left:var(--row-pad-x);
+      padding-right:var(--row-pad-x);
+      padding-top:var(--row-pad-top);
+      padding-bottom:var(--row-pad-bottom);
+      gap:var(--key-gap);
+    }
+    .row.row-spaced{grid-template-columns:var(--row-cols)}
+    .row-flex{
+      display:flex;
+      align-items:stretch;
+      padding-left:var(--row-pad-x);
+      padding-right:var(--row-pad-x);
+      padding-top:var(--row-pad-top);
+      padding-bottom:var(--row-pad-bottom);
+      gap:var(--key-gap);
+    }
+    .key,.frame-key{
+      min-width:0;
+      border-radius:var(--radius);
+      color:var(--text);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      line-height:1;
+      box-shadow:0 var(--shadow-y) var(--shadow-blur) var(--shadow);
+      user-select:none;
+      position:relative;
+      overflow:hidden;
+    }
+    .key.letter{background:var(--letter);color:var(--text)}
+    .key.number{background:var(--number);color:var(--text)}
+    .key.function{background:var(--function);color:var(--function-text)}
+    .key.space{background:var(--space);color:var(--space-text)}
+    .key.selected{background:var(--selected);color:#fff}
+    .frame-key{background:var(--letter)}
+    .frame-main{
+      position:absolute;
+      top:8px;
+      left:50%;
+      transform:translateX(-50%);
+      font-size:var(--letter-font);
+      color:var(--text);
+    }
+    .frame-sub{
+      position:absolute;
+      right:8px;
+      bottom:6px;
+      font-size:var(--sub-font);
+      color:var(--subtext);
+    }
+    .bottom-row{
+      display:flex;
+      align-items:stretch;
+      padding-left:var(--row-pad-x);
+      padding-right:var(--row-pad-x);
+      padding-top:var(--bottom-pad-top);
+      padding-bottom:var(--bottom-pad-bottom);
+      gap:var(--key-gap);
+    }
+    .weight{display:flex;min-width:0}
+    .notes{padding:18px 20px}
+    .notes h3{margin:0 0 10px;font-size:16px;font-weight:800}
+    .notes ul{margin:0;padding-left:18px;color:#475467;line-height:1.7;font-size:14px}
+    @media (max-width:1200px){
+      .page{grid-template-columns:1fr}
+      .sidebar{position:static;max-height:none}
+    }
+    @media (max-width:900px){
+      body{padding:16px}
+      .grid{grid-template-columns:1fr}
+      .colors{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <aside class="panel sidebar">
+      <h1 class="title">Android Keyboard Live Preview</h1>
+      <p class="sub">Android 키보드 XML 구조를 기준으로 만든 조절용 HTML입니다. 숫자줄, 상단 chrome, 두벌식/영문/천지인/기호 페이지, 공통 하단줄 가중치까지 값별로 바로 바꿔볼 수 있습니다.</p>
+
+      <section class="section">
+        <h2>Theme</h2>
+        <div class="chips" id="themeTabs">
+          <button class="chip active" data-theme="white">화이트</button>
+          <button class="chip" data-theme="black">블랙</button>
+          <button class="chip" data-theme="pink">핑크</button>
+          <button class="chip" data-theme="custom">커스텀</button>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Layout</h2>
+        <div class="chips" id="layoutTabs">
+          <button class="chip active" data-layout="dubeol">한글</button>
+          <button class="chip" data-layout="english">영어</button>
+          <button class="chip" data-layout="cheonjiin">천지인</button>
+          <button class="chip" data-layout="symbol1">기호 1</button>
+          <button class="chip" data-layout="symbol2">기호 2</button>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Chrome</h2>
+        <div class="chips">
+          <button class="chip active" id="toggleToolbar">툴바 On</button>
+          <button class="chip" id="toggleSuggestion">교정줄 Off</button>
+          <button class="chip" id="toggleLang">언어줄 Off</button>
+          <button class="chip" id="toggleFormal">말투줄 Off</button>
+          <button class="chip" id="toggleShift">Shift Off</button>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Geometry</h2>
+        <div class="group" id="rangeControls"></div>
+      </section>
+
+      <section class="section">
+        <h2>Colors</h2>
+        <div class="colors" id="colorControls"></div>
+      </section>
+
+      <section class="section">
+        <h2>Actions</h2>
+        <div class="actions">
+          <button class="btn dark" id="resetWhite">화이트 기본값</button>
+          <button class="btn dark" id="resetBlack">블랙 기본값</button>
+          <button class="btn blue" id="copyValues">값 복사</button>
+        </div>
+      </section>
+    </aside>
+
+    <main class="content">
+      <section class="panel preview-panel">
+        <div class="preview-head">
+          <h2>Android Keyboard Preview</h2>
+          <p>실제 Android 키보드처럼 숫자줄, chrome rows, body container, bottom row를 분리해서 렌더링합니다. 수치 바꾸면 각 줄 높이, 간격, 가중치, 색상이 즉시 반영됩니다.</p>
+        </div>
+
+        <div class="grid">
+          <article class="box">
+            <div>
+              <h3>실시간 미리보기</h3>
+              <p>한글/영문/천지인/기호 페이지를 바꿔가며 바로 볼 수 있습니다.</p>
+            </div>
+            <div class="phone">
+              <div class="stage">
+                <div class="header">
+                  <div class="t">메모</div>
+                  <div class="ic"><span>⌕</span><span>⋯</span></div>
+                </div>
+                <div class="thread">
+                  <div class="bubble left">안드로이드 기본 키보드 느낌에<br>우리 기능이 붙은 버전</div>
+                  <div class="bubble right">숫자 바꿔가며 바로 확인해보기</div>
+                </div>
+                <div class="composer">
+                  <div class="circle">＋</div>
+                  <div class="field">메시지 입력</div>
+                  <div class="cicon">☺</div>
+                  <div class="cicon">🎤</div>
+                </div>
+                <div class="keyboard" id="keyboardRoot">
+                  <div class="chrome-row suggest-row hidden" id="suggestionRow">
+                    <div class="suggest-text">민감한 입력 칸에서는 AI 기능을 사용할 수 없습니다.</div>
+                    <div class="suggest-btn">광고 보기</div>
+                    <div class="suggest-btn">적용</div>
+                    <div class="close-mini">✕</div>
+                  </div>
+                  <div class="chrome-row lang-row hidden" id="langRow">
+                    <div class="lang-list">
+                      <div class="lang-btn">한국어</div>
+                      <div class="lang-btn active">영어</div>
+                      <div class="lang-btn">중국어</div>
+                      <div class="lang-btn">일본어</div>
+                      <div class="close-mini">✕</div>
+                    </div>
+                  </div>
+                  <div class="chrome-row toolbar-row" id="toolbarRow">
+                    <div class="toolbar-left">
+                      <div class="status-dot">●</div>
+                      <div class="toolbar-label">맞춤법 자동교정 ON</div>
+                    </div>
+                    <div class="chip-btn">번역</div>
+                    <div class="divider"></div>
+                    <div class="chip-btn">말투</div>
+                  </div>
+                  <div class="chrome-row formal-row hidden" id="formalRow">
+                    <div class="formal-list">
+                      <div class="formal-btn active">존댓말</div>
+                      <div class="formal-btn">격식체</div>
+                      <div class="formal-btn">사내 메시지</div>
+                      <div class="formal-btn">고객 안내</div>
+                      <div class="formal-btn">공문 안내</div>
+                      <div class="close-mini">✕</div>
+                    </div>
+                  </div>
+                  <div class="body" id="keyboardBody"></div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="box">
+            <div>
+              <h3>무엇을 조절할 수 있나</h3>
+              <p>실제 Android XML과 최대한 같은 축으로 수치를 나눴습니다.</p>
+            </div>
+            <div class="notes">
+              <ul>
+                <li>상단 chrome row 높이: toolbar / suggestion / lang / formal</li>
+                <li>숫자줄 높이, 일반 row 높이, 천지인 row 높이, 기호 row 높이</li>
+                <li>행별 상하 padding, 좌우 padding, 키 사이 간격</li>
+                <li>2줄 들여쓰기용 spacer weight, 3줄 shift/delete weight</li>
+                <li>하단줄 mode / globe / space / enter weight</li>
+                <li>글자 크기, 보조 글자 크기, 아이콘 크기, radius, shadow</li>
+                <li>화이트/블랙/핑크/커스텀 테마 색상</li>
+              </ul>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const controls = [
+      ["toolbarHeight", "툴바 높이", 24, 60, 1],
+      ["suggestionHeight", "교정줄 높이", 24, 60, 1],
+      ["langHeight", "언어줄 높이", 24, 60, 1],
+      ["formalHeight", "말투줄 높이", 24, 60, 1],
+      ["numberRowHeight", "숫자줄 높이", 24, 60, 1],
+      ["letterRowHeight", "한글/영어 row 높이", 32, 64, 1],
+      ["cheonjiinRowHeight", "천지인 row 높이", 32, 64, 1],
+      ["symbolRowHeight", "기호 row 높이", 32, 68, 1],
+      ["symbolTopRowHeight", "기호 첫 row 높이", 32, 68, 1],
+      ["bottomRowHeight", "공통 하단줄 높이", 32, 64, 1],
+      ["rowPadX", "행 좌우 padding", 0, 16, 1],
+      ["rowPadTop", "행 상단 padding", 0, 12, 1],
+      ["rowPadBottom", "행 하단 padding", 0, 12, 1],
+      ["bottomPadTop", "하단줄 상단 padding", 0, 12, 1],
+      ["bottomPadBottom", "하단줄 하단 padding", 0, 12, 1],
+      ["keyGap", "키 사이 간격", 0, 12, 1],
+      ["dubeolSecondSpacer", "2줄 들여쓰기 spacer", 0, 1.2, 0.05],
+      ["englishSecondSpacer", "영문 2줄 들여쓰기 spacer", 0, 1.2, 0.05],
+      ["shiftWeight", "shift 폭 가중치", 1, 2.4, 0.05],
+      ["deleteWeight", "delete 폭 가중치", 1, 2.4, 0.05],
+      ["modeWeight", "하단 !#1 가중치", 1, 2.4, 0.05],
+      ["globeWeight", "하단 globe 가중치", 0.8, 1.8, 0.05],
+      ["spaceWeight", "하단 space 가중치", 3, 6.5, 0.1],
+      ["enterWeight", "하단 enter 가중치", 1, 3.2, 0.05],
+      ["symbolDeleteWeight", "기호 delete 가중치", 1, 2.2, 0.05],
+      ["symbolEnterWeight", "기호 enter 가중치", 1, 2.2, 0.05],
+      ["symbolBottomSpaceWeight", "기호 하단 space 가중치", 2, 5, 0.1],
+      ["letterFont", "메인 글자 크기", 12, 28, 0.5],
+      ["numberFont", "숫자줄 글자 크기", 10, 24, 0.5],
+      ["functionFont", "기능키 글자 크기", 10, 24, 0.5],
+      ["spaceFont", "space 글자 크기", 8, 18, 0.5],
+      ["subFont", "천지인 보조 글자 크기", 8, 16, 0.5],
+      ["iconFont", "아이콘 크기", 14, 28, 0.5],
+      ["radius", "버튼 radius", 2, 16, 0.5],
+      ["shadowY", "그림자 y", 0, 4, 0.1],
+      ["shadowBlur", "그림자 blur", 0, 8, 0.1],
+      ["shadowOpacity", "그림자 opacity", 0, 0.4, 0.01]
+    ];
+
+    const colorKeys = [
+      ["screen", "대화 배경"],
+      ["toolbar", "키보드 배경"],
+      ["chrome", "chrome 배경"],
+      ["suggest", "교정줄 배경"],
+      ["suggestText", "교정줄 글자"],
+      ["letter", "일반키 배경"],
+      ["letterPressed", "일반키 눌림"],
+      ["number", "숫자줄 배경"],
+      ["function", "기능키 배경"],
+      ["functionPressed", "기능키 눌림"],
+      ["space", "space 배경"],
+      ["spacePressed", "space 눌림"],
+      ["selected", "선택 상태"],
+      ["text", "메인 글자"],
+      ["subtext", "보조 글자"],
+      ["functionText", "기능키 글자"],
+      ["spaceText", "space 글자"],
+      ["toolbarText", "툴바 글자"],
+      ["chipFill", "칩 배경"],
+      ["chipStroke", "칩 테두리"],
+      ["chipText", "칩 글자"]
+    ];
+
+    const presets = {
+      white: {
+        screen:"#dbe3ef", toolbar:"#f9f9fe", chrome:"#ebeef7", suggest:"#d8e2ff", suggestText:"#004ea8",
+        letter:"#ffffff", letterPressed:"#eceff7", number:"#ffffff", numberPressed:"#eceff7",
+        function:"#e0e2e8", functionPressed:"#d5d9e1", space:"#ffffff", spacePressed:"#eceff7",
+        selected:"#0064ff", selectedPressed:"#0054d6", text:"#2c333d", subtext:"#838a95",
+        functionText:"#2c333d", spaceText:"#8a8f99", toolbarText:"#848a95",
+        chipFill:"#edf4ff", chipStroke:"#97b8ef", chipText:"#005bc1"
+      },
+      black: {
+        screen:"#111827", toolbar:"#0a0a0a", chrome:"#020617", suggest:"#0f172a", suggestText:"#f8fafc",
+        letter:"#334155", letterPressed:"#293548", number:"#334155", numberPressed:"#293548",
+        function:"#1e293b", functionPressed:"#172132", space:"#334155", spacePressed:"#293548",
+        selected:"#2563eb", selectedPressed:"#1d4ed8", text:"#ffffff", subtext:"#94a3b8",
+        functionText:"#ffffff", spaceText:"#d4d8de", toolbarText:"#64748b",
+        chipFill:"#1f325f", chipStroke:"#31507f", chipText:"#60a5fa"
+      },
+      pink: {
+        screen:"#fdf2f8", toolbar:"#fff0f9", chrome:"#fce7f3", suggest:"#fbcfe8", suggestText:"#831843",
+        letter:"#ffffff", letterPressed:"#fde7f1", number:"#ffffff", numberPressed:"#fde7f1",
+        function:"#fbcfe8", functionPressed:"#f5b5d3", space:"#ffffff", spacePressed:"#fde7f1",
+        selected:"#db2777", selectedPressed:"#be185d", text:"#831843", subtext:"#be185d",
+        functionText:"#9d174d", spaceText:"#9d174d", toolbarText:"#be185d",
+        chipFill:"#fdf2f8", chipStroke:"#fbcfe8", chipText:"#9d174d"
+      }
+    };
+
+    const state = {
+      theme: "white",
+      layout: "dubeol",
+      showToolbar: true,
+      showSuggestion: false,
+      showLang: false,
+      showFormal: false,
+      shift: false,
+      toolbarHeight: 36,
+      suggestionHeight: 36,
+      langHeight: 36,
+      formalHeight: 36,
+      numberRowHeight: 38,
+      letterRowHeight: 46,
+      cheonjiinRowHeight: 46,
+      symbolRowHeight: 46,
+      symbolTopRowHeight: 52,
+      bottomRowHeight: 46,
+      rowPadX: 4,
+      rowPadTop: 4,
+      rowPadBottom: 2,
+      bottomPadTop: 4,
+      bottomPadBottom: 4,
+      keyGap: 4,
+      dubeolSecondSpacer: 0.5,
+      englishSecondSpacer: 0.5,
+      shiftWeight: 1.5,
+      deleteWeight: 1.5,
+      modeWeight: 1.5,
+      globeWeight: 1,
+      spaceWeight: 5.4,
+      enterWeight: 2.2,
+      symbolDeleteWeight: 1.5,
+      symbolEnterWeight: 1.5,
+      symbolBottomSpaceWeight: 4,
+      letterFont: 16,
+      numberFont: 15,
+      functionFont: 12,
+      spaceFont: 10,
+      subFont: 10,
+      iconFont: 18,
+      radius: 6,
+      shadowY: 1,
+      shadowBlur: 2,
+      shadowOpacity: 0.12,
+      ...presets.white
+    };
+
+    const $ = (q) => document.querySelector(q);
+    const $$ = (q) => Array.from(document.querySelectorAll(q));
+
+    function hex(v){ return v; }
+
+    function buildControls(){
+      const rangeRoot = $("#rangeControls");
+      controls.forEach(([key,label,min,max,step]) => {
+        const row = document.createElement("div");
+        row.className = "control";
+        row.innerHTML = `
+          <label for="${key}">${label}<span class="value" id="${key}Value"></span></label>
+          <input id="${key}" type="range" min="${min}" max="${max}" step="${step}">
+        `;
+        rangeRoot.appendChild(row);
+        row.querySelector("input").addEventListener("input", (e) => {
+          state[key] = Number(e.target.value);
+          render();
+        });
+      });
+
+      const colorRoot = $("#colorControls");
+      colorKeys.forEach(([key,label]) => {
+        const card = document.createElement("div");
+        card.className = "color-card";
+        card.innerHTML = `<span>${label}</span><input id="${key}" type="color">`;
+        colorRoot.appendChild(card);
+        card.querySelector("input").addEventListener("input", (e) => {
+          state[key] = e.target.value;
+          state.theme = "custom";
+          render();
+        });
+      });
+    }
+
+    function applyThemeVars(){
+      const root = document.documentElement.style;
+      root.setProperty("--screen", state.screen);
+      root.setProperty("--toolbar", state.toolbar);
+      root.setProperty("--chrome", state.chrome);
+      root.setProperty("--suggest", state.suggest);
+      root.setProperty("--suggest-text", state.suggestText);
+      root.setProperty("--letter", state.letter);
+      root.setProperty("--letter-pressed", state.letterPressed);
+      root.setProperty("--number", state.number);
+      root.setProperty("--number-pressed", state.numberPressed || state.number);
+      root.setProperty("--function", state.function);
+      root.setProperty("--function-pressed", state.functionPressed);
+      root.setProperty("--space", state.space);
+      root.setProperty("--space-pressed", state.spacePressed);
+      root.setProperty("--selected", state.selected);
+      root.setProperty("--selected-pressed", state.selectedPressed || state.selected);
+      root.setProperty("--text", state.text);
+      root.setProperty("--subtext", state.subtext);
+      root.setProperty("--function-text", state.functionText);
+      root.setProperty("--space-text", state.spaceText);
+      root.setProperty("--toolbar-text", state.toolbarText);
+      root.setProperty("--chip-fill", state.chipFill);
+      root.setProperty("--chip-stroke", state.chipStroke);
+      root.setProperty("--chip-text", state.chipText);
+      root.setProperty("--radius", `${state.radius}px`);
+      root.setProperty("--shadow-y", `${state.shadowY}px`);
+      root.setProperty("--shadow-blur", `${state.shadowBlur}px`);
+      root.setProperty("--shadow", `rgba(15,23,42,${state.shadowOpacity})`);
+      root.setProperty("--row-pad-x", `${state.rowPadX}px`);
+      root.setProperty("--row-pad-top", `${state.rowPadTop}px`);
+      root.setProperty("--row-pad-bottom", `${state.rowPadBottom}px`);
+      root.setProperty("--bottom-pad-top", `${state.bottomPadTop}px`);
+      root.setProperty("--bottom-pad-bottom", `${state.bottomPadBottom}px`);
+      root.setProperty("--key-gap", `${state.keyGap}px`);
+      root.setProperty("--letter-font", `${state.letterFont}px`);
+      root.setProperty("--number-font", `${state.numberFont}px`);
+      root.setProperty("--function-font", `${state.functionFont}px`);
+      root.setProperty("--space-font", `${state.spaceFont}px`);
+      root.setProperty("--sub-font", `${state.subFont}px`);
+      root.setProperty("--icon-font", `${state.iconFont}px`);
+    }
+
+    function applyUIState(){
+      $("#toolbarRow").classList.toggle("hidden", !state.showToolbar);
+      $("#suggestionRow").classList.toggle("hidden", !state.showSuggestion);
+      $("#langRow").classList.toggle("hidden", !state.showLang);
+      $("#formalRow").classList.toggle("hidden", !state.showFormal);
+      $("#toolbarRow").style.height = `${state.toolbarHeight}px`;
+      $("#suggestionRow").style.height = `${state.suggestionHeight}px`;
+      $("#langRow").style.height = `${state.langHeight}px`;
+      $("#formalRow").style.height = `${state.formalHeight}px`;
+
+      $("#toggleToolbar").classList.toggle("active", state.showToolbar);
+      $("#toggleToolbar").textContent = `툴바 ${state.showToolbar ? "On" : "Off"}`;
+      $("#toggleSuggestion").classList.toggle("active", state.showSuggestion);
+      $("#toggleSuggestion").textContent = `교정줄 ${state.showSuggestion ? "On" : "Off"}`;
+      $("#toggleLang").classList.toggle("active", state.showLang);
+      $("#toggleLang").textContent = `언어줄 ${state.showLang ? "On" : "Off"}`;
+      $("#toggleFormal").classList.toggle("active", state.showFormal);
+      $("#toggleFormal").textContent = `말투줄 ${state.showFormal ? "On" : "Off"}`;
+      $("#toggleShift").classList.toggle("active", state.shift);
+      $("#toggleShift").textContent = `Shift ${state.shift ? "On" : "Off"}`;
+      $$("#themeTabs .chip").forEach((el) => el.classList.toggle("active", el.dataset.theme === state.theme));
+      $$("#layoutTabs .chip").forEach((el) => el.classList.toggle("active", el.dataset.layout === state.layout));
+    }
+
+    function syncControlValues(){
+      controls.forEach(([key]) => {
+        const input = document.getElementById(key);
+        const out = document.getElementById(`${key}Value`);
+        if (!input || !out) return;
+        input.value = state[key];
+        out.textContent = typeof state[key] === "number" ? `${state[key]}` : String(state[key]);
+      });
+      colorKeys.forEach(([key]) => {
+        const input = document.getElementById(key);
+        if (input) input.value = hex(state[key]);
+      });
+    }
+
+    function flexWeight(item){
+      const wrap = document.createElement("div");
+      wrap.className = "weight";
+      wrap.style.flex = `${item.weight} 1 0`;
+      wrap.appendChild(item.el);
+      return wrap;
+    }
+
+    function key(label, role, height, fontSize){
+      const el = document.createElement("div");
+      el.className = `key ${role}`;
+      el.style.height = `${height}px`;
+      el.style.fontSize = `${fontSize}px`;
+      el.textContent = label;
+      return el;
+    }
+
+    function iconKey(icon, role, height){
+      return key(icon, role, height, state.iconFont);
+    }
+
+    function frameKey(main, sub, height){
+      const el = document.createElement("div");
+      el.className = "frame-key";
+      el.style.height = `${height}px`;
+      const t1 = document.createElement("div");
+      t1.className = "frame-main";
+      t1.textContent = main;
+      const t2 = document.createElement("div");
+      t2.className = "frame-sub";
+      t2.textContent = sub;
+      el.appendChild(t1);
+      el.appendChild(t2);
+      return el;
+    }
+
+    function row(columns, height, type, labels){
+      const el = document.createElement("div");
+      el.className = "row row-spaced";
+      el.style.height = `${height + state.rowPadTop + state.rowPadBottom}px`;
+      el.style.setProperty("--row-cols", columns);
+      labels.forEach((item) => el.appendChild(item));
+      return el;
+    }
+
+    function symbolRows(page){
+      const body = [];
+      if (page === 1) {
+        body.push(weightRow(
+          [1,1,1,1,1,1,state.symbolDeleteWeight],
+          ["!","?",".",",","(",")","⌫"],
+          state.symbolTopRowHeight,
+          ["letter","letter","letter","letter","letter","letter","function"]
+        ));
+        body.push(weightRow(
+          [1,1,1,1,1,1,state.symbolEnterWeight],
+          ["@",":",";","/","-","♡","⏎"],
+          state.symbolRowHeight,
+          ["letter","letter","letter","letter","letter","letter","function"]
+        ));
+        body.push(weightRow(
+          [1,1,1,1,1,1,1],
+          ["…","·","•","○","●","□","■"],
+          state.symbolRowHeight,
+          ["letter","letter","letter","letter","letter","letter","letter"]
+        ));
+        body.push(weightRow(
+          [1.5,1,1,1,1,1,1,1.5],
+          ["1/2","☆","★","♠","♣","♥","♪","⌫"],
+          state.symbolRowHeight,
+          ["function","letter","letter","letter","letter","letter","letter","function"]
+        ));
+        body.push(weightRow(
+          [1.5,1.5,1,state.symbolBottomSpaceWeight,1,1.5],
+          ["가","한/영","'","space",".","⏎"],
+          state.bottomRowHeight,
+          ["function","function","letter","space","letter","function"]
+        ));
+      } else {
+        body.push(numberRow(["1","2","3","4","5","6","7","8","9","0"]));
+        body.push(letterSimpleRow(["`","~","\\","|","{","}","€","£","¥","$"], state.symbolRowHeight));
+        body.push(letterSimpleRow(["°","•","○","●","□","■","♠","♡","◇","♣"], state.symbolRowHeight));
+        body.push(weightRow(
+          [1.5,1,1,1,1,1,1,1,1.5],
+          ["2/2","☆","▪","¤","«","»","¡","¿","⌫"],
+          state.symbolRowHeight,
+          ["function","letter","letter","letter","letter","letter","letter","letter","function"]
+        ));
+        body.push(weightRow(
+          [1.5,1.5,1,state.symbolBottomSpaceWeight,1,1.5],
+          ["가","한/영","'","space",".","⏎"],
+          state.bottomRowHeight,
+          ["function","function","letter","space","letter","function"]
+        ));
+      }
+      return body;
+    }
+
+    function numberRow(labels){
+      const cols = "repeat(10, minmax(0, 1fr))";
+      return row(cols, state.numberRowHeight, "numbers", labels.map((label) => key(label, "number", state.numberRowHeight, state.numberFont)));
+    }
+
+    function letterSimpleRow(labels, height){
+      const cols = `repeat(${labels.length}, minmax(0, 1fr))`;
+      return row(cols, height, "letters", labels.map((label) => key(label, "letter", height, state.letterFont)));
+    }
+
+    function weightRow(weights, labels, height, roles){
+      const container = document.createElement("div");
+      container.className = "row-flex";
+      container.style.height = `${height + state.rowPadTop + state.rowPadBottom}px`;
+      labels.forEach((label, i) => {
+        let el;
+        if (label === "space") {
+          el = key("공백", "space", height, state.spaceFont);
+        } else if (label === "⌫" || label === "⏎" || label === "⇧" || label === "🌐") {
+          el = iconKey(label, roles[i], height);
+        } else {
+          el = key(label, roles[i], height, roles[i] === "function" ? state.functionFont : state.letterFont);
+        }
+        container.appendChild(flexWeight({weight: weights[i], el}));
+      });
+      return container;
+    }
+
+    function spacer(weight, height){
+      const el = document.createElement("div");
+      el.style.flex = `${weight} 1 0`;
+      el.style.height = `${height}px`;
+      return el;
+    }
+
+    function dubeolRows(){
+      const rows = [];
+      rows.push(numberRow(["1","2","3","4","5","6","7","8","9","0"]));
+      rows.push(letterSimpleRow(["ㅂ","ㅈ","ㄷ","ㄱ","ㅅ","ㅛ","ㅕ","ㅑ","ㅐ","ㅔ"], state.letterRowHeight));
+
+      const second = document.createElement("div");
+      second.className = "row-flex";
+      second.style.height = `${state.letterRowHeight + state.rowPadTop + state.rowPadBottom}px`;
+      second.appendChild(spacer(state.dubeolSecondSpacer, state.letterRowHeight));
+      ["ㅁ","ㄴ","ㅇ","ㄹ","ㅎ","ㅗ","ㅓ","ㅏ","ㅣ"].forEach((label) => {
+        second.appendChild(flexWeight({weight:1, el:key(label, "letter", state.letterRowHeight, state.letterFont)}));
+      });
+      second.appendChild(spacer(state.dubeolSecondSpacer, state.letterRowHeight));
+      rows.push(second);
+
+      rows.push(weightRow(
+        [state.shiftWeight,1,1,1,1,1,1,state.deleteWeight],
+        [state.shift ? "⇪" : "⇧","ㅋ","ㅌ","ㅊ","ㅍ","ㅠ","ㅜ","ㅡ","⌫"],
+        state.letterRowHeight,
+        ["function","letter","letter","letter","letter","letter","letter","letter","function"]
+      ));
+
+      rows.push(weightRow(
+        [state.modeWeight,state.globeWeight,state.spaceWeight,state.enterWeight],
+        ["!#1","🌐","space","⏎"],
+        state.bottomRowHeight,
+        ["function","function","space","function"]
+      ));
+
+      return rows;
+    }
+
+    function englishRows(){
+      const rows = [];
+      rows.push(numberRow(["1","2","3","4","5","6","7","8","9","0"]));
+      rows.push(letterSimpleRow((state.shift ? "Q W E R T Y U I O P" : "q w e r t y u i o p").split(" "), state.letterRowHeight));
+
+      const second = document.createElement("div");
+      second.className = "row-flex";
+      second.style.height = `${state.letterRowHeight + state.rowPadTop + state.rowPadBottom}px`;
+      second.appendChild(spacer(state.englishSecondSpacer, state.letterRowHeight));
+      (state.shift ? "A S D F G H J K L" : "a s d f g h j k l").split(" ").forEach((label) => {
+        second.appendChild(flexWeight({weight:1, el:key(label, "letter", state.letterRowHeight, state.letterFont)}));
+      });
+      second.appendChild(spacer(state.englishSecondSpacer, state.letterRowHeight));
+      rows.push(second);
+
+      rows.push(weightRow(
+        [state.shiftWeight,1,1,1,1,1,1,state.deleteWeight],
+        [state.shift ? "⇪" : "⇧",...(state.shift ? "Z X C V B N M" : "z x c v b n m").split(" "),"⌫"],
+        state.letterRowHeight,
+        ["function","letter","letter","letter","letter","letter","letter","letter","function"]
+      ));
+
+      rows.push(weightRow(
+        [state.modeWeight,state.globeWeight,state.spaceWeight,state.enterWeight],
+        ["!#1","🌐","space","⏎"],
+        state.bottomRowHeight,
+        ["function","function","space","function"]
+      ));
+
+      return rows;
+    }
+
+    function cheonjiinRows(){
+      const rows = [];
+      rows.push(numberRow(["1","2","3","4","5","6","7","8","9","0"]));
+      rows.push(weightRow([1,1,1,1], ["ㅣ","ㆍ","ㅡ","⌫"], state.cheonjiinRowHeight, ["letter","letter","letter","function"]));
+
+      const second = document.createElement("div");
+      second.className = "row-flex";
+      second.style.height = `${state.cheonjiinRowHeight + state.rowPadTop + state.rowPadBottom}px`;
+      [["ㄱㅋ","ㄱ"],["ㄴㄹ","ㄴ"],["ㄷㅌ","ㄷ"],["⏎",""]].forEach(([main, sub], index) => {
+        const el = index === 3 ? iconKey("⏎", "function", state.cheonjiinRowHeight) : frameKey(main, sub, state.cheonjiinRowHeight);
+        second.appendChild(flexWeight({weight:1, el}));
+      });
+      rows.push(second);
+
+      const third = document.createElement("div");
+      third.className = "row-flex";
+      third.style.height = `${state.cheonjiinRowHeight + state.rowPadTop + state.rowPadBottom}px`;
+      [["ㅂㅍ","ㅂ"],["ㅅㅎ","ㅅ"],["ㅈㅊ","ㅈ"],[".",""]].forEach(([main, sub], index) => {
+        const el = index === 3 ? key(".", "letter", state.cheonjiinRowHeight, state.letterFont) : frameKey(main, sub, state.cheonjiinRowHeight);
+        third.appendChild(flexWeight({weight:1, el}));
+      });
+      rows.push(third);
+
+      const bottom = document.createElement("div");
+      bottom.className = "bottom-row";
+      bottom.style.height = `${state.bottomRowHeight + state.bottomPadTop + state.bottomPadBottom}px`;
+      bottom.appendChild(flexWeight({weight:1.4, el:key("!#1", "function", state.bottomRowHeight, state.functionFont)}));
+      bottom.appendChild(flexWeight({weight:1.1, el:key("한/영", "function", state.bottomRowHeight, state.functionFont)}));
+      bottom.appendChild(flexWeight({weight:3.2, el:key("space", "space", state.bottomRowHeight, state.spaceFont)}));
+      bottom.appendChild(flexWeight({weight:1.4, el:iconKey("⏎", "function", state.bottomRowHeight)}));
+      rows.push(bottom);
+
+      return rows;
+    }
+
+    function renderBody(){
+      const body = $("#keyboardBody");
+      body.innerHTML = "";
+      let rows = [];
+      if (state.layout === "dubeol") rows = dubeolRows();
+      if (state.layout === "english") rows = englishRows();
+      if (state.layout === "cheonjiin") rows = cheonjiinRows();
+      if (state.layout === "symbol1") rows = symbolRows(1);
+      if (state.layout === "symbol2") rows = symbolRows(2);
+      rows.forEach((r) => body.appendChild(r));
+    }
+
+    function setTheme(name){
+      state.theme = name;
+      if (name !== "custom") Object.assign(state, presets[name]);
+      render();
+    }
+
+    function copyValues(){
+      const data = {
+        theme: state.theme,
+        layout: state.layout,
+        showToolbar: state.showToolbar,
+        showSuggestion: state.showSuggestion,
+        showLang: state.showLang,
+        showFormal: state.showFormal,
+      };
+      controls.forEach(([key]) => data[key] = state[key]);
+      colorKeys.forEach(([key]) => data[key] = state[key]);
+      const text = JSON.stringify(data, null, 2);
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = $("#copyValues");
+        btn.textContent = "복사 완료";
+        setTimeout(() => btn.textContent = "값 복사", 1200);
+      }).catch(() => alert(text));
+    }
+
+    function render(){
+      applyThemeVars();
+      applyUIState();
+      syncControlValues();
+      renderBody();
+    }
+
+    buildControls();
+
+    $$("#themeTabs .chip").forEach((el) => el.addEventListener("click", () => setTheme(el.dataset.theme)));
+    $$("#layoutTabs .chip").forEach((el) => el.addEventListener("click", () => {
+      state.layout = el.dataset.layout;
+      render();
+    }));
+
+    $("#toggleToolbar").addEventListener("click", () => { state.showToolbar = !state.showToolbar; render(); });
+    $("#toggleSuggestion").addEventListener("click", () => { state.showSuggestion = !state.showSuggestion; render(); });
+    $("#toggleLang").addEventListener("click", () => { state.showLang = !state.showLang; render(); });
+    $("#toggleFormal").addEventListener("click", () => { state.showFormal = !state.showFormal; render(); });
+    $("#toggleShift").addEventListener("click", () => { state.shift = !state.shift; render(); });
+    $("#resetWhite").addEventListener("click", () => {
+      Object.assign(state, {
+        ...state,
+        theme: "white",
+        toolbarHeight: 36, suggestionHeight: 36, langHeight: 36, formalHeight: 36,
+        numberRowHeight: 38, letterRowHeight: 46, cheonjiinRowHeight: 46,
+        symbolRowHeight: 46, symbolTopRowHeight: 52, bottomRowHeight: 46,
+        rowPadX: 4, rowPadTop: 4, rowPadBottom: 2, bottomPadTop: 4, bottomPadBottom: 4,
+        keyGap: 4, dubeolSecondSpacer: 0.5, englishSecondSpacer: 0.5,
+        shiftWeight: 1.5, deleteWeight: 1.5, modeWeight: 1.5, globeWeight: 1,
+        spaceWeight: 5.4, enterWeight: 2.2, symbolDeleteWeight: 1.5, symbolEnterWeight: 1.5,
+        symbolBottomSpaceWeight: 4, letterFont: 16, numberFont: 15, functionFont: 12,
+        spaceFont: 10, subFont: 10, iconFont: 18, radius: 6, shadowY: 1, shadowBlur: 2,
+        shadowOpacity: 0.12, ...presets.white
+      });
+      render();
+    });
+    $("#resetBlack").addEventListener("click", () => {
+      Object.assign(state, {
+        ...state,
+        theme: "black",
+        shadowOpacity: 0.18,
+        ...presets.black
+      });
+      render();
+    });
+    $("#copyValues").addEventListener("click", copyValues);
+
+    render();
+  </script>
+</body>
+</html>
