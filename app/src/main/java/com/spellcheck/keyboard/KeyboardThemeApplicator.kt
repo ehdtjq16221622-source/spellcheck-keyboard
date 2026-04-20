@@ -431,7 +431,7 @@ object KeyboardThemeApplicator {
         }
 
         styleRow(rootView.findViewById(R.id.toolbar), 38f, padXDp = 8f, padTopDp = 0f, padBottomDp = 0f)
-        styleRow(rootView.findViewById(R.id.rowNumbers), 36f)
+        styleRow(rootView.findViewById(R.id.rowNumbers), 34f)
         styleContainerRows(R.id.container_dubeolsik, 42f)
         styleContainerRows(R.id.container_english, 42f)
         styleContainerRows(R.id.container_symbols, 42f)
