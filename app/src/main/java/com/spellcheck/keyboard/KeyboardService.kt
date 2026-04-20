@@ -433,6 +433,20 @@ class KeyboardService : InputMethodService() {
                 imeWindow.isNavigationBarContrastEnforced = false
             }
         }
+        val useDarkNavIcons = android.graphics.Color.luminance(color) > 0.5f
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            imeWindow.insetsController?.setSystemBarsAppearance(
+                if (useDarkNavIcons) android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS else 0,
+                android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
+            )
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            @Suppress("DEPRECATION")
+            imeWindow.decorView.systemUiVisibility = if (useDarkNavIcons) {
+                imeWindow.decorView.systemUiVisibility or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+            } else {
+                imeWindow.decorView.systemUiVisibility and View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR.inv()
+            }
+        }
     }
 
     private fun applyTheme() {
