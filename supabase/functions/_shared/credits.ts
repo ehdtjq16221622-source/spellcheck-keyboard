@@ -1,5 +1,15 @@
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+function wrapPgError(prefix: string, error: unknown): Error {
+  if (error instanceof Error) return error
+  if (error && typeof error === 'object') {
+    const e = error as { message?: string; code?: string; details?: string; hint?: string }
+    const parts = [e.message, e.code, e.details, e.hint].filter(Boolean)
+    return new Error(`${prefix}: ${parts.join(' | ') || JSON.stringify(error)}`)
+  }
+  return new Error(`${prefix}: ${String(error)}`)
+}
+
 export const DAILY_FREE = 50
 export const PLAN1_DAILY_CREDITS = 5000
 export const PLAN2_DAILY_CREDITS = 10000
@@ -47,7 +57,7 @@ async function ensureCreditRow(
     .eq('device_id', deviceId)
     .maybeSingle()
 
-  if (error) throw error
+  if (error) throw wrapPgError('device_credits select', error)
 
   if (!data) {
     const row: CreditRow = {
@@ -57,7 +67,7 @@ async function ensureCreditRow(
       last_reset_date: today,
     }
     const { error: insertError } = await supabase.from('device_credits').insert(row)
-    if (insertError) throw insertError
+    if (insertError) throw wrapPgError('device_credits insert', insertError)
     return row
   }
 
@@ -75,7 +85,7 @@ async function ensureCreditRow(
         updated_at: new Date().toISOString(),
       })
       .eq('device_id', deviceId)
-    if (updateError) throw updateError
+    if (updateError) throw wrapPgError('device_credits reset', updateError)
     return nextRow
   }
 
@@ -113,7 +123,7 @@ export async function checkAndDeduct(
       updated_at: new Date().toISOString(),
     })
     .eq('device_id', deviceId)
-  if (error) throw error
+  if (error) throw wrapPgError('device_credits deduct', error)
 
   return {
     allowed: true,
@@ -140,7 +150,7 @@ export async function addPaidCredits(
       updated_at: new Date().toISOString(),
     })
     .eq('device_id', deviceId)
-  if (error) throw error
+  if (error) throw wrapPgError('device_credits add_paid', error)
 
   return {
     freeCredits: row.free_credits,
