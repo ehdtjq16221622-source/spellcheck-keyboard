@@ -61,24 +61,7 @@ async function ensureCreditRow(
     return row
   }
 
-  if (data.last_reset_date < today) {
-    const nextRow: CreditRow = {
-      ...data,
-      free_credits: DAILY_FREE,
-      last_reset_date: today,
-    }
-    const { error: updateError } = await supabase
-      .from('device_credits')
-      .update({
-        free_credits: DAILY_FREE,
-        last_reset_date: today,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('device_id', deviceId)
-    if (updateError) throw updateError
-    return nextRow
-  }
-
+  // 자동 리셋 제거 — 출석 체크인 시에만 free_credits 지급
   return data
 }
 

@@ -35,14 +35,8 @@ Deno.serve(async (req: Request) => {
       )
     }
 
-    const result = await callGPT(
-      text,
-      formalMode,
-      includePunct,
-      includeDialect,
-      formalLevel,
-      formalIncludePunct
-    )
+    const normalizedLevel = formalLevel ?? ''
+    const result = await callGemini(text, formalMode, includePunct, includeDialect, normalizedLevel, formalIncludePunct)
 
     return new Response(
       JSON.stringify({
@@ -68,55 +62,46 @@ function buildSystemPrompt(
   formalLevel: string,
   formalIncludePunct: boolean
 ): string {
-  let system =
-    '당신은 한국어 맞춤법과 문장 다듬기를 돕는 편집기입니다. ' +
-    '입력된 문장의 의미는 유지하고, 결과 문장만 출력하세요. ' +
-    '설명, 머리말, 따옴표, 불릿, 메모를 붙이지 마세요.'
-
-  if (!includePunct) {
-    system += ' 마침표, 쉼표, 물음표 같은 구두점은 새로 손대지 마세요.'
-  }
-  if (!includeDialect) {
-    system += ' 사투리나 구어체를 억지로 표준어로 바꾸지 말고, 문법적으로 어색한 부분만 정리하세요.'
-  }
-
-  if (!formalMode) {
+  // 말투 교정 모드: 기본 프롬프트 없이 말투 프롬프트만 단독 사용
+  if (formalMode) {
+    const modePrompt: Record<string, string> = {
+      '스마트 교정':
+        '너는 한국어 문장을 상황에 맞게 다듬는 전문 편집자다. 원문의 문맥과 핵심 의도를 파악하고, 상대를 탓하거나 압박하는 표현과 무례한 뉘앙스는 완화하라. 관계를 해치거나 오해를 살 수 있는 내용은 포함하지 말고, 화자의 신뢰와 진정성이 잘 전달되도록 원문의 구성 요소를 파악하여 있는 것들만 자연스럽게 흘러가도록 재작성하라. 문맥상 필요하면 짧은 인삿말을 넣고, 최종 결과만 출력하라.',
+      '존댓말':
+        '적당한 존댓말로 바꾸세요. 지나치게 딱딱하지 않게, 자연스러운 -요체를 우선하세요. 결과 문장만 출력하세요.',
+      '격식체':
+        '격식 있는 문체로 바꾸세요. 공문이나 보고에 어울리는 -습니다체를 사용하세요. 결과 문장만 출력하세요.',
+      '비즈니스':
+        '사내 메시지 톤으로 바꾸세요. 업무용으로 자연스럽고 신뢰감 있게 정리하되, 길이를 억지로 줄이지 마세요. ' +
+        '자기 자신에게 높임말을 쓰지 말고, 원문에 없는 이름·직함·부서명·일정은 만들어내지 마세요. ' +
+        '과한 인사말이나 감사말은 꼭 필요할 때만 넣으세요. 결과 문장만 출력하세요.',
+      '고객 안내':
+        '고객 응대 톤으로 바꾸세요. 정중하고 분명하게 안내하되, 약한 공감 표현은 허용하세요. ' +
+        '예: 기다리셨죠, 불편을 드려 죄송합니다, 걱정되셨을 것 같습니다. ' +
+        '다만 과한 감정 표현이나 지나치게 AI 같은 문장은 피하세요. 결과 문장만 출력하세요.',
+      '학부모 안내':
+        '학부모 안내 톤으로 바꾸세요. 아이를 세심하게 챙겨주는 느낌이 들도록 따뜻하고 안정적인 표현을 사용하세요. ' +
+        '원문 의미 범위 안에서 배려와 관찰의 뉘앙스를 조금 확장해도 됩니다. ' +
+        '다만 원문에 없는 구체적 사실, 일정, 약속, 평가를 새로 만들지는 마세요. 결과 문장만 출력하세요.',
+      '소개팅체':
+        '당신은 한국어 맞춤법 교정기입니다. 맞춤법·띄어쓰기 오류만 수정하고, 문장 구조·단어·표현은 원문 그대로 유지하세요. 결과 문장만 출력하세요. 설명, 머리말, 따옴표, 불릿, 메모를 붙이지 마세요.',
+    }
+    let system = modePrompt[formalLevel] ?? '자연스럽고 읽기 좋은 존댓말 문장으로 다듬으세요. 결과 문장만 출력하세요.'
+    if (!formalIncludePunct) system += ' 구두점은 가능하면 유지하세요.'
     return system
   }
 
-  if (!formalIncludePunct) {
-    system += ' 말투를 바꾸더라도 구두점은 가능하면 유지하세요.'
-  }
-
-  const modePrompt: Record<string, string> = {
-    '적당한 존댓말':
-      '적당한 존댓말로 바꾸세요. 지나치게 딱딱하지 않게, 자연스러운 -요체를 우선하세요.',
-    '엄격 격식체':
-      '엄격한 격식체로 바꾸세요. 공문이나 보고에 어울리는 -습니다체를 사용하세요.',
-    '사내 메시지':
-      '사내 메시지 톤으로 바꾸세요. 업무용으로 자연스럽고 신뢰감 있게 정리하되, 길이를 억지로 줄이지 마세요. ' +
-      '자기 자신에게 높임말을 쓰지 말고, 원문에 없는 이름·직함·부서명·일정은 만들어내지 마세요. ' +
-      '과한 인사말이나 감사말은 꼭 필요할 때만 넣으세요.',
-    '고객 응대':
-      '고객 응대 톤으로 바꾸세요. 정중하고 분명하게 안내하되, 약한 공감 표현은 허용하세요. ' +
-      '예: 기다리셨죠, 불편을 드려 죄송합니다, 걱정되셨을 것 같습니다. ' +
-      '다만 과한 감정 표현이나 지나치게 AI 같은 문장은 피하세요.',
-    '학부모 안내':
-      '학부모 안내 톤으로 바꾸세요. 아이를 세심하게 챙겨주는 느낌이 들도록 따뜻하고 안정적인 표현을 사용하세요. ' +
-      '원문 의미 범위 안에서 배려와 관찰의 뉘앙스를 조금 확장해도 됩니다. ' +
-      '다만 원문에 없는 구체적 사실, 일정, 약속, 평가를 새로 만들지는 마세요.',
-    '소개팅':
-      '소개팅 이후 카톡처럼 자연스럽고 단정한 존댓말로 바꾸세요. ' +
-      '너무 문어체인 -습니다체보다 부드러운 -요체를 우선하세요. ' +
-      'ㅎㅎ, ... 같은 잡음은 정리하되 실제 채팅처럼 읽히게 유지하세요. ' +
-      '화자 관점을 뒤집지 말고, 원문에 없는 사과나 감정 고백을 새로 만들지 마세요.',
-  }
-
-  system += ` ${modePrompt[formalLevel] ?? '자연스럽고 읽기 좋은 한국어 문장으로 다듬으세요.'}`
+  // 맞춤법 교정 모드
+  let system =
+    '당신은 한국어 맞춤법 교정기입니다. ' +
+    '맞춤법·띄어쓰기 오류만 수정하고, 문장 구조·단어·표현은 원문 그대로 유지하세요. ' +
+    '결과 문장만 출력하세요. 설명, 머리말, 따옴표, 불릿, 메모를 붙이지 마세요.'
+  if (!includePunct) system += ' 마침표, 쉼표, 물음표 같은 구두점은 새로 손대지 마세요.'
+  if (!includeDialect) system += ' 사투리나 구어체를 억지로 표준어로 바꾸지 말고, 문법적으로 어색한 부분만 정리하세요.'
   return system
 }
 
-async function callGPT(
+async function callGemini(
   text: string,
   formalMode: boolean,
   includePunct: boolean,
@@ -132,24 +117,28 @@ async function callGPT(
     formalIncludePunct
   )
 
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+  const apiKey = Deno.env.get('GEMINI_API_KEY')!
+  const model = formalMode ? 'gemini-3.1-flash-lite' : 'gemini-2.5-flash-lite'
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
+
+  const res = await fetch(url, {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: text },
-      ],
-      temperature: 0.35,
-      max_tokens: 1000,
+      system_instruction: { parts: [{ text: system }] },
+      contents: [{ role: 'user', parts: [{ text }] }],
+      generationConfig: {
+        temperature: 0.3,
+        maxOutputTokens: 1000,
+        ...(formalMode ? { thinkingConfig: { thinkingLevel: 'medium' } } : {}),
+      },
     }),
   })
 
   const data = await res.json()
   if (!res.ok) throw new Error(data.error?.message ?? '교정 실패')
-  return data.choices[0].message.content.trim()
+  const content = data.candidates?.[0]?.content?.parts?.[0]?.text
+  if (!content) throw new Error(`빈 응답: ${JSON.stringify(data.candidates?.[0])}`)
+  return content.trim()
 }
+
