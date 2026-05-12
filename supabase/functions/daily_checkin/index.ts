@@ -18,10 +18,11 @@ Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
 
   try {
-    const { deviceId } = await req.json()
+    const { deviceId, statusOnly } = await req.json()
     if (!deviceId || typeof deviceId !== 'string') {
       return new Response(JSON.stringify({ error: '기기 정보를 확인할 수 없습니다.' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } })
     }
+    const isStatusOnly = statusOnly === true
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -38,6 +39,17 @@ Deno.serve(async (req: Request) => {
       .maybeSingle()
 
     if (error) throw error
+
+    if (isStatusOnly) {
+      const freeCredits = data?.free_credits ?? 0
+      const paidCredits = data?.paid_credits ?? 0
+      return new Response(JSON.stringify({
+        already_checked_in: data?.last_reset_date === today,
+        free_credits_remaining: freeCredits,
+        paid_credits_remaining: paidCredits,
+        credits_remaining: freeCredits + paidCredits,
+      }), { headers: { ...cors, 'Content-Type': 'application/json' } })
+    }
 
     // 이미 오늘 출석했는지 확인
     if (data && data.last_reset_date === today) {
