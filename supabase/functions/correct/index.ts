@@ -13,7 +13,7 @@ Deno.serve(async (req: Request) => {
     const {
       text,
       formalMode,
-      includePunct,
+      removePunct,
       includeDialect,
       formalLevel,
       formalIncludePunct,
@@ -36,7 +36,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const normalizedLevel = formalLevel ?? ''
-    const result = await callGemini(text, formalMode, includePunct, includeDialect, normalizedLevel, formalIncludePunct)
+    const result = await callGemini(text, formalMode, removePunct ?? false, includeDialect, normalizedLevel, formalIncludePunct)
 
     return new Response(
       JSON.stringify({
@@ -57,7 +57,7 @@ Deno.serve(async (req: Request) => {
 
 function buildSystemPrompt(
   formalMode: boolean,
-  includePunct: boolean,
+  removePunct: boolean,
   includeDialect: boolean,
   formalLevel: string,
   formalIncludePunct: boolean
@@ -84,7 +84,7 @@ function buildSystemPrompt(
         '원문 의미 범위 안에서 배려와 관찰의 뉘앙스를 조금 확장해도 됩니다. ' +
         '다만 원문에 없는 구체적 사실, 일정, 약속, 평가를 새로 만들지는 마세요. 결과 문장만 출력하세요.',
       '소개팅체':
-        '당신은 한국어 맞춤법 교정기입니다. 맞춤법·띄어쓰기 오류만 수정하고, 문장 구조·단어·표현은 원문 그대로 유지하세요. 결과 문장만 출력하세요. 설명, 머리말, 따옴표, 불릿, 메모를 붙이지 마세요.',
+        '당신은 한국어 맞춤법 교정기입니다. 맞춤법·띄어쓰기 오류만 수정하고, 문장 구조·단어·표현은 원문 그대로 유지하세요. ㅋㅋ, ㅎㅎ, ㅠㅠ, ㅜㅜ, ㅡㅡ 같은 감정 표현, 자모 반복, 인터넷체, 이모티콘성 표기는 원문에 있으면 오타로 보지 말고 삭제하지 말며 그대로 유지하세요. 결과 문장만 출력하세요. 설명, 머리말, 따옴표, 불릿, 메모를 붙이지 마세요.',
     }
     let system = modePrompt[formalLevel] ?? '자연스럽고 읽기 좋은 존댓말 문장으로 다듬으세요. 결과 문장만 출력하세요.'
     if (!formalIncludePunct) system += ' 구두점은 가능하면 유지하세요.'
@@ -94,9 +94,9 @@ function buildSystemPrompt(
   // 맞춤법 교정 모드
   let system =
     '당신은 한국어 맞춤법 교정기입니다. ' +
-    '맞춤법·띄어쓰기 오류만 수정하고, 문장 구조·단어·표현은 원문 그대로 유지하세요. ' +
+    '맞춤법·띄어쓰기 오류만 수정하고, 문장 구조·단어·표현은 원문 그대로 유지하세요. ㅋㅋ, ㅎㅎ, ㅠㅠ, ㅜㅜ, ㅡㅡ 같은 감정 표현, 자모 반복, 인터넷체, 이모티콘성 표기는 원문에 있으면 오타로 보지 말고 삭제하지 말며 그대로 유지하세요. ' +
     '결과 문장만 출력하세요. 설명, 머리말, 따옴표, 불릿, 메모를 붙이지 마세요.'
-  if (!includePunct) system += ' 마침표, 쉼표, 물음표 같은 구두점은 새로 손대지 마세요.'
+  if (removePunct) system += ' 마침표, 쉼표, 물음표 같은 구두점을 새로 추가하지 마세요. 원문에 있는 구두점은 그대로 유지하세요.'
   if (!includeDialect) system += ' 사투리나 구어체를 억지로 표준어로 바꾸지 말고, 문법적으로 어색한 부분만 정리하세요.'
   return system
 }
@@ -104,14 +104,14 @@ function buildSystemPrompt(
 async function callGemini(
   text: string,
   formalMode: boolean,
-  includePunct: boolean,
+  removePunct: boolean,
   includeDialect: boolean,
   formalLevel: string,
   formalIncludePunct: boolean
 ): Promise<string> {
   const system = buildSystemPrompt(
     formalMode,
-    includePunct,
+    removePunct,
     includeDialect,
     formalLevel,
     formalIncludePunct
@@ -141,4 +141,3 @@ async function callGemini(
   if (!content) throw new Error(`빈 응답: ${JSON.stringify(data.candidates?.[0])}`)
   return content.trim()
 }
-
