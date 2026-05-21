@@ -1,11 +1,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { DAILY_FREE } from '../_shared/credits.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
-
-const DAILY_FREE = 100
 
 function todayInKst(): string {
   return new Intl.DateTimeFormat('en-CA', {
@@ -89,6 +88,7 @@ Deno.serve(async (req: Request) => {
     }), { headers: { ...cors, 'Content-Type': 'application/json' } })
 
   } catch (e) {
+    console.error('[daily_checkin]', e)
     return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: { ...cors, 'Content-Type': 'application/json' } })
   }
 })

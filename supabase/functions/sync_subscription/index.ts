@@ -1,9 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import {
-  MONTHLY_SUBSCRIPTION_CREDITS,
-  getCredits,
-  setMonthlySubscriptionCredits,
-} from '../_shared/credits.ts'
+import { getCredits, setMonthlySubscriptionCredits } from '../_shared/credits.ts'
 import { verifySubscription } from '../_shared/google_play.ts'
 
 const cors = {
@@ -68,8 +64,14 @@ Deno.serve(async (req: Request) => {
     let monthlyGrantApplied = false
     const previousCycle = (existing as DeviceSubscriptionRow | null)?.last_cycle_key ?? null
     if (verified.active && verified.cycleKey && previousCycle !== verified.cycleKey) {
-      await setMonthlySubscriptionCredits(supabase, deviceId, MONTHLY_SUBSCRIPTION_CREDITS)
-      monthlyGrantApplied = true
+      const grant = await setMonthlySubscriptionCredits(
+        supabase,
+        deviceId,
+        undefined,
+        [purchaseToken, productId, verified.cycleKey].join(':'),
+        { productId, orderId: verified.orderId, cycleKey: verified.cycleKey }
+      )
+      monthlyGrantApplied = grant.applied
     }
 
     const row: DeviceSubscriptionRow = {
@@ -109,6 +111,7 @@ Deno.serve(async (req: Request) => {
       { headers: { ...cors, 'Content-Type': 'application/json' } }
     )
   } catch (e) {
+    console.error('[sync_subscription]', e)
     return new Response(
       JSON.stringify({ error: String(e) }),
       { status: 500, headers: { ...cors, 'Content-Type': 'application/json' } }

@@ -58,12 +58,25 @@ Deno.serve(async (req: Request) => {
     let monthlyGrantApplied = false
     const previousCycle = (existing as DeviceSubscriptionRow | null)?.last_cycle_key ?? null
     if (verified.active && verified.cycleKey && previousCycle !== verified.cycleKey) {
-      await setMonthlySubscriptionCredits(
+      const grantKey = [
+        verified.originalTransactionId ?? verified.orderId ?? deviceId,
+        productId,
+        verified.cycleKey,
+      ].join(':')
+      const grant = await setMonthlySubscriptionCredits(
         supabase,
         deviceId,
-        subscriptionCreditsForProduct(productId)
+        subscriptionCreditsForProduct(productId),
+        grantKey,
+        {
+          productId,
+          orderId: verified.orderId,
+          originalTransactionId: verified.originalTransactionId,
+          cycleKey: verified.cycleKey,
+          environment: verified.environment,
+        }
       )
-      monthlyGrantApplied = true
+      monthlyGrantApplied = grant.applied
     }
 
     const row: DeviceSubscriptionRow = {
@@ -107,6 +120,7 @@ Deno.serve(async (req: Request) => {
       { headers: { ...cors, 'Content-Type': 'application/json' } }
     )
   } catch (e) {
+    console.error('[sync_subscription_ios]', e)
     return new Response(
       JSON.stringify({ error: String(e) }),
       { status: 500, headers: { ...cors, 'Content-Type': 'application/json' } }

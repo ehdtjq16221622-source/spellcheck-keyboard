@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { checkAndDeduct } from '../_shared/credits.ts'
+import { checkAndDeduct, refundDeductedCredits } from '../_shared/credits.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -26,7 +26,13 @@ Deno.serve(async (req: Request) => {
       )
     }
 
-    const result = await callGPT(text, targetLang)
+    let result: string
+    try {
+      result = await callGPT(text, targetLang)
+    } catch (e) {
+      await refundDeductedCredits(supabase, deviceId, credit.deducted)
+      throw e
+    }
 
     return new Response(
       JSON.stringify({
@@ -38,6 +44,7 @@ Deno.serve(async (req: Request) => {
       { headers: { ...cors, 'Content-Type': 'application/json' } }
     )
   } catch (e) {
+    console.error('[translate]', e)
     return new Response(
       JSON.stringify({ error: String(e) }),
       { status: 500, headers: { ...cors, 'Content-Type': 'application/json' } }
