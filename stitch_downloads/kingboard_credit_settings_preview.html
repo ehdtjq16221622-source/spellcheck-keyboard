@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kingboard Credit Settings Preview</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@0..1"
+    />
+    <style>
+      :root {
+        --bg: #000000;
+        --panel: #1c1c1e;
+        --panel-soft: #2c2c2d;
+        --line: #39393b;
+        --text: #f5f5f7;
+        --subtext: #9b9ba1;
+        --blue: #0a84ff;
+        --blue-soft: rgba(10, 132, 255, 0.16);
+        --green: #34c759;
+        --orange: #ff9f0a;
+        --purple: #bf5af2;
+        --page: radial-gradient(circle at top left, #15161a 0%, #050505 60%, #000 100%);
+      }
+
+      body.light {
+        --bg: #ecebf0;
+        --panel: #f8f8f8;
+        --panel-soft: #ecebf0;
+        --line: #d8d7dd;
+        --text: #151518;
+        --subtext: #6d6d74;
+        --blue: #007aff;
+        --blue-soft: rgba(0, 122, 255, 0.12);
+        --green: #22c55e;
+        --orange: #ff9500;
+        --purple: #8b5cf6;
+        --page: linear-gradient(180deg, #fafafd 0%, #ecebf0 100%);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--page);
+        color: var(--text);
+        font-family:
+          "SF Pro Display",
+          "SF Pro Text",
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+      }
+
+      .wrap {
+        width: min(1560px, calc(100% - 48px));
+        margin: 0 auto;
+        padding: 36px 0 64px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 26px;
+      }
+
+      .title h1 {
+        margin: 0;
+        font-size: clamp(28px, 3.8vw, 40px);
+        letter-spacing: -0.04em;
+      }
+
+      .title p {
+        margin: 8px 0 0;
+        color: var(--subtext);
+        font-size: 15px;
+        line-height: 1.45;
+      }
+
+      .theme-switch {
+        display: inline-flex;
+        padding: 4px;
+        border-radius: 999px;
+        background: rgba(127, 127, 127, 0.14);
+        border: 1px solid rgba(127, 127, 127, 0.14);
+      }
+
+      .theme-switch button {
+        border: 0;
+        background: transparent;
+        color: var(--subtext);
+        padding: 10px 16px;
+        border-radius: 999px;
+        font: inherit;
+        cursor: pointer;
+      }
+
+      .theme-switch button.active {
+        background: var(--panel);
+        color: var(--text);
+      }
+
+      .legend {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(280px, 1fr));
+        gap: 18px;
+        margin-bottom: 24px;
+      }
+
+      .legend-card {
+        background: rgba(127, 127, 127, 0.08);
+        border: 1px solid rgba(127, 127, 127, 0.12);
+        border-radius: 22px;
+        padding: 18px 20px;
+      }
+
+      .legend-card h2 {
+        margin: 0 0 12px;
+        font-size: 18px;
+        letter-spacing: -0.03em;
+      }
+
+      .emoji-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .emoji-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 112px;
+        padding: 10px 12px;
+        border-radius: 16px;
+        background: var(--panel);
+        border: 1px solid var(--panel);
+      }
+
+      .emoji-chip .emoji {
+        width: 28px;
+        height: 28px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        background: var(--panel-soft);
+        color: var(--blue);
+        font-size: 17px;
+        font-weight: 700;
+        line-height: 1;
+      }
+
+      .ms {
+        font-family: "Material Symbols Rounded";
+        font-weight: normal;
+        font-style: normal;
+        font-size: 22px;
+        line-height: 1;
+        letter-spacing: normal;
+        text-transform: none;
+        display: inline-block;
+        white-space: nowrap;
+        word-wrap: normal;
+        direction: ltr;
+        -webkit-font-smoothing: antialiased;
+        font-variation-settings:
+          "FILL" 1,
+          "wght" 500,
+          "GRAD" 0,
+          "opsz" 24;
+      }
+
+      .emoji-chip strong {
+        font-size: 15px;
+        letter-spacing: -0.02em;
+      }
+
+      .emoji-chip span {
+        display: block;
+        margin-top: 2px;
+        color: var(--subtext);
+        font-size: 11px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(310px, 1fr));
+        gap: 24px;
+      }
+
+      .phone {
+        background: #000;
+        border-radius: 36px;
+        padding: 14px;
+        box-shadow:
+          0 18px 60px rgba(0, 0, 0, 0.28),
+          inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+      }
+
+      .screen {
+        min-height: 860px;
+        border-radius: 26px;
+        overflow: hidden;
+        background: var(--bg);
+      }
+
+      .status {
+        display: flex;
+        justify-content: space-between;
+        padding: 18px 20px 10px;
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .content {
+        padding: 12px 18px 28px;
+      }
+
+      .screen-title {
+        font-size: 32px;
+        font-weight: 700;
+        letter-spacing: -0.05em;
+        margin: 6px 0 24px;
+      }
+
+      .section-label {
+        color: var(--subtext);
+        font-size: 13px;
+        font-weight: 700;
+        margin: 20px 6px 10px;
+      }
+
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--panel);
+        border-radius: 22px;
+        overflow: hidden;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 16px;
+      }
+
+      .row + .row {
+        border-top: 1px solid var(--line);
+      }
+
+      .row.compact {
+        padding-top: 14px;
+        padding-bottom: 14px;
+      }
+
+      .meta {
+        min-width: 0;
+        flex: 1;
+      }
+
+      .meta strong {
+        display: block;
+        font-size: 16px;
+        line-height: 1.22;
+        letter-spacing: -0.02em;
+      }
+
+      .meta span {
+        display: block;
+        color: var(--subtext);
+        font-size: 13px;
+        margin-top: 4px;
+        line-height: 1.35;
+      }
+
+      .value {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text);
+        white-space: nowrap;
+      }
+
+      .value.sub {
+        color: var(--subtext);
+        font-weight: 500;
+      }
+
+      .credit-hero {
+        padding: 20px 18px 18px;
+      }
+
+      .credit-hero .eyebrow {
+        color: var(--subtext);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .credit-hero .big {
+        margin-top: 12px;
+        display: flex;
+        align-items: flex-end;
+        gap: 10px;
+      }
+
+      .credit-hero .emoji {
+        width: 34px;
+        height: 34px;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        background: var(--panel-soft);
+        color: var(--blue);
+        font-size: 21px;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 4px;
+      }
+
+      .credit-hero strong {
+        font-size: 44px;
+        line-height: 1;
+        letter-spacing: -0.06em;
+      }
+
+      .credit-hero .unit {
+        color: var(--subtext);
+        font-size: 14px;
+        margin-bottom: 5px;
+      }
+
+      .cost-line {
+        margin-top: 14px;
+        color: var(--subtext);
+        font-size: 13px;
+        line-height: 1.4;
+      }
+
+      .chev {
+        color: var(--subtext);
+        font-size: 20px;
+        line-height: 1;
+      }
+
+      .icon-box {
+        width: 42px;
+        height: 42px;
+        flex: 0 0 42px;
+        border-radius: 15px;
+        display: grid;
+        place-items: center;
+        font-size: 21px;
+      }
+
+      .mini-card {
+        background: var(--panel-soft);
+        border-radius: 18px;
+        padding: 14px 16px;
+      }
+
+      .mini-card + .mini-card {
+        margin-top: 12px;
+      }
+
+      .blue {
+        background: var(--blue-soft);
+        color: var(--blue);
+      }
+
+      .green {
+        background: rgba(52, 199, 89, 0.14);
+        color: var(--green);
+      }
+
+      .orange {
+        background: rgba(255, 159, 10, 0.14);
+        color: var(--orange);
+      }
+
+      .purple {
+        background: rgba(191, 90, 242, 0.14);
+        color: var(--purple);
+      }
+
+      .summary-box {
+        margin: 16px;
+        padding: 16px;
+        background: var(--panel-soft);
+        border-radius: 18px;
+      }
+
+      .summary-box .headline {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 12px;
+        margin-bottom: 10px;
+      }
+
+      .summary-box .headline strong {
+        font-size: 18px;
+        letter-spacing: -0.03em;
+      }
+
+      .summary-box .headline span {
+        color: var(--blue);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .list-item {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        color: var(--subtext);
+        font-size: 13px;
+      }
+
+      .list-item strong {
+        color: var(--text);
+        font-size: 14px;
+      }
+
+      .sheet {
+        margin: 16px 16px 0;
+        padding: 10px 12px 12px;
+        background: var(--panel-soft);
+        border-radius: 22px 22px 0 0;
+      }
+
+      .grabber {
+        width: 42px;
+        height: 5px;
+        border-radius: 999px;
+        background: rgba(127, 127, 127, 0.4);
+        margin: 2px auto 14px;
+      }
+
+      .sheet h3 {
+        margin: 0 0 12px;
+        font-size: 22px;
+        letter-spacing: -0.04em;
+      }
+
+      .plan-card {
+        background: var(--panel-soft);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 16px;
+      }
+
+      .plan-card + .plan-card {
+        margin-top: 12px;
+      }
+
+      .plan-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: flex-start;
+      }
+
+      .plan-name {
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+      }
+
+      .plan-desc {
+        margin-top: 5px;
+        color: var(--subtext);
+        font-size: 13px;
+      }
+
+      .plan-day {
+        margin-top: 6px;
+        color: var(--blue);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .premium-card {
+        background:
+          linear-gradient(135deg, rgba(191, 90, 242, 0.16), rgba(10, 132, 255, 0.12) 52%, rgba(48, 209, 88, 0.12)),
+          var(--panel);
+        border: 1px solid rgba(10, 132, 255, 0.28);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+      }
+
+      .premium-name {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .discount-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #a855f7, #22c55e);
+        color: white;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+      }
+
+      .plan-price {
+        text-align: right;
+        font-size: 16px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      .plan-credits {
+        margin-top: 14px;
+        padding-top: 14px;
+        border-top: 1px solid var(--line);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 11px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .badge.on {
+        background: rgba(52, 199, 89, 0.14);
+        color: var(--green);
+      }
+
+      .badge.off {
+        background: var(--blue-soft);
+        color: var(--blue);
+      }
+
+      .note {
+        margin-top: 28px;
+        padding: 18px 20px;
+        background: rgba(127, 127, 127, 0.08);
+        border: 1px solid rgba(127, 127, 127, 0.12);
+        border-radius: 20px;
+      }
+
+      .note strong {
+        display: block;
+        font-size: 15px;
+        margin-bottom: 8px;
+      }
+
+      .note p {
+        margin: 0;
+        color: var(--subtext);
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
+      @media (max-width: 1320px) {
+        .grid {
+          grid-template-columns: repeat(2, minmax(310px, 1fr));
+        }
+      }
+
+      @media (max-width: 980px) {
+        .wrap {
+          width: min(100% - 24px, 720px);
+          padding-top: 22px;
+        }
+
+        .topbar {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .legend,
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="topbar">
+        <div class="title">
+          <h1>Kingboard 크레딧 구조 시안</h1>
+          <p>
+            메인 설정에서는 총 크레딧만 짧게 보여주고, <strong>크레딧 관리하기</strong>에서
+            무료 크레딧과 구독 정보를 보는 흐름으로 정리한 버전.
+          </p>
+        </div>
+        <div class="theme-switch">
+          <button class="active" data-theme="dark">블랙</button>
+          <button data-theme="light">화이트</button>
+        </div>
+      </div>
+
+      <div class="legend">
+        <div class="legend-card">
+          <h2>총 크레딧 아이콘 2안</h2>
+          <div class="emoji-grid">
+            <div class="emoji-chip"><div class="emoji"><span class="ms">toll</span></div><div><strong>toll</strong><span>A안, 가장 코인 느낌</span></div></div>
+            <div class="emoji-chip"><div class="emoji"><span class="ms">monetization_on</span></div><div><strong>monetization_on</strong><span>B안, 더 익숙한 머니 느낌</span></div></div>
+          </div>
+        </div>
+
+        <div class="legend-card">
+          <h2>출석 체크 아이콘 후보</h2>
+          <div class="emoji-grid">
+            <div class="emoji-chip"><div class="emoji"><span class="ms">task_alt</span></div><div><strong>task_alt</strong><span>최종 추천</span></div></div>
+            <div class="emoji-chip"><div class="emoji"><span class="ms">event_available</span></div><div><strong>event_available</strong><span>출석 의미 명확</span></div></div>
+            <div class="emoji-chip"><div class="emoji"><span class="ms">check_circle</span></div><div><strong>check_circle</strong><span>가장 안정적</span></div></div>
+            <div class="emoji-chip"><div class="emoji"><span class="ms">fact_check</span></div><div><strong>fact_check</strong><span>기록 느낌</span></div></div>
+            <div class="emoji-chip"><div class="emoji"><span class="ms">calendar_today</span></div><div><strong>calendar_today</strong><span>달력형</span></div></div>
+            <div class="emoji-chip"><div class="emoji"><span class="ms">done_all</span></div><div><strong>done_all</strong><span>자동 완료 느낌</span></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="phone">
+          <div class="screen">
+            <div class="status">
+              <span>9:41</span>
+              <span>5G 100%</span>
+            </div>
+            <div class="content">
+              <div class="screen-title">설정</div>
+
+              <div class="section-label">내 크레딧</div>
+              <div class="card">
+                <div class="credit-hero">
+                  <div class="eyebrow">현재 사용 가능</div>
+                  <div class="big">
+                    <div class="emoji"><span class="ms">toll</span></div>
+                    <strong>1,240</strong>
+                    <div class="unit">credits</div>
+                  </div>
+                  <div class="cost-line">교정 10 · 번역 20 · 말투 30 크레딧 소모</div>
+                </div>
+                <div class="row">
+                  <div class="meta">
+                    <strong>크레딧 관리하기</strong>
+                    <span>출석 체크, 광고 충전, 구독 관리</span>
+                  </div>
+                  <div class="chev">&gt;</div>
+                </div>
+              </div>
+
+              <div class="section-label">설정</div>
+              <div class="card">
+                <div class="row compact">
+                  <div class="meta">
+                    <strong>시작하기</strong>
+                    <span>키보드 활성화 방법</span>
+                  </div>
+                  <div class="chev">&gt;</div>
+                </div>
+                <div class="row compact">
+                  <div class="meta">
+                    <strong>키보드 설정</strong>
+                    <span>테마, 진동, 소리, 팝업</span>
+                  </div>
+                  <div class="chev">&gt;</div>
+                </div>
+                <div class="row compact">
+                  <div class="meta">
+                    <strong>교정 설정</strong>
+                    <span>맞춤법, 말투, 번역 옵션</span>
+                  </div>
+                  <div class="chev">&gt;</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="phone">
+          <div class="screen">
+            <div class="status">
+              <span>9:41</span>
+              <span>5G 100%</span>
+            </div>
+            <div class="content">
+              <div class="screen-title">크레딧 관리하기</div>
+
+              <div class="section-label">무료 크레딧</div>
+              <div class="card">
+                <div class="row">
+                  <div class="icon-box blue"><span class="ms">task_alt</span></div>
+                  <div class="meta">
+                    <strong>자동 출석 체크</strong>
+                  </div>
+                  <div class="value">+100</div>
+                </div>
+                <div class="row">
+                  <div class="icon-box blue"><span class="ms">play_circle</span></div>
+                  <div class="meta">
+                    <strong>광고 보고 무료 충전</strong>
+                  </div>
+                  <div class="value">+200</div>
+                </div>
+              </div>
+
+              <div class="section-label">플랜 보기</div>
+              <div class="card" style="padding: 16px">
+                <div class="plan-card">
+                  <div class="plan-top">
+                    <div>
+                      <div class="plan-name">베이직</div>
+                      <div class="plan-desc">1개월 자동 갱신 구독</div>
+                      <div class="plan-day">하루 약 40원 소모</div>
+                    </div>
+                    <div class="plan-price">₩1,100 / 월</div>
+                  </div>
+                  <div class="plan-credits">
+                    <div>
+                      <strong>월 4,000 크레딧</strong>
+                      <div class="plan-desc">맞춤법 교정, 번역, 말투 변경 기능에 사용</div>
+                    </div>
+                    <div class="badge off">구독하기</div>
+                  </div>
+                </div>
+
+                <div class="plan-card premium-card">
+                  <div class="plan-top">
+                    <div>
+                      <div class="plan-name premium-name">프리미엄 <span class="discount-badge">11% 할인</span></div>
+                      <div class="plan-desc">1개월 자동 갱신 구독</div>
+                      <div class="plan-day">하루 약 70원 소모</div>
+                    </div>
+                    <div class="plan-price">₩2,200 / 월</div>
+                  </div>
+                  <div class="plan-credits">
+                    <div>
+                      <strong>월 9,000 크레딧</strong>
+                      <div class="plan-desc">맞춤법 교정, 번역, 말투 변경 기능에 사용</div>
+                    </div>
+                    <div class="badge on">프리미엄 구독 중</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="section-label">구독 관리</div>
+              <div class="card">
+                <div class="row">
+                  <div class="meta">
+                    <strong>구독 설정</strong>
+                    <span>App Store 구독 설정으로 이동</span>
+                  </div>
+                  <div class="chev">&gt;</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="phone">
+          <div class="screen">
+            <div class="status">
+              <span>9:41</span>
+              <span>5G 100%</span>
+            </div>
+            <div class="content">
+              <div class="screen-title">크레딧 관리하기</div>
+
+              <div class="section-label">무료 크레딧</div>
+              <div class="card">
+                <div class="row">
+                  <div class="icon-box blue"><span class="ms">task_alt</span></div>
+                  <div class="meta">
+                    <strong>자동 출석 체크</strong>
+                  </div>
+                  <div class="value">+100</div>
+                </div>
+                <div class="row">
+                  <div class="icon-box blue"><span class="ms">play_circle</span></div>
+                  <div class="meta">
+                    <strong>광고 보고 무료 충전</strong>
+                  </div>
+                  <div class="value">+200</div>
+                </div>
+              </div>
+
+              <div class="section-label">플랜 보기</div>
+              <div class="card" style="padding: 16px">
+                <div class="plan-card">
+                  <div class="plan-top">
+                    <div>
+                      <div class="plan-name">베이직</div>
+                      <div class="plan-desc">1개월 자동 갱신 구독</div>
+                      <div class="plan-day">하루 약 40원 소모</div>
+                    </div>
+                    <div class="plan-price">₩1,100 / 월</div>
+                  </div>
+                  <div class="plan-credits">
+                    <div>
+                      <strong>월 4,000 크레딧</strong>
+                      <div class="plan-desc">맞춤법 교정, 번역, 말투 변경 기능에 사용</div>
+                    </div>
+                    <div class="badge off">구독하기</div>
+                  </div>
+                </div>
+
+                <div class="plan-card premium-card">
+                  <div class="plan-top">
+                    <div>
+                      <div class="plan-name premium-name">프리미엄 <span class="discount-badge">11% 할인</span></div>
+                      <div class="plan-desc">1개월 자동 갱신 구독</div>
+                      <div class="plan-day">하루 약 70원 소모</div>
+                    </div>
+                    <div class="plan-price">₩2,200 / 월</div>
+                  </div>
+                  <div class="plan-credits">
+                    <div>
+                      <strong>월 9,000 크레딧</strong>
+                      <div class="plan-desc">맞춤법 교정, 번역, 말투 변경 기능에 사용</div>
+                    </div>
+                    <div class="badge off">구독하기</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="section-label">구독 관리</div>
+              <div class="card">
+                <div class="row">
+                  <div class="meta">
+                    <strong>구독 설정</strong>
+                    <span>App Store 구독 설정으로 이동</span>
+                  </div>
+                  <div class="chev">&gt;</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="phone">
+          <div class="screen">
+            <div class="status">
+              <span>9:41</span>
+              <span>5G 100%</span>
+            </div>
+            <div class="content">
+              <div class="screen-title">설정</div>
+
+              <div class="section-label">내 크레딧</div>
+              <div class="card">
+                <div class="credit-hero">
+                  <div class="eyebrow">현재 사용 가능</div>
+                  <div class="big">
+                    <div class="emoji"><span class="ms">monetization_on</span></div>
+                    <strong>1,240</strong>
+                    <div class="unit">credits</div>
+                  </div>
+                  <div class="cost-line">교정 10 · 번역 20 · 말투 30 크레딧 소모</div>
+                </div>
+                <div class="row">
+                  <div class="meta">
+                    <strong>크레딧 관리하기</strong>
+                    <span>출석 체크, 광고 충전, 구독 관리</span>
+                  </div>
+                  <div class="chev">&gt;</div>
+                </div>
+              </div>
+
+              <div class="note">
+                <strong>아이콘 B안</strong>
+                <p>
+                  `toll`보다 조금 더 익숙한 머니/포인트 느낌을 주는 버전. 총 크레딧 카드만 비교하려고
+                  따로 빼둔 화면이야.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const buttons = document.querySelectorAll("[data-theme]");
+      buttons.forEach((button) => {
+        button.addEventListener("click", () => {
+          document.body.classList.toggle("light", button.dataset.theme === "light");
+          buttons.forEach((item) => item.classList.remove("active"));
+          button.classList.add("active");
+        });
+      });
+    </script>
+  </body>
+</html>
