@@ -1,0 +1,23 @@
+[functions.correct]
+verify_jwt = false
+
+[functions.translate]
+verify_jwt = false
+
+[functions.get_credits]
+verify_jwt = false
+
+[functions.daily_checkin]
+verify_jwt = false
+
+[functions.link_apple_user]
+verify_jwt = false
+
+[functions.sync_subscription_ios]
+verify_jwt = false
+
+[functions.reward_ad]
+verify_jwt = false
+
+[functions.admob_ssv_callback]
+verify_jwt = false
