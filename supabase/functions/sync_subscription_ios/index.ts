@@ -5,6 +5,7 @@ import {
   subscriptionCreditsForProduct,
 } from '../_shared/credits.ts'
 import { verifyAppleSubscription } from '../_shared/apple_receipt.ts'
+import { verifyAppleJWS } from '../_shared/apple_jws.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -25,8 +26,8 @@ Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
 
   try {
-    const { deviceId, productId, receiptData, bundleId } = await req.json()
-    if (!deviceId || !productId || !receiptData) {
+    const { deviceId, productId, jwsToken, receiptData, bundleId } = await req.json()
+    if (!deviceId || !productId || (!jwsToken && !receiptData)) {
       return new Response(
         JSON.stringify({ error: 'Missing required subscription fields.' }),
         { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } }
@@ -43,7 +44,35 @@ Deno.serve(async (req: Request) => {
       bundleId ??
       'com.kingboard.app'
 
-    const verified = await verifyAppleSubscription(receiptData, productId, expectedBundleId)
+    // StoreKit 2 clients send jwsToken (transaction.jwsRepresentation).
+    // Older clients (or restore-purchase flows) may still send receiptData.
+    let verified: Awaited<ReturnType<typeof verifyAppleSubscription>>
+    if (jwsToken) {
+      try {
+        const payload = await verifyAppleJWS(jwsToken as string)
+        if (payload.bundleId !== expectedBundleId) {
+          throw new Error('JWS bundleId does not match expected app bundle.')
+        }
+        const expiryMs = typeof payload.expiresDate === 'number' ? payload.expiresDate : null
+        const isActive = expiryMs != null && expiryMs > Date.now()
+        verified = {
+          active: isActive,
+          state: isActive ? 'SUBSCRIPTION_STATE_ACTIVE' : 'SUBSCRIPTION_STATE_EXPIRED',
+          expiryTimeMillis: expiryMs,
+          cycleKey: expiryMs != null ? String(expiryMs) : null,
+          orderId: payload.transactionId ?? null,
+          originalTransactionId: payload.originalTransactionId ?? payload.transactionId ?? null,
+          latestReceipt: null,
+          environment: payload.environment ?? null,
+        }
+      } catch (jwsError) {
+        if (!receiptData) throw jwsError
+        console.warn('[sync_subscription_ios] JWS verification failed, falling back to receipt verification', jwsError)
+        verified = await verifyAppleSubscription(receiptData as string, productId, expectedBundleId)
+      }
+    } else {
+      verified = await verifyAppleSubscription(receiptData as string, productId, expectedBundleId)
+    }
 
     const { data: existing, error: existingError } = await supabase
       .from('device_subscriptions')
