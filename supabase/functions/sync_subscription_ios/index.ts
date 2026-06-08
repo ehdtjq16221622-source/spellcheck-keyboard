@@ -85,8 +85,7 @@ Deno.serve(async (req: Request) => {
     if (existingError) throw existingError
 
     let monthlyGrantApplied = false
-    const previousCycle = (existing as DeviceSubscriptionRow | null)?.last_cycle_key ?? null
-    if (verified.active && verified.cycleKey && previousCycle !== verified.cycleKey) {
+    if (verified.active && verified.cycleKey) {
       const grantKey = [
         verified.originalTransactionId ?? verified.orderId ?? deviceId,
         productId,
