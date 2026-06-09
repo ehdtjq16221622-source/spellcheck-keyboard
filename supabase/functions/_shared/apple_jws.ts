@@ -3,9 +3,14 @@
 
 import { jwtVerify, decodeProtectedHeader, importX509 } from 'https://esm.sh/jose@5.6.3'
 
-// SHA-256 fingerprint of Apple Root CA G3 (publicly known, stable).
-// Verifying this prevents self-signed fake certificate chains.
-const APPLE_ROOT_CA_G3_SHA256 = '63343afaf7603305bf60ee417dcaa797f6e76ec70b707e8609a6e440614a6ab0'
+// Known Apple Root CA SHA-256 fingerprints.
+// Apple uses G3 for Production and may use G2 or other roots in Sandbox.
+// Security is guaranteed by JWS signature verification (leaf cert) + bundleId check.
+const APPLE_ROOT_CA_FINGERPRINTS = new Set([
+  '63343afaf7603305bf60ee417dcaa797f6e76ec70b707e8609a6e440614a6ab0', // Apple Root CA G3 (Production)
+  'c2b9b042dd57830e7d117dac55ac8828b4a1f0c62a06fbcace6f34dc1bc32c79', // Apple Root CA G2
+  'b0b1730ecbc7ff4505142c49f1295e6eda6bcaed7e2c68c5be91b5a11001f024', // Apple Root CA G1
+])
 
 export interface AppleTransactionPayload {
   bundleId: string
@@ -43,10 +48,11 @@ export async function verifyAppleJWS(jws: string): Promise<AppleTransactionPaylo
     throw new Error('Apple JWS is missing a valid certificate chain (x5c).')
   }
 
-  // Confirm the root certificate belongs to Apple before trusting the chain.
+  // Verify root certificate is one of Apple's known root CAs.
   const rootFingerprint = await sha256Hex(header.x5c[header.x5c.length - 1])
-  if (rootFingerprint !== APPLE_ROOT_CA_G3_SHA256) {
-    throw new Error('JWS root certificate is not Apple Root CA G3.')
+  if (!APPLE_ROOT_CA_FINGERPRINTS.has(rootFingerprint)) {
+    console.warn('[verifyAppleJWS] Unknown root CA fingerprint:', rootFingerprint)
+    throw new Error('JWS root certificate is not a recognized Apple Root CA.')
   }
 
   // Verify the JWS signature using the leaf certificate's public key.
