@@ -480,6 +480,25 @@
       text-decoration: none;
     }
 
+    .footer-business {
+      max-width: 1040px;
+      margin: 0 auto 18px;
+      display: grid;
+      gap: 5px;
+    }
+
+    .footer-business-row {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 4px 14px;
+    }
+
+    .footer-business strong {
+      color: var(--near-black);
+      font-weight: 600;
+    }
+
     .btn-primary:hover,
     .btn-secondary:hover,
     .nav-cta:hover,
@@ -700,7 +719,20 @@
   </section>
 
   <footer class="footer">
-    <p>통신판매업 신고번호 2026-경북영덕-0014</p>
+    <div class="footer-business" aria-label="사업자 정보">
+      <p class="footer-business-row"><strong>리스폰</strong><span>대표 박동섭</span></p>
+      <p class="footer-business-row">
+        <span>사업자등록번호 219-30-72139</span>
+        <span>통신판매업 신고번호 2026-경북영덕-0014</span>
+        <a href="https://www.ftc.go.kr/bizCommPop.do?wrkr_no=2193072139" target="_blank" rel="noopener noreferrer">사업자정보 확인</a>
+      </p>
+      <p class="footer-business-row">
+        <span>경상북도 영덕군 영덕읍 도매샛길 38, 401호</span>
+        <a href="tel:+821089311622">010-8931-1622</a>
+        <a href="mailto:ehdtjq16221622@gmail.com">ehdtjq16221622@gmail.com</a>
+      </p>
+      <p class="footer-business-row"><span>호스팅서비스 제공자 GitHub, Inc. (GitHub Pages)</span></p>
+    </div>
     <p>© 2026 킹보드 · <a href="./index.html">홈</a> · <a href="./privacy.html">개인정보처리방침</a> · <a href="./feedback.html">건의사항</a></p>
   </footer>
 </body>
