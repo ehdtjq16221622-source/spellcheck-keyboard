@@ -6,6 +6,8 @@
   <meta name="application-name" content="킹보드: 맞춤법·말투 AI 키보드">
   <meta name="apple-mobile-web-app-title" content="킹보드">
   <meta name="theme-color" content="#000000">
+  <link rel="icon" type="image/png" sizes="180x180" href="./kingboard-icon.png">
+  <link rel="apple-touch-icon" href="./kingboard-icon.png">
   <title>건의사항 - 킹보드: 맞춤법·말투 AI 키보드</title>
   <style>
     :root {
@@ -87,12 +89,23 @@
     }
 
     .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
       font-size: 12px;
       font-weight: 600;
       letter-spacing: -0.01em;
       color: var(--white);
       text-decoration: none;
       white-space: nowrap;
+    }
+
+    .brand-icon {
+      width: 22px;
+      height: 22px;
+      flex: 0 0 22px;
+      border-radius: 5px;
+      object-fit: cover;
     }
 
     .nav-links {
@@ -517,7 +530,7 @@
 <body>
   <nav class="nav">
     <div class="nav-inner">
-      <a class="brand" href="./index.html">킹보드</a>
+      <a class="brand" href="./index.html"><img class="brand-icon" src="./kingboard-icon.png" alt=""><span>킹보드</span></a>
       <ul class="nav-links">
         <li><a href="#categories">유형</a></li>
         <li><a href="#form">작성</a></li>
