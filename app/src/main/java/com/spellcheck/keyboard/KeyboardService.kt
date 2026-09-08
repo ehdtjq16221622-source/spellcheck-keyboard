@@ -106,6 +106,42 @@ class KeyboardService : InputMethodService() {
         R.id.btn_lang_th to "th"
     )
 
+    private fun applyConfiguredButtonOrders() {
+        reorderHorizontalButtons(
+            container = keyboardView.findViewById(R.id.formalOptionsRow),
+            orderedIds = SettingsManager.toneOrder.mapNotNull { level ->
+                formalOptionButtons.entries.firstOrNull { it.value == level }?.key
+            }
+        ) { it == R.id.btnFormal_close }
+        reorderHorizontalButtons(
+            container = keyboardView.findViewById(R.id.langSelectRow),
+            orderedIds = SettingsManager.translateFavorites.mapNotNull { lang ->
+                langButtons.entries.firstOrNull { it.value == lang }?.key
+            }
+        ) { it == R.id.btn_lang_cancel }
+        val favorites = SettingsManager.translateFavorites.toSet()
+        langButtons.forEach { (id, lang) ->
+            keyboardView.findViewById<View>(id)?.visibility =
+                if (favorites.isEmpty() || lang in favorites) View.VISIBLE else View.GONE
+        }
+    }
+
+    private fun reorderHorizontalButtons(
+        container: View?,
+        orderedIds: List<Int>,
+        isTrailing: (Int) -> Boolean
+    ) {
+        val scroll = container as? android.widget.HorizontalScrollView ?: return
+        val row = scroll.getChildAt(0) as? LinearLayout ?: return
+        val allButtons = (0 until row.childCount).mapNotNull { row.getChildAt(it) as? Button }
+        val byId = allButtons.associateBy { it.id }
+        val trailing = allButtons.filter { isTrailing(it.id) }
+        val ordered = orderedIds.mapNotNull { byId[it] }.distinct()
+        val remaining = allButtons.filter { it !in ordered && it !in trailing }
+        row.removeAllViews()
+        (ordered + remaining + trailing).forEach(row::addView)
+    }
+
     // Cache selection to reduce repeated getExtractedText IPC calls while typing.
     private var cachedSelStart = -1
     private var cachedSelEnd = -1
@@ -1083,6 +1119,7 @@ class KeyboardService : InputMethodService() {
 
         val formalOptionsRow = keyboardView.findViewById<View>(R.id.formalOptionsRow)
         formalOptionsRow.visibility = View.GONE
+        applyConfiguredButtonOrders()
         keyboardView.findViewById<Button>(R.id.btnFormalToggle)?.setOnClickListener {
             vibrateKey()
             isFormalMode = !isFormalMode

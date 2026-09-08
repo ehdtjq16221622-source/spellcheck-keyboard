@@ -120,6 +120,7 @@ private enum class AppScreen {
     KEYBOARD,
     SPELLCHECK,
     FORMAL,
+    AI,
     QUICK_CONTENT,
     PRIVACY,
     FEEDBACK
@@ -303,6 +304,9 @@ private fun AppNavigator(
         AppScreen.FORMAL -> SubScreenShell("말투 교정 설정", onBack = { screen = AppScreen.MAIN }) {
             FormalScreenContent()
         }
+        AppScreen.AI -> SubScreenShell("AI 설정", onBack = { screen = AppScreen.MAIN }) {
+            AiScreenContent()
+        }
         AppScreen.QUICK_CONTENT -> SubScreenShell("텍스트 대치 · 메모 · 붙여넣기", onBack = { screen = AppScreen.MAIN }) {
             QuickContentScreen()
         }
@@ -356,6 +360,8 @@ private fun MainScreen(
             KRow("맞춤법 교정 설정", "구두점, 사투리 교정", TrailingType.Chevron) { onNavigate(AppScreen.SPELLCHECK) }
             KDivider()
             KRow("말투 교정 설정", "말투 스타일 선택", TrailingType.Chevron) { onNavigate(AppScreen.FORMAL) }
+            KDivider()
+            KRow("AI 설정", "말투 버튼 순서, 번역 언어 즐겨찾기", TrailingType.Chevron) { onNavigate(AppScreen.AI) }
             KDivider()
             KRow("텍스트 대치 · 메모 · 붙여넣기", "키보드에서 바로 입력할 내용 관리", TrailingType.Chevron) { onNavigate(AppScreen.QUICK_CONTENT) }
         }
@@ -1457,6 +1463,102 @@ private fun FormalScreenContent() {
             }
         )
     }
+}
+
+@Composable
+private fun AiScreenContent() {
+    val toneLabels = mapOf(
+        "smart" to "스마트",
+        "polite" to "존댓말",
+        "formal" to "격식체",
+        "business" to "비즈니스",
+        "customer" to "고객 안내",
+        "parent" to "학부모 안내",
+        "dating" to "소개팅체",
+        "custom" to "커스텀"
+    )
+    val languageLabels = listOf(
+        "ko" to "한국어", "en" to "영어", "ja" to "일본어", "zh" to "중국어(간체)",
+        "zh-Hant" to "중국어(번체)", "es" to "스페인어", "fr" to "프랑스어",
+        "de" to "독일어", "vi" to "베트남어", "th" to "태국어"
+    )
+    var toneOrder by remember { mutableStateOf(SettingsManager.toneOrder) }
+    var favorites by remember { mutableStateOf(SettingsManager.translateFavorites) }
+
+    KSectionLabel("말투 버튼 순서")
+    KSection {
+        toneOrder.forEachIndexed { index, key ->
+            if (index > 0) KDivider()
+            OrderSettingRow(
+                title = toneLabels[key] ?: key,
+                canMoveLeft = index > 0,
+                canMoveRight = index < toneOrder.lastIndex,
+                onMoveLeft = {
+                    toneOrder = toneOrder.toMutableList().also { it.swap(index, index - 1) }
+                    SettingsManager.toneOrder = toneOrder
+                },
+                onMoveRight = {
+                    toneOrder = toneOrder.toMutableList().also { it.swap(index, index + 1) }
+                    SettingsManager.toneOrder = toneOrder
+                }
+            )
+        }
+    }
+
+    Spacer(Modifier.height(18.dp))
+    KSectionLabel("번역 언어 즐겨찾기")
+    KSection {
+        languageLabels.forEachIndexed { index, (code, label) ->
+            if (index > 0) KDivider()
+            KRow(
+                title = label,
+                subtitle = if (favorites.contains(code)) "번역 언어 행에 표시" else "즐겨찾기에서 숨김",
+                trailingType = TrailingType.Toggle(favorites.contains(code)) { enabled ->
+                    favorites = if (enabled) {
+                        (favorites + code).distinct()
+                    } else {
+                        favorites.filterNot { it == code }
+                    }
+                    SettingsManager.translateFavorites = favorites
+                }
+            )
+        }
+    }
+    Text(
+        "즐겨찾기 순서와 선택 상태는 다음 키보드 실행부터 반영됩니다.",
+        color = LocalKColors.current.textMuted,
+        fontSize = 12.sp,
+        modifier = Modifier.padding(horizontal = 4.dp, vertical = 10.dp)
+    )
+}
+
+@Composable
+private fun OrderSettingRow(
+    title: String,
+    canMoveLeft: Boolean,
+    canMoveRight: Boolean,
+    onMoveLeft: () -> Unit,
+    onMoveRight: () -> Unit
+) {
+    val colors = LocalKColors.current
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(title, color = colors.textPrimary, fontSize = 16.sp, modifier = Modifier.weight(1f))
+        TextButton(onClick = onMoveLeft, enabled = canMoveLeft, contentPadding = PaddingValues(horizontal = 8.dp)) {
+            Text("‹", color = if (canMoveLeft) colors.accent else colors.textMuted, fontSize = 24.sp)
+        }
+        TextButton(onClick = onMoveRight, enabled = canMoveRight, contentPadding = PaddingValues(horizontal = 8.dp)) {
+            Text("›", color = if (canMoveRight) colors.accent else colors.textMuted, fontSize = 24.sp)
+        }
+    }
+}
+
+private fun <T> MutableList<T>.swap(first: Int, second: Int) {
+    val value = this[first]
+    this[first] = this[second]
+    this[second] = value
 }
 
 @Composable

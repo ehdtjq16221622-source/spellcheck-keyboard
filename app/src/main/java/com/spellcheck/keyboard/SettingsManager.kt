@@ -119,6 +119,20 @@ object SettingsManager {
         get() = prefs?.getString("translate_lang", "en") ?: "en"
         set(v) { prefs?.edit()?.putString("translate_lang", v)?.apply() }
 
+    var toneOrder: List<String>
+        get() = (prefs?.getString("tone_order", null)
+            ?.split(',')
+            ?.filter { it.isNotBlank() }
+            ?: listOf("smart", "polite", "formal", "business", "customer", "parent", "dating", "custom"))
+        set(v) { prefs?.edit()?.putString("tone_order", v.joinToString(","))?.apply() }
+
+    var translateFavorites: List<String>
+        get() = (prefs?.getString("translate_favorites", null)
+            ?.split(',')
+            ?.filter { it.isNotBlank() }
+            ?: listOf("ko", "en", "ja", "zh", "zh-Hant", "es", "fr", "de", "vi", "th"))
+        set(v) { prefs?.edit()?.putString("translate_favorites", v.joinToString(","))?.apply() }
+
     var formalIncludePunct: Boolean
         get() = prefs?.getBoolean("formal_include_punct", true) ?: true
         set(v) { prefs?.edit()?.putBoolean("formal_include_punct", v)?.apply() }
