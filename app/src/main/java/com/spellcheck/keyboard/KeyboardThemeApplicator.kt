@@ -333,11 +333,20 @@ object KeyboardThemeApplicator {
                 KeyRole.FUNCTION -> Triple(spec.functionFill, spec.functionPressedFill, spec.functionText)
                 KeyRole.SPACE -> Triple(spec.spaceFill, spec.spacePressedFill, spec.spaceText)
             }
-            button.background = createKeyDrawable(density, fill, pressedFill)
+            button.background = createKeyDrawable(
+                density,
+                fill,
+                pressedFill,
+                radiusDp = SettingsManager.keyCornerRadius.toFloat()
+            )
             button.backgroundTintList = null
             button.setTextColor(textColor)
             button.stateListAnimator = null
-            button.elevation = density
+            button.elevation = when (SettingsManager.keyShadowLevel) {
+                "없음" -> 0f
+                "강함" -> density * 2f
+                else -> density
+            }
         }
 
         fun styleImageButton(button: ImageButton, role: KeyRole) {
@@ -347,17 +356,35 @@ object KeyboardThemeApplicator {
                 R.id.key_mode, R.id.key_cj_mode -> spec.secondaryIconTint
                 else -> spec.functionIconTint
             }
-            button.background = createKeyDrawable(density, fill, pressed)
+            button.background = createKeyDrawable(
+                density,
+                fill,
+                pressed,
+                radiusDp = SettingsManager.keyCornerRadius.toFloat()
+            )
             button.backgroundTintList = null
             button.imageTintList = ColorStateList.valueOf(iconTint)
             button.stateListAnimator = null
-            button.elevation = density
+            button.elevation = when (SettingsManager.keyShadowLevel) {
+                "없음" -> 0f
+                "강함" -> density * 2f
+                else -> density
+            }
         }
 
         fun styleFrameKey(frame: FrameLayout) {
-            frame.background = createKeyDrawable(density, spec.letterFill, spec.letterPressedFill)
+            frame.background = createKeyDrawable(
+                density,
+                spec.letterFill,
+                spec.letterPressedFill,
+                radiusDp = SettingsManager.keyCornerRadius.toFloat()
+            )
             frame.backgroundTintList = null
-            frame.elevation = density
+            frame.elevation = when (SettingsManager.keyShadowLevel) {
+                "없음" -> 0f
+                "강함" -> density * 2f
+                else -> density
+            }
             for (i in 0 until frame.childCount) {
                 val child = frame.getChildAt(i)
                 if (child is TextView) {

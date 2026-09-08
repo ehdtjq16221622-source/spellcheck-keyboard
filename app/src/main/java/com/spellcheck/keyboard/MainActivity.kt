@@ -117,6 +117,7 @@ private val LocalKColors = staticCompositionLocalOf { lightKColors() }
 private enum class AppScreen {
     MAIN,
     START,
+    CREDITS,
     KEYBOARD,
     SPELLCHECK,
     FORMAL,
@@ -295,10 +296,13 @@ private fun AppNavigator(
         AppScreen.START -> SubScreenShell("시작하기", onBack = { screen = AppScreen.MAIN }) {
             StartScreenContent(onOpenKeyboardSettings)
         }
-        AppScreen.KEYBOARD -> SubScreenShell("키보드 설정", onBack = { screen = AppScreen.MAIN }) {
+        AppScreen.CREDITS -> SubScreenShell("크레딧 관리하기", onBack = { screen = AppScreen.MAIN }) {
+            CreditManagementScreenContent()
+        }
+        AppScreen.KEYBOARD -> SubScreenShell("키보드 스튜디오", onBack = { screen = AppScreen.MAIN }) {
             KeyboardScreenContent()
         }
-        AppScreen.SPELLCHECK -> SubScreenShell("맞춤법 교정 설정", onBack = { screen = AppScreen.MAIN }) {
+        AppScreen.SPELLCHECK -> SubScreenShell("교정 설정", onBack = { screen = AppScreen.MAIN }) {
             SpellcheckScreenContent()
         }
         AppScreen.FORMAL -> SubScreenShell("말투 교정 설정", onBack = { screen = AppScreen.MAIN }) {
@@ -332,6 +336,8 @@ private fun MainScreen(
     onOpenFeedback: () -> Unit
 ) {
     val colors = LocalKColors.current
+    val context = LocalContext.current
+    var showThemeDialog by remember { mutableStateOf(false) }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -344,45 +350,30 @@ private fun MainScreen(
 
         Spacer(Modifier.height(20.dp))
         KSectionLabel("내 크레딧")
-        CreditSectionCard()
-
-        Spacer(Modifier.height(22.dp))
-        KSectionLabel("구독 플랜")
-        PlanSectionCard()
+        CreditSectionCard { onNavigate(AppScreen.CREDITS) }
 
         Spacer(Modifier.height(22.dp))
         KSectionLabel("설정")
         KSection {
             KRow("시작하기", "키보드 활성화 방법", TrailingType.Chevron) { onNavigate(AppScreen.START) }
             KDivider()
-            KRow("키보드 설정", "테마, 입력 모드, 진동", TrailingType.Chevron) { onNavigate(AppScreen.KEYBOARD) }
+            KRow("키보드 스튜디오", "테마, 입력 모드, 진동", TrailingType.Chevron) { onNavigate(AppScreen.KEYBOARD) }
             KDivider()
-            KRow("맞춤법 교정 설정", "구두점, 사투리 교정", TrailingType.Chevron) { onNavigate(AppScreen.SPELLCHECK) }
-            KDivider()
-            KRow("말투 교정 설정", "말투 스타일 선택", TrailingType.Chevron) { onNavigate(AppScreen.FORMAL) }
-            KDivider()
-            KRow("AI 설정", "말투 버튼 순서, 번역 언어 즐겨찾기", TrailingType.Chevron) { onNavigate(AppScreen.AI) }
+            KRow("교정 설정", "맞춤법, 말투 스타일", TrailingType.Chevron) { onNavigate(AppScreen.SPELLCHECK) }
             KDivider()
             KRow("텍스트 대치 · 메모 · 붙여넣기", "키보드에서 바로 입력할 내용 관리", TrailingType.Chevron) { onNavigate(AppScreen.QUICK_CONTENT) }
         }
 
         Spacer(Modifier.height(22.dp))
-        KSectionLabel("앱 화면")
+        KSectionLabel("기타")
         KSection {
-            Column(Modifier.padding(16.dp)) {
-                Text("화면 모드", color = colors.textSecondary, fontSize = 13.sp)
-                Spacer(Modifier.height(10.dp))
-                KSegmentedControl(
-                    options = listOf("시스템", "라이트", "다크"),
-                    selected = normalizeAppTheme(selectedTheme),
-                    onSelect = onThemeChange
-                )
+            KRow("화면 모드 설정", "현재: ${normalizeAppTheme(selectedTheme)}", TrailingType.Chevron) { showThemeDialog = true }
+            KDivider()
+            KRow("구매 내역 복원", "Google Play 구독 상태 다시 확인", TrailingType.Chevron) {
+                BillingManager.refresh()
+                android.widget.Toast.makeText(context, "구매 내역을 확인하고 있어요.", android.widget.Toast.LENGTH_SHORT).show()
             }
-        }
-
-        Spacer(Modifier.height(22.dp))
-        KSectionLabel("정보")
-        KSection {
+            KDivider()
             KRow("건의사항 보내기", trailingType = TrailingType.Chevron) { onOpenFeedback() }
             KDivider()
             KRow("개인정보처리방침", trailingType = TrailingType.Chevron) { onOpenPrivacyPolicy() }
@@ -405,6 +396,28 @@ private fun MainScreen(
             fontSize = 11.sp
         )
         Spacer(Modifier.height(28.dp))
+    }
+
+    if (showThemeDialog) {
+        AlertDialog(
+            onDismissRequest = { showThemeDialog = false },
+            title = { Text("화면 모드") },
+            text = {
+                Column {
+                    listOf("시스템", "라이트", "다크").forEach { mode ->
+                        KRow(
+                            title = mode,
+                            trailingType = TrailingType.Checkmark(normalizeAppTheme(selectedTheme) == mode),
+                            onClick = {
+                                onThemeChange(mode)
+                                showThemeDialog = false
+                            }
+                        )
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showThemeDialog = false }) { Text("취소") } }
+        )
     }
 }
 
@@ -516,6 +529,12 @@ private fun KeyboardScreenContent() {
     var soundEnabled by remember { mutableStateOf(SettingsManager.soundEnabled) }
     var customImageOffsetX by remember { mutableFloatStateOf(SettingsManager.customImageOffsetX) }
     var customImageOffsetY by remember { mutableFloatStateOf(SettingsManager.customImageOffsetY) }
+    var keyboardHeight by remember { mutableFloatStateOf(SettingsManager.keyboardHeightPercent.toFloat()) }
+    var keyFontSize by remember { mutableFloatStateOf(SettingsManager.keyFontSizePercent.toFloat()) }
+    var keyCornerRadius by remember { mutableFloatStateOf(SettingsManager.keyCornerRadius.toFloat()) }
+    var keyHorizontalSpacing by remember { mutableFloatStateOf(SettingsManager.keyHorizontalSpacing.toFloat()) }
+    var keyVerticalSpacing by remember { mutableFloatStateOf(SettingsManager.keyVerticalSpacing.toFloat()) }
+    var keyShadowLevel by remember { mutableStateOf(SettingsManager.keyShadowLevel) }
     var imageVersion by remember { mutableIntStateOf(0) }
 
     val cropLauncher = rememberLauncherForActivityResult(
@@ -779,6 +798,104 @@ private fun KeyboardScreenContent() {
     }
 
     Spacer(Modifier.height(18.dp))
+    KSectionLabel("외관")
+    KSection {
+        Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+            LabelValueRow("키보드 높이", "${keyboardHeight.roundToInt()}%")
+            Slider(
+                value = keyboardHeight,
+                onValueChange = {
+                    keyboardHeight = it
+                    SettingsManager.keyboardHeightPercent = it.roundToInt()
+                },
+                valueRange = 80f..130f,
+                colors = SliderDefaults.colors(
+                    thumbColor = colors.accent,
+                    activeTrackColor = colors.accent,
+                    inactiveTrackColor = colors.sliderInactive
+                )
+            )
+            KDivider()
+            LabelValueRow("키 글자 크기", "${keyFontSize.roundToInt()}%")
+            Slider(
+                value = keyFontSize,
+                onValueChange = {
+                    keyFontSize = it
+                    SettingsManager.keyFontSizePercent = it.roundToInt()
+                },
+                valueRange = 80f..120f,
+                colors = SliderDefaults.colors(
+                    thumbColor = colors.accent,
+                    activeTrackColor = colors.accent,
+                    inactiveTrackColor = colors.sliderInactive
+                )
+            )
+            KDivider()
+            LabelValueRow("키 모서리", "${keyCornerRadius.roundToInt()}pt")
+            Slider(
+                value = keyCornerRadius,
+                onValueChange = {
+                    keyCornerRadius = it
+                    SettingsManager.keyCornerRadius = it.roundToInt()
+                },
+                valueRange = 0f..16f,
+                colors = SliderDefaults.colors(
+                    thumbColor = colors.accent,
+                    activeTrackColor = colors.accent,
+                    inactiveTrackColor = colors.sliderInactive
+                )
+            )
+            KDivider()
+            LabelValueRow("가로 간격", "${keyHorizontalSpacing.roundToInt()}pt")
+            Slider(
+                value = keyHorizontalSpacing,
+                onValueChange = {
+                    keyHorizontalSpacing = it
+                    SettingsManager.keyHorizontalSpacing = it.roundToInt()
+                },
+                valueRange = 0f..12f,
+                colors = SliderDefaults.colors(
+                    thumbColor = colors.accent,
+                    activeTrackColor = colors.accent,
+                    inactiveTrackColor = colors.sliderInactive
+                )
+            )
+            KDivider()
+            LabelValueRow("세로 간격", "${keyVerticalSpacing.roundToInt()}pt")
+            Slider(
+                value = keyVerticalSpacing,
+                onValueChange = {
+                    keyVerticalSpacing = it
+                    SettingsManager.keyVerticalSpacing = it.roundToInt()
+                },
+                valueRange = 4f..18f,
+                colors = SliderDefaults.colors(
+                    thumbColor = colors.accent,
+                    activeTrackColor = colors.accent,
+                    inactiveTrackColor = colors.sliderInactive
+                )
+            )
+            KDivider()
+            Text("그림자", color = colors.textSecondary, fontSize = 13.sp)
+            Spacer(Modifier.height(8.dp))
+            KSegmentedControl(
+                options = listOf("없음", "기본", "강함"),
+                selected = keyShadowLevel,
+                onSelect = {
+                    keyShadowLevel = it
+                    SettingsManager.keyShadowLevel = it
+                }
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "변경 사항은 다음 키보드 실행부터 적용됩니다.",
+                color = colors.textMuted,
+                fontSize = 12.sp
+            )
+        }
+    }
+
+    Spacer(Modifier.height(18.dp))
     KSectionLabel("입력 옵션")
     KSection {
         KRow("키 소리", trailingType = TrailingType.Toggle(soundEnabled) {
@@ -825,6 +942,9 @@ private fun KeyboardScreenContent() {
             SettingsManager.doubleSpacePeriod = it
         })
     }
+
+    Spacer(Modifier.height(18.dp))
+    AiScreenContent()
 
     LaunchedEffect(Unit) {
         scope.launch {
@@ -1391,6 +1511,9 @@ private fun SpellcheckScreenContent() {
             }
         )
     }
+
+    Spacer(Modifier.height(18.dp))
+    FormalScreenContent()
 }
 
 @Composable
@@ -1562,7 +1685,24 @@ private fun <T> MutableList<T>.swap(first: Int, second: Int) {
 }
 
 @Composable
-private fun CreditSectionCard() {
+private fun CreditManagementScreenContent() {
+    val context = LocalContext.current
+    KSectionLabel("내 크레딧")
+    CreditSectionCard()
+    Spacer(Modifier.height(18.dp))
+    KSectionLabel("구독 플랜")
+    PlanSectionCard()
+    Spacer(Modifier.height(16.dp))
+    KSection {
+        KRow("구매 내역 복원", "Google Play에서 활성 구독을 다시 확인합니다.", TrailingType.Chevron) {
+            BillingManager.refresh()
+            android.widget.Toast.makeText(context, "구매 내역을 확인하고 있어요.", android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+}
+
+@Composable
+private fun CreditSectionCard(onClick: (() -> Unit)? = null) {
     val c = LocalKColors.current
     val creditState by CreditsManager.state.collectAsState()
     val subscriptionState by TrialManager.state.collectAsState()
@@ -1573,6 +1713,7 @@ private fun CreditSectionCard() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(enabled = onClick != null) { onClick?.invoke() }
             .clip(RoundedCornerShape(18.dp))
             .background(c.card)
             .border(1.dp, c.border, RoundedCornerShape(18.dp))

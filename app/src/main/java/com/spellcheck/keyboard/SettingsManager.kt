@@ -196,4 +196,29 @@ object SettingsManager {
     var keyboardBodyHeightPx: Int
         get() = prefs?.getInt("keyboard_body_height_px", 0) ?: 0
         set(v) { prefs?.edit()?.putInt("keyboard_body_height_px", v)?.apply() }
+
+    // Match the iOS keyboard studio appearance controls.
+    var keyboardHeightPercent: Int
+        get() = (prefs?.getInt("keyboard_height_percent", 100) ?: 100).coerceIn(80, 130)
+        set(v) { prefs?.edit()?.putInt("keyboard_height_percent", v.coerceIn(80, 130))?.apply() }
+
+    var keyFontSizePercent: Int
+        get() = (prefs?.getInt("key_font_size_percent", 100) ?: 100).coerceIn(80, 120)
+        set(v) { prefs?.edit()?.putInt("key_font_size_percent", v.coerceIn(80, 120))?.apply() }
+
+    var keyCornerRadius: Int
+        get() = (prefs?.getInt("key_corner_radius", 8) ?: 8).coerceIn(0, 16)
+        set(v) { prefs?.edit()?.putInt("key_corner_radius", v.coerceIn(0, 16))?.apply() }
+
+    var keyHorizontalSpacing: Int
+        get() = (prefs?.getInt("key_horizontal_spacing", 5) ?: 5).coerceIn(0, 12)
+        set(v) { prefs?.edit()?.putInt("key_horizontal_spacing", v.coerceIn(0, 12))?.apply() }
+
+    var keyVerticalSpacing: Int
+        get() = (prefs?.getInt("key_vertical_spacing", 12) ?: 12).coerceIn(4, 18)
+        set(v) { prefs?.edit()?.putInt("key_vertical_spacing", v.coerceIn(4, 18))?.apply() }
+
+    var keyShadowLevel: String
+        get() = prefs?.getString("key_shadow_level", "기본") ?: "기본"
+        set(v) { prefs?.edit()?.putString("key_shadow_level", v)?.apply() }
 }

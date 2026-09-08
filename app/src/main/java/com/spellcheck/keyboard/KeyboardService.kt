@@ -329,8 +329,29 @@ class KeyboardService : InputMethodService() {
     private fun applyAdaptiveKeyboardSizing() {
         val layoutScale = KeyboardSizing.scaleFactor(resources.configuration)
         if (layoutScale <= 1.01f) return
-        val textScale = KeyboardSizing.textScaleFactor(layoutScale)
+        val textScale = KeyboardSizing.textScaleFactor(layoutScale) * (SettingsManager.keyFontSizePercent / 100f)
         scaleKeyboardView(keyboardView, layoutScale, textScale)
+        applyUserSpacing(keyboardView)
+    }
+
+    private fun applyUserSpacing(view: View) {
+        val horizontalFactor = 1f + ((SettingsManager.keyHorizontalSpacing - 5) * 0.08f)
+        val verticalFactor = 1f + ((SettingsManager.keyVerticalSpacing - 12) * 0.05f)
+        fun scaled(value: Int, factor: Float): Int = (value * factor).roundToInt().coerceAtLeast(0)
+
+        if (view.layoutParams is ViewGroup.MarginLayoutParams) {
+            val lp = view.layoutParams as ViewGroup.MarginLayoutParams
+            lp.leftMargin = scaled(lp.leftMargin, horizontalFactor)
+            lp.rightMargin = scaled(lp.rightMargin, horizontalFactor)
+            lp.marginStart = scaled(lp.marginStart, horizontalFactor)
+            lp.marginEnd = scaled(lp.marginEnd, horizontalFactor)
+            lp.topMargin = scaled(lp.topMargin, verticalFactor)
+            lp.bottomMargin = scaled(lp.bottomMargin, verticalFactor)
+            view.layoutParams = lp
+        }
+        if (view is ViewGroup) {
+            for (i in 0 until view.childCount) applyUserSpacing(view.getChildAt(i))
+        }
     }
 
     private fun scaleKeyboardView(view: View, layoutScale: Float, textScale: Float) {
@@ -422,7 +443,8 @@ class KeyboardService : InputMethodService() {
             resolveCanonicalHeight(keyboardView.findViewById(R.id.container_dubeol_sym2))
         ).maxOrNull() ?: 0
 
-        keyboardView.minimumHeight = topVisibleHeight + bodyHeight
+        val scaledBodyHeight = (bodyHeight * SettingsManager.keyboardHeightPercent / 100f).roundToInt()
+        keyboardView.minimumHeight = topVisibleHeight + scaledBodyHeight
         keyboardView.requestLayout()
     }
 
