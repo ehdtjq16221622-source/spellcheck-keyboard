@@ -13,12 +13,15 @@ object SettingsManager {
     }
 
     fun normalizeFormalLevel(level: String): String = when {
-        level.contains("격") -> "격식체"
-        level.contains("사내") -> "사내 메시지"
-        level.contains("고객") -> "고객 안내"
-        level.contains("공문") || level.contains("학부모") -> "공문 안내"
-        level.contains("친근") || level.contains("소개팅") -> "친근체"
-        else -> "존댓말"
+        level == "smart" || level.contains("스마트") -> "smart"
+        level == "polite" || level.contains("존댓말") -> "polite"
+        level == "formal" || level.contains("격") -> "formal"
+        level == "business" || level.contains("비즈니스") || level.contains("사내") -> "business"
+        level == "customer" || level.contains("고객") -> "customer"
+        level == "parent" || level.contains("공문") || level.contains("학부모") -> "parent"
+        level == "dating" || level.contains("친근") || level.contains("소개팅") -> "dating"
+        level == "custom" || level.contains("커스텀") -> "custom"
+        else -> "smart"
     }
 
     private fun normalizeKeyboardTheme(value: String): String = when {
@@ -81,13 +84,32 @@ object SettingsManager {
         get() = prefs?.getBoolean("include_punct", true) ?: true
         set(v) { prefs?.edit()?.putBoolean("include_punct", v)?.apply() }
 
+    // Keep this in the same range as the iOS keyboard. The value is stored in
+    // milliseconds so the keyboard service can schedule it without rounding.
+    var autoCorrectEnabled: Boolean
+        get() = prefs?.getBoolean("auto_correct_enabled", true) ?: true
+        set(v) { prefs?.edit()?.putBoolean("auto_correct_enabled", v)?.apply() }
+
+    var autoCorrectDelayMs: Long
+        get() = (prefs?.getLong("auto_correct_delay_ms", 1500L) ?: 1500L)
+            .coerceIn(1000L, 3000L)
+        set(v) { prefs?.edit()?.putLong("auto_correct_delay_ms", v.coerceIn(1000L, 3000L))?.apply() }
+
     var includeDialect: Boolean
         get() = prefs?.getBoolean("include_dialect", false) ?: false
         set(v) { prefs?.edit()?.putBoolean("include_dialect", v)?.apply() }
 
     var formalLevel: String
-        get() = normalizeFormalLevel(prefs?.getString("formal_level", "존댓말") ?: "존댓말")
+        get() = normalizeFormalLevel(prefs?.getString("formal_level", "smart") ?: "smart")
         set(v) { prefs?.edit()?.putString("formal_level", normalizeFormalLevel(v))?.apply() }
+
+    var customTonePrompt: String
+        get() = prefs?.getString("custom_tone_prompt", "") ?: ""
+        set(v) { prefs?.edit()?.putString("custom_tone_prompt", v.take(500))?.apply() }
+
+    var translateLang: String
+        get() = prefs?.getString("translate_lang", "en") ?: "en"
+        set(v) { prefs?.edit()?.putString("translate_lang", v)?.apply() }
 
     var formalIncludePunct: Boolean
         get() = prefs?.getBoolean("formal_include_punct", true) ?: true
@@ -106,7 +128,7 @@ object SettingsManager {
         set(v) { prefs?.edit()?.putString("custom_image_mode", normalizeCustomImageMode(v))?.apply() }
 
     var customImageOverlay: Int
-        get() = prefs?.getInt("custom_image_overlay", 30) ?: 30
+        get() = prefs?.getInt("custom_image_overlay", 70) ?: 70
         set(v) { prefs?.edit()?.putInt("custom_image_overlay", v)?.apply() }
 
     var customKeyTextColor: String
@@ -114,7 +136,7 @@ object SettingsManager {
         set(v) { prefs?.edit()?.putString("custom_key_text_color", normalizeCustomKeyTextColor(v))?.apply() }
 
     var customButtonOpacity: Int
-        get() = prefs?.getInt("custom_button_opacity", 30) ?: 30
+        get() = prefs?.getInt("custom_button_opacity", 80) ?: 80
         set(v) { prefs?.edit()?.putInt("custom_button_opacity", v)?.apply() }
 
     var customChromeTheme: String

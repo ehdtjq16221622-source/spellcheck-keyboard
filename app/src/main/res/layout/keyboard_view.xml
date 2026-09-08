@@ -80,26 +80,38 @@
 
 
     <!-- ===== 언어 선택 행 ===== -->
-    <LinearLayout
+    <HorizontalScrollView
         android:id="@+id/langSelectRow"
         android:layout_width="match_parent"
         android:layout_height="36dp"
-        android:orientation="horizontal"
+        android:background="#EBEEF7"
+        android:scrollbars="none"
         android:paddingStart="8dp"
         android:paddingEnd="8dp"
         android:paddingTop="6dp"
         android:paddingBottom="6dp"
-        android:background="#EBEEF7"
-        android:gravity="center_vertical"
-        android:visibility="gone"
-        android:splitMotionEvents="true">
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:splitMotionEvents="true">
 
         <Button android:id="@+id/btn_lang_ko" android:layout_width="wrap_content" android:layout_height="24dp" android:text="한국어" android:textSize="10sp" android:paddingStart="10dp" android:paddingEnd="10dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginEnd="4dp" android:minWidth="0dp" android:textStyle="normal" android:stateListAnimator="@null" />
         <Button android:id="@+id/btn_lang_en" android:layout_width="wrap_content" android:layout_height="24dp" android:text="영어" android:textSize="10sp" android:paddingStart="10dp" android:paddingEnd="10dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginEnd="4dp" android:minWidth="0dp" android:textStyle="normal" android:stateListAnimator="@null" />
-        <Button android:id="@+id/btn_lang_zh" android:layout_width="wrap_content" android:layout_height="24dp" android:text="중국어" android:textSize="10sp" android:paddingStart="10dp" android:paddingEnd="10dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginEnd="4dp" android:minWidth="0dp" android:textStyle="normal" android:stateListAnimator="@null" />
         <Button android:id="@+id/btn_lang_ja" android:layout_width="wrap_content" android:layout_height="24dp" android:text="일본어" android:textSize="10sp" android:paddingStart="10dp" android:paddingEnd="10dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginEnd="4dp" android:minWidth="0dp" android:textStyle="normal" android:stateListAnimator="@null" />
+        <Button android:id="@+id/btn_lang_zh" android:layout_width="wrap_content" android:layout_height="24dp" android:text="중국어(간체)" android:textSize="10sp" android:paddingStart="10dp" android:paddingEnd="10dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginEnd="4dp" android:minWidth="0dp" android:textStyle="normal" android:stateListAnimator="@null" />
+        <Button android:id="@+id/btn_lang_zh_hant" android:layout_width="wrap_content" android:layout_height="24dp" android:text="중국어(번체)" android:textSize="10sp" android:paddingStart="10dp" android:paddingEnd="10dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginEnd="4dp" android:minWidth="0dp" android:textStyle="normal" android:stateListAnimator="@null" />
+        <Button android:id="@+id/btn_lang_es" android:layout_width="wrap_content" android:layout_height="24dp" android:text="스페인어" android:textSize="10sp" android:paddingStart="10dp" android:paddingEnd="10dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginEnd="4dp" android:minWidth="0dp" android:textStyle="normal" android:stateListAnimator="@null" />
+        <Button android:id="@+id/btn_lang_fr" android:layout_width="wrap_content" android:layout_height="24dp" android:text="프랑스어" android:textSize="10sp" android:paddingStart="10dp" android:paddingEnd="10dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginEnd="4dp" android:minWidth="0dp" android:textStyle="normal" android:stateListAnimator="@null" />
+        <Button android:id="@+id/btn_lang_de" android:layout_width="wrap_content" android:layout_height="24dp" android:text="독일어" android:textSize="10sp" android:paddingStart="10dp" android:paddingEnd="10dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginEnd="4dp" android:minWidth="0dp" android:textStyle="normal" android:stateListAnimator="@null" />
+        <Button android:id="@+id/btn_lang_vi" android:layout_width="wrap_content" android:layout_height="24dp" android:text="베트남어" android:textSize="10sp" android:paddingStart="10dp" android:paddingEnd="10dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginEnd="4dp" android:minWidth="0dp" android:textStyle="normal" android:stateListAnimator="@null" />
+        <Button android:id="@+id/btn_lang_th" android:layout_width="wrap_content" android:layout_height="24dp" android:text="태국어" android:textSize="10sp" android:paddingStart="10dp" android:paddingEnd="10dp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:layout_marginEnd="4dp" android:minWidth="0dp" android:textStyle="normal" android:stateListAnimator="@null" />
         <Button android:id="@+id/btn_lang_cancel" android:layout_width="24dp" android:layout_height="24dp" android:text="✕" android:textSize="10sp" android:padding="0dp" android:background="@android:color/transparent" android:textColor="#595F6A" android:layout_marginStart="4dp" android:minWidth="0dp" android:textStyle="normal" android:stateListAnimator="@null" />
-    </LinearLayout>
+        </LinearLayout>
+    </HorizontalScrollView>
 
     <!-- ===== 툴바: 교정 + 번역 + 말투 교정 ===== -->
     <LinearLayout
@@ -166,6 +178,27 @@
             android:minWidth="0dp"
             android:textStyle="normal" android:stateListAnimator="@null" />
 
+        <View
+            android:layout_width="1dp"
+            android:layout_height="12dp"
+            android:background="#EBEEF7"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp" />
+
+        <Button
+            android:id="@+id/btnQuickContent"
+            android:layout_width="wrap_content"
+            android:layout_height="24dp"
+            android:text="메모"
+            android:textSize="10sp"
+            android:textColor="#4A78A8"
+            android:background="@drawable/key_translate_outline"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:minWidth="0dp"
+            android:textStyle="normal"
+            android:stateListAnimator="@null" />
+
     </LinearLayout>
 
     <!-- ===== 말투 옵션 선택 행 (스위치 ON 시 표시) ===== -->
@@ -189,6 +222,20 @@
         android:splitMotionEvents="true">
 
             <Button
+                android:id="@+id/btnFormal_smart"
+                android:layout_width="wrap_content"
+                android:layout_height="24dp"
+                android:text="스마트"
+                android:textSize="10sp"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:layout_marginEnd="4dp"
+                android:minWidth="0dp"
+                android:background="@drawable/key_primary"
+                android:textColor="#004EA8"
+                android:textStyle="normal" android:stateListAnimator="@null" />
+
+            <Button
                 android:id="@+id/btnFormal_jondaemal"
                 android:layout_width="wrap_content"
                 android:layout_height="24dp"
@@ -198,8 +245,8 @@
                 android:paddingEnd="10dp"
                 android:layout_marginEnd="4dp"
                 android:minWidth="0dp"
-                android:background="@drawable/key_primary"
-                android:textColor="#004EA8"
+                android:background="@drawable/key_letter"
+                android:textColor="#1A1A1A"
                 android:textStyle="normal" android:stateListAnimator="@null" />
 
             <Button
@@ -217,10 +264,10 @@
                 android:textStyle="normal" android:stateListAnimator="@null" />
 
             <Button
-                android:id="@+id/btnFormal_sanae"
+                android:id="@+id/btnFormal_business"
                 android:layout_width="wrap_content"
                 android:layout_height="24dp"
-                android:text="회사용"
+                android:text="비즈니스"
                 android:textSize="10sp"
                 android:paddingStart="10dp"
                 android:paddingEnd="10dp"
@@ -234,7 +281,7 @@
                 android:id="@+id/btnFormal_gogaek"
                 android:layout_width="wrap_content"
                 android:layout_height="24dp"
-                android:text="고객용"
+                android:text="고객 안내"
                 android:textSize="10sp"
                 android:paddingStart="10dp"
                 android:paddingEnd="10dp"
@@ -245,10 +292,10 @@
                 android:textStyle="normal" android:stateListAnimator="@null" />
 
             <Button
-                android:id="@+id/btnFormal_hakbumo"
+                android:id="@+id/btnFormal_parent"
                 android:layout_width="wrap_content"
                 android:layout_height="24dp"
-                android:text="학부모용"
+                android:text="학부모"
                 android:textSize="10sp"
                 android:paddingStart="10dp"
                 android:paddingEnd="10dp"
@@ -259,10 +306,24 @@
                 android:textStyle="normal" android:stateListAnimator="@null" />
 
             <Button
-                android:id="@+id/btnFormal_sogaeting"
+                android:id="@+id/btnFormal_dating"
                 android:layout_width="wrap_content"
                 android:layout_height="24dp"
-                android:text="소개팅"
+                android:text="소개팅체"
+                android:textSize="10sp"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:layout_marginEnd="4dp"
+                android:minWidth="0dp"
+                android:background="@drawable/key_letter"
+                android:textColor="#1A1A1A"
+                android:textStyle="normal" android:stateListAnimator="@null" />
+
+            <Button
+                android:id="@+id/btnFormal_custom"
+                android:layout_width="wrap_content"
+                android:layout_height="24dp"
+                android:text="커스텀"
                 android:textSize="10sp"
                 android:paddingStart="10dp"
                 android:paddingEnd="10dp"
@@ -288,6 +349,46 @@
 
         </LinearLayout>
     </HorizontalScrollView>
+
+    <!-- iOS와 같은 메모 · 붙여넣기 · 이모지 전용 탭. 실제 항목은 키보드 서비스에서 채운다. -->
+    <LinearLayout
+        android:id="@+id/quickContentPanel"
+        android:layout_width="match_parent"
+        android:layout_height="124dp"
+        android:orientation="vertical"
+        android:background="#EBEEF7"
+        android:visibility="gone"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <Button android:id="@+id/btnQuickMemo" android:layout_width="0dp" android:layout_weight="1" android:layout_height="24dp" android:text="메모" android:textSize="10sp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:padding="0dp" android:minWidth="0dp" android:stateListAnimator="@null" />
+            <Button android:id="@+id/btnQuickClipboard" android:layout_width="0dp" android:layout_weight="1" android:layout_height="24dp" android:text="붙여넣기" android:textSize="10sp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:padding="0dp" android:layout_marginStart="4dp" android:minWidth="0dp" android:stateListAnimator="@null" />
+            <Button android:id="@+id/btnQuickEmoji" android:layout_width="0dp" android:layout_weight="1" android:layout_height="24dp" android:text="이모지" android:textSize="10sp" android:background="@drawable/key_letter" android:textColor="#1A1A1A" android:padding="0dp" android:layout_marginStart="4dp" android:minWidth="0dp" android:stateListAnimator="@null" />
+            <Button android:id="@+id/btnQuickClose" android:layout_width="44dp" android:layout_height="36dp" android:text="✕" android:textSize="13sp" android:background="@android:color/transparent" android:textColor="#595F6A" android:padding="0dp" android:minWidth="0dp" android:stateListAnimator="@null" />
+        </LinearLayout>
+
+        <HorizontalScrollView
+            android:id="@+id/quickContentScroll"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:fillViewport="true"
+            android:scrollbars="none">
+            <LinearLayout
+                android:id="@+id/quickContentList"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingBottom="6dp" />
+        </HorizontalScrollView>
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/keyboardBody"

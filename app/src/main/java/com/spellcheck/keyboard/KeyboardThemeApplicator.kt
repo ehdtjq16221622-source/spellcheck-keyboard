@@ -281,7 +281,7 @@ object KeyboardThemeApplicator {
         rootView.findViewById<TextView>(R.id.toolbarStatusDot)?.setTextColor(Color.parseColor("#22C55E"))
         rootView.findViewById<TextView>(R.id.toolbarStatusLabel)?.setTextColor(spec.toolbarStatusText)
         rootView.findViewById<View>(R.id.toolbarDivider)?.setBackgroundColor(spec.toolbarDivider)
-        listOf(R.id.btnTranslate, R.id.btnFormalToggle).forEach { id ->
+        listOf(R.id.btnTranslate, R.id.btnFormalToggle, R.id.btnQuickContent).forEach { id ->
             rootView.findViewById<Button>(id)?.apply {
                 background = createKeyDrawable(
                     density = density,
@@ -306,7 +306,7 @@ object KeyboardThemeApplicator {
     }
 
     fun isChromeView(view: View): Boolean {
-        val chromeContainers = listOf(R.id.suggestionBar, R.id.langSelectRow, R.id.formalOptionsRow, R.id.toolbar)
+        val chromeContainers = listOf(R.id.suggestionBar, R.id.langSelectRow, R.id.formalOptionsRow, R.id.toolbar, R.id.quickContentPanel)
         return view.id in chromeContainers || chromeContainers.any { isDescendantOf(view, it) }
     }
 

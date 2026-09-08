@@ -1,6 +1,7 @@
 ﻿package com.spellcheck.keyboard
 
 import android.content.Context
+import android.content.ClipboardManager
 import android.content.res.ColorStateList
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -46,7 +47,13 @@ private typealias KeyboardKeyRole = KeyboardThemeApplicator.KeyRole
 class KeyboardService : InputMethodService() {
 
     enum class InputMode { DUBEOLSIK, CHEONJIIN, ENGLISH, SYMBOL, SYMBOL2, SYMBOL3, DUBEOL_SYMBOL, DUBEOL_SYMBOL2 }
-    private enum class SuggestionMode { CORRECTION, TRANSLATION, NO_CREDITS }
+    private enum class SuggestionMode { CORRECTION, TRANSLATION, TEXT_REPLACEMENT, NO_CREDITS }
+    private enum class QuickContentPage { MEMO, CLIPBOARD, EMOJI }
+
+    private data class PendingTextReplacement(
+        val shortcut: String,
+        val replacement: String
+    )
 
     private lateinit var keyboardView: View
     private val dubeolsikComposer = HangulComposer()
@@ -71,21 +78,32 @@ class KeyboardService : InputMethodService() {
     private var correctedText = ""
     private var translatedText = ""
     private var suggestionMode = SuggestionMode.CORRECTION
-    private var selectedTranslationLang = "en"
+    private var selectedTranslationLang = SettingsManager.translateLang
+    private var quickContentPage = QuickContentPage.MEMO
+    private var selectedEmojiCategory = "최근"
+    private var pendingTextReplacement: PendingTextReplacement? = null
 
     private val formalOptionButtons = mapOf(
-        R.id.btnFormal_jondaemal to "존댓말",
-        R.id.btnFormal_gyeoksik  to "격식체",
-        R.id.btnFormal_sanae     to "사내 메시지",
-        R.id.btnFormal_gogaek    to "고객 안내",
-        R.id.btnFormal_hakbumo   to "공문 안내",
-        R.id.btnFormal_sogaeting to "친근체"
+        R.id.btnFormal_smart to "smart",
+        R.id.btnFormal_jondaemal to "polite",
+        R.id.btnFormal_gyeoksik to "formal",
+        R.id.btnFormal_business to "business",
+        R.id.btnFormal_gogaek to "customer",
+        R.id.btnFormal_parent to "parent",
+        R.id.btnFormal_dating to "dating",
+        R.id.btnFormal_custom to "custom"
     )
     private val langButtons = mapOf(
         R.id.btn_lang_ko to "ko",
         R.id.btn_lang_en to "en",
+        R.id.btn_lang_ja to "ja",
         R.id.btn_lang_zh to "zh",
-        R.id.btn_lang_ja to "ja"
+        R.id.btn_lang_zh_hant to "zh-Hant",
+        R.id.btn_lang_es to "es",
+        R.id.btn_lang_fr to "fr",
+        R.id.btn_lang_de to "de",
+        R.id.btn_lang_vi to "vi",
+        R.id.btn_lang_th to "th"
     )
 
     // Cache selection to reduce repeated getExtractedText IPC calls while typing.
@@ -157,6 +175,9 @@ class KeyboardService : InputMethodService() {
                         keyboardView.findViewById<View>(R.id.formalOptionsRow)?.visibility = View.GONE
                     }
                 }
+                "auto_correct_enabled", "auto_correct_delay_ms" -> {
+                    if (::keyboardView.isInitialized) updateToolbarStatus()
+                }
             }
         }
     }
@@ -222,6 +243,8 @@ class KeyboardService : InputMethodService() {
         SettingsManager.init(this)
         TrialManager.init(this)
         CreditsManager.init(this)
+        QuickContentStore.init(this)
+        EmojiRecentStore.init(this)
         val prefs = getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
         prefs.registerOnSharedPreferenceChangeListener(settingsChangeListener)
     }
@@ -250,6 +273,7 @@ class KeyboardService : InputMethodService() {
         positionChromeRows()
         applyTheme()
         setupButtons()
+        updateToolbarStatus()
         updateKeyboardMode()
         return keyboardView
     }
@@ -687,6 +711,164 @@ class KeyboardService : InputMethodService() {
 
     private fun applyKeyboardKeyStyles(spec: KeyboardThemeSpec) = KeyboardThemeApplicator.applyKeyStyles(keyboardView, spec, resources.displayMetrics.density)
 
+    private fun openQuickContentPanel(page: QuickContentPage) {
+        quickContentPage = page
+        keyboardView.findViewById<View>(R.id.langSelectRow).visibility = View.GONE
+        keyboardView.findViewById<View>(R.id.formalOptionsRow).visibility = View.GONE
+        keyboardView.findViewById<View>(R.id.quickContentPanel).visibility = View.VISIBLE
+        renderQuickContentPanel()
+    }
+
+    private fun closeQuickContentPanel() {
+        keyboardView.findViewById<View>(R.id.quickContentPanel).visibility = View.GONE
+    }
+
+    private fun renderQuickContentPanel() {
+        val spec = currentThemeSpec()
+        val tabs = mapOf(
+            R.id.btnQuickMemo to QuickContentPage.MEMO,
+            R.id.btnQuickClipboard to QuickContentPage.CLIPBOARD,
+            R.id.btnQuickEmoji to QuickContentPage.EMOJI
+        )
+        tabs.forEach { (id, page) ->
+            keyboardView.findViewById<Button>(id)?.apply {
+                if (page == quickContentPage) {
+                    background = createKeyDrawable(spec.selectedFill, spec.selectedPressedFill, radiusDp = 4f)
+                    setTextColor(spec.selectedText)
+                } else {
+                    background = createKeyDrawable(spec.outlineFill, spec.chromeBackground, radiusDp = 4f, strokeColor = spec.outlineStroke, strokeWidthDp = 1f)
+                    setTextColor(spec.outlineText)
+                }
+            }
+        }
+
+        val list = keyboardView.findViewById<LinearLayout>(R.id.quickContentList)
+        list.removeAllViews()
+        when (quickContentPage) {
+            QuickContentPage.MEMO -> renderQuickMemos(list)
+            QuickContentPage.CLIPBOARD -> renderQuickClipboard(list)
+            QuickContentPage.EMOJI -> renderQuickEmoji(list)
+        }
+        keyboardView.findViewById<android.widget.HorizontalScrollView>(R.id.quickContentScroll)?.scrollTo(0, 0)
+    }
+
+    private fun renderQuickMemos(container: LinearLayout) {
+        val memos = QuickContentStore.memos()
+        if (memos.isEmpty()) {
+            addQuickContentButton(container, "등록된 메모가 없어요", enabled = false) {}
+            return
+        }
+        memos.forEach { memo ->
+            addQuickContentButton(container, memo.displayTitle) {
+                insertQuickContent(memo.content)
+            }
+        }
+    }
+
+    private fun renderQuickClipboard(container: LinearLayout) {
+        val manager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        manager.primaryClip?.takeIf { it.itemCount > 0 }
+            ?.getItemAt(0)?.coerceToText(this)?.toString()
+            ?.let(QuickContentStore::recordClipboard)
+
+        val snippets = QuickContentStore.clipboardSnippets()
+        if (snippets.isEmpty()) {
+            addQuickContentButton(container, "최근 복사한 내용이 없어요", enabled = false) {}
+            return
+        }
+        snippets.forEach { text ->
+            addQuickContentButton(container, text.replace('\n', ' ').take(28)) {
+                insertQuickContent(text)
+            }
+        }
+    }
+
+    private fun renderQuickEmoji(container: LinearLayout) {
+        val categories = linkedMapOf(
+            "최근" to EmojiRecentStore.recent(),
+            "스마일" to listOf("😀", "😁", "😂", "🥹", "😊", "😍", "😘", "😎", "🥳", "😭", "😡", "🤔"),
+            "손" to listOf("👍", "👎", "👏", "🙏", "🤝", "💪", "🫶", "👋", "✌️", "👌", "🤞", "🫡"),
+            "하트" to listOf("❤️", "🩷", "🧡", "💛", "💚", "🩵", "💙", "💜", "🖤", "🤍", "🤎", "💕"),
+            "동물" to listOf("🐶", "🐱", "🐻", "🐼", "🐰", "🦊", "🐯", "🐷", "🐸", "🐵", "🦁", "🐨"),
+            "음식" to listOf("🍚", "🍜", "🍗", "🍕", "🍔", "🍰", "☕", "🍺", "🍓", "🍎", "🥑", "🍙"),
+            "기호" to listOf("✅", "❌", "⚠️", "✨", "🔥", "🎉", "💯", "⭐", "🌈", "📌", "📍", "💬")
+        )
+        if (selectedEmojiCategory !in categories) selectedEmojiCategory = "최근"
+        categories.keys.forEach { category ->
+            addQuickContentButton(container, category, selected = category == selectedEmojiCategory) {
+                selectedEmojiCategory = category
+                renderQuickContentPanel()
+            }
+        }
+        val emoji = categories[selectedEmojiCategory].orEmpty()
+        if (emoji.isEmpty()) {
+            addQuickContentButton(container, "최근 사용 이모지가 없어요", enabled = false) {}
+        } else {
+            emoji.forEach { value ->
+                addQuickContentButton(container, value, emoji = true) {
+                    EmojiRecentStore.add(value)
+                    insertQuickContent(value, keepPanelOpen = true)
+                }
+            }
+        }
+    }
+
+    private fun addQuickContentButton(
+        container: LinearLayout,
+        label: String,
+        selected: Boolean = false,
+        enabled: Boolean = true,
+        emoji: Boolean = false,
+        onClick: () -> Unit
+    ) {
+        val spec = currentThemeSpec()
+        val button = Button(this).apply {
+            text = label
+            isAllCaps = false
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, if (emoji) 20f else 11f)
+            setPadding(dp(12), 0, dp(12), 0)
+            minWidth = 0
+            minimumWidth = 0
+            stateListAnimator = null
+            isEnabled = enabled
+            alpha = if (enabled) 1f else 0.55f
+            background = when {
+                selected -> createKeyDrawable(spec.selectedFill, spec.selectedPressedFill, radiusDp = 5f)
+                else -> createKeyDrawable(spec.outlineFill, spec.chromeBackground, radiusDp = 5f, strokeColor = spec.outlineStroke, strokeWidthDp = 1f)
+            }
+            setTextColor(if (selected) spec.selectedText else spec.outlineText)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            ).apply { marginEnd = dp(4) }
+        }
+        if (enabled) button.onKeyDown { vibrateKey(); onClick() }
+        container.addView(button)
+    }
+
+    private fun insertQuickContent(text: String, keepPanelOpen: Boolean = false) {
+        if (text.isBlank()) return
+        commitComposing()
+        currentInputConnection?.commitText(text, 1)
+        if (!keepPanelOpen) closeQuickContentPanel()
+    }
+
+    private fun showTextReplacementPreviewIfMatched(): Boolean {
+        val ic = currentInputConnection ?: return false
+        val beforeCursor = ic.getTextBeforeCursor(160, 0)?.toString().orEmpty()
+        val match = QuickContentStore.replacements()
+            .sortedByDescending { it.shortcut.length }
+            .firstOrNull { replacement -> beforeCursor.endsWith(replacement.shortcut) }
+            ?: return false
+
+        pendingTextReplacement = PendingTextReplacement(match.shortcut, match.replacement)
+        suggestionMode = SuggestionMode.TEXT_REPLACEMENT
+        showSuggestion(match.replacement, true)
+        return true
+    }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).roundToInt()
+
     private fun updateFormalOptionHighlight() {
         val spec = currentThemeSpec()
         val current = SettingsManager.normalizeFormalLevel(SettingsManager.formalLevel)
@@ -727,6 +909,52 @@ class KeyboardService : InputMethodService() {
             }
         }
         keyboardView.findViewById<Button>(R.id.btnTranslate)?.text = "번역"
+    }
+
+    private fun updateToolbarStatus() {
+        val label = keyboardView.findViewById<TextView>(R.id.toolbarStatusLabel) ?: return
+        val dot = keyboardView.findViewById<TextView>(R.id.toolbarStatusDot)
+        if (SettingsManager.autoCorrectEnabled) {
+            label.text = "맞춤법 자동교정 ON"
+            dot?.setTextColor(Color.parseColor("#22C55E"))
+        } else {
+            label.text = "맞춤법 자동교정 OFF"
+            dot?.setTextColor(Color.parseColor("#9CA3AF"))
+        }
+    }
+
+    private fun languageDisplayName(code: String): String = when (code) {
+        "ko" -> "한국어"
+        "en" -> "영어"
+        "ja" -> "일본어"
+        "zh" -> "중국어(간체)"
+        "zh-Hant" -> "중국어(번체)"
+        "es" -> "스페인어"
+        "fr" -> "프랑스어"
+        "de" -> "독일어"
+        "it" -> "이탈리아어"
+        "pt" -> "포르투갈어"
+        "ru" -> "러시아어"
+        "ar" -> "아랍어"
+        "hi" -> "힌디어"
+        "vi" -> "베트남어"
+        "th" -> "태국어"
+        "id" -> "인도네시아어"
+        "ms" -> "말레이어"
+        "tr" -> "터키어"
+        "pl" -> "폴란드어"
+        "nl" -> "네덜란드어"
+        "sv" -> "스웨덴어"
+        "el" -> "그리스어"
+        "cs" -> "체코어"
+        "uk" -> "우크라이나어"
+        "he" -> "히브리어"
+        "tl" -> "필리핀어"
+        "ro" -> "루마니아어"
+        "hu" -> "헝가리어"
+        "da" -> "덴마크어"
+        "fi" -> "핀란드어"
+        else -> code
     }
 
     private fun isSensitiveInputField(info: EditorInfo? = currentInputEditorInfo): Boolean {
@@ -802,6 +1030,27 @@ class KeyboardService : InputMethodService() {
     }
 
     private fun setupButtons() {
+        keyboardView.findViewById<Button>(R.id.btnQuickContent).onKeyDown {
+            vibrateKey()
+            if (keyboardView.findViewById<View>(R.id.quickContentPanel).visibility == View.VISIBLE) {
+                closeQuickContentPanel()
+            } else {
+                openQuickContentPanel(QuickContentPage.MEMO)
+            }
+        }
+        keyboardView.findViewById<Button>(R.id.btnQuickMemo).onKeyDown {
+            vibrateKey(); openQuickContentPanel(QuickContentPage.MEMO)
+        }
+        keyboardView.findViewById<Button>(R.id.btnQuickClipboard).onKeyDown {
+            vibrateKey(); openQuickContentPanel(QuickContentPage.CLIPBOARD)
+        }
+        keyboardView.findViewById<Button>(R.id.btnQuickEmoji).onKeyDown {
+            vibrateKey(); openQuickContentPanel(QuickContentPage.EMOJI)
+        }
+        keyboardView.findViewById<Button>(R.id.btnQuickClose).onKeyDown {
+            vibrateKey(); closeQuickContentPanel()
+        }
+
         // Translation toggle
         keyboardView.findViewById<Button>(R.id.btnTranslate).onKeyDown {
             vibrateKey()
@@ -820,6 +1069,7 @@ class KeyboardService : InputMethodService() {
             keyboardView.findViewById<Button>(id)?.onKeyDown {
                 vibrateKey()
                 selectedTranslationLang = lang
+                SettingsManager.translateLang = lang
                 keyboardView.findViewById<View>(R.id.langSelectRow).visibility = View.GONE
                 updateLangHighlight()
                 performTranslation(lang)
@@ -857,23 +1107,35 @@ class KeyboardService : InputMethodService() {
             }
         }
 
-        // Apply correction/translation result
+        // Apply correction, translation, or the text-replacement preview.
         val applyAction = View.OnClickListener {
             vibrateKey()
-            val textToApply = if (suggestionMode == SuggestionMode.TRANSLATION) translatedText else correctedText
-            if (textToApply.isNotBlank()) {
-                commitComposing()
+            val replacement = pendingTextReplacement
+            if (suggestionMode == SuggestionMode.TEXT_REPLACEMENT && replacement != null) {
                 val ic = currentInputConnection ?: return@OnClickListener
-                ic.beginBatchEdit()
-                ic.performContextMenuAction(android.R.id.selectAll)
-                ic.commitText(textToApply, 1)
-                ic.endBatchEdit()
+                val beforeCursor = ic.getTextBeforeCursor(replacement.shortcut.length + 2, 0)?.toString().orEmpty()
+                if (beforeCursor.endsWith(replacement.shortcut)) {
+                    ic.beginBatchEdit()
+                    ic.deleteSurroundingText(replacement.shortcut.length, 0)
+                    ic.commitText(replacement.replacement, 1)
+                    ic.endBatchEdit()
+                }
+            } else {
+                val textToApply = if (suggestionMode == SuggestionMode.TRANSLATION) translatedText else correctedText
+                if (textToApply.isNotBlank()) {
+                    commitComposing()
+                    val ic = currentInputConnection ?: return@OnClickListener
+                    ic.beginBatchEdit()
+                    ic.performContextMenuAction(android.R.id.selectAll)
+                    ic.commitText(textToApply, 1)
+                    ic.endBatchEdit()
+                }
             }
             hideSuggestionBar()
         }
         keyboardView.findViewById<Button>(R.id.btnApply).setOnClickListener(applyAction)
         keyboardView.findViewById<TextView>(R.id.tvSuggestion).setOnClickListener {
-            if (correctedText.isNotEmpty() || translatedText.isNotEmpty()) applyAction.onClick(it)
+            if (correctedText.isNotEmpty() || translatedText.isNotEmpty() || pendingTextReplacement != null) applyAction.onClick(it)
         }
 
         // Rewarded-ad button
@@ -984,8 +1246,12 @@ class KeyboardService : InputMethodService() {
                 scheduleAutoCorrect()
                 return@onKeyDown
             }
+            commitComposing()
+            if (showTextReplacementPreviewIfMatched()) {
+                lastSpaceTime = 0
+                return@onKeyDown
+            }
             if (SettingsManager.doubleSpacePeriod && now - lastSpaceTime < 300L) {
-                commitComposing()
                 currentInputConnection?.deleteSurroundingText(1, 0)
                 currentInputConnection?.commitText(". ", 1)
                 lastSpaceTime = 0
@@ -1065,13 +1331,16 @@ class KeyboardService : InputMethodService() {
         keyboardView.findViewById<Button>(R.id.key_space).onKeyDown {
             vibrateKey()
             val now = System.currentTimeMillis()
+            commitComposing()
+            if (showTextReplacementPreviewIfMatched()) {
+                lastSpaceTime = 0
+                return@onKeyDown
+            }
             if (SettingsManager.doubleSpacePeriod && now - lastSpaceTime < 300L) {
-                commitComposing()
                 currentInputConnection?.deleteSurroundingText(1, 0)
                 currentInputConnection?.commitText(". ", 1)
                 lastSpaceTime = 0
             } else {
-                commitComposing()
                 currentInputConnection?.commitText(" ", 1)
                 lastSpaceTime = now
             }
@@ -1725,17 +1994,15 @@ class KeyboardService : InputMethodService() {
 
     private fun scheduleAutoCorrect() {
         handler.removeCallbacks(autoCorrectRunnable)
+        if (!SettingsManager.autoCorrectEnabled) return
         if (!prepareAiAction(showBlockedMessage = false)) return
-        handler.postDelayed(autoCorrectRunnable, 1000)
+        handler.postDelayed(autoCorrectRunnable, SettingsManager.autoCorrectDelayMs)
     }
 
     private fun performAutoCorrect() {
         if (!prepareAiAction(showBlockedMessage = false)) return
-        val cost = if (isFormalMode) CreditsManager.COST_FORMAL else CreditsManager.COST_CORRECT
-        if (!CreditsManager.canAfford(cost)) {
-            showNoCredits()
-            return
-        }
+        // The server is the source of truth. A local pre-check can incorrectly
+        // block someone whose subscription credits were just restored.
         val ic = currentInputConnection ?: return
         val extracted = ic.getExtractedText(ExtractedTextRequest(), 0)
         val text = extracted?.text?.toString() ?: return
@@ -1748,7 +2015,8 @@ class KeyboardService : InputMethodService() {
             text, isFormalMode,
             SettingsManager.includePunct, SettingsManager.includeDialect,
             SettingsManager.normalizeFormalLevel(SettingsManager.formalLevel),
-            SettingsManager.formalIncludePunct
+            SettingsManager.formalIncludePunct,
+            SettingsManager.customTonePrompt
         ) { result ->
             handler.post {
                 if (!isServiceActive) return@post
@@ -1775,18 +2043,13 @@ class KeyboardService : InputMethodService() {
 
     private fun performTranslation(targetLang: String) {
         if (!prepareAiAction(showBlockedMessage = true)) return
-        if (!CreditsManager.canAfford(CreditsManager.COST_TRANSLATE)) {
-            showNoCredits()
-            return
-        }
+        // Credit availability is checked atomically by the server with this request.
         val ic = currentInputConnection ?: return
         val extracted = ic.getExtractedText(ExtractedTextRequest(), 0)
         val text = extracted?.text?.toString() ?: return
         if (text.isBlank()) return
 
-        val langName = when (targetLang) {
-            "ko" -> "한국어"; "en" -> "영어"; "zh" -> "중국어"; "ja" -> "일본어"; else -> targetLang
-        }
+        val langName = languageDisplayName(targetLang)
         suggestionMode = SuggestionMode.TRANSLATION
         showSuggestion("$langName 번역 중...", false)
 
@@ -1858,6 +2121,7 @@ class KeyboardService : InputMethodService() {
         keyboardView.findViewById<Button>(R.id.btnWatchAd).visibility = View.GONE
         correctedText = ""
         translatedText = ""
+        pendingTextReplacement = null
         suggestionMode = SuggestionMode.CORRECTION
     }
 

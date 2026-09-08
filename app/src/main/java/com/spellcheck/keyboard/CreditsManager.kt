@@ -15,24 +15,25 @@ object CreditsManager {
 
     data class Snapshot(
         val freeCredits: Int = DAILY_FREE,
-        val paidCredits: Int = 0
+        val paidCredits: Int = 0,
+        val subscriptionCredits: Int = 0
     ) {
-        val totalCredits: Int get() = freeCredits + paidCredits
+        val totalCredits: Int get() = freeCredits + paidCredits + subscriptionCredits
     }
 
     private const val PREFS = "credits"
     private const val KEY_LEGACY_CREDITS = "credits"
     private const val KEY_FREE_CREDITS = "free_credits"
     private const val KEY_PAID_CREDITS = "paid_credits"
+    private const val KEY_SUBSCRIPTION_CREDITS = "subscription_credits"
     private const val KEY_LAST_DATE = "last_date"
     private const val DAILY_FREE = 50
 
     const val COST_CORRECT = 10
     const val COST_TRANSLATE = 20
     const val COST_FORMAL = 30
-    const val PLAN1_DAILY_CREDITS = 5000
-    const val PLAN2_DAILY_CREDITS = 10000
-    const val MONTHLY_SUBSCRIPTION_CREDITS = 5000
+    const val PLAN1_MONTHLY_CREDITS = 4000
+    const val PLAN2_MONTHLY_CREDITS = 9000
     const val REWARDED_AD_CREDITS = 500
 
     private var prefs: SharedPreferences? = null
@@ -69,14 +70,17 @@ object CreditsManager {
         val nextFree = (snapshot.freeCredits - remainingCost).coerceAtLeast(0).also {
             remainingCost = (remainingCost - snapshot.freeCredits).coerceAtLeast(0)
         }
-        val nextPaid = (snapshot.paidCredits - remainingCost).coerceAtLeast(0)
+        val nextPaid = (snapshot.paidCredits - remainingCost).coerceAtLeast(0).also {
+            remainingCost = (remainingCost - snapshot.paidCredits).coerceAtLeast(0)
+        }
+        val nextSubscription = (snapshot.subscriptionCredits - remainingCost).coerceAtLeast(0)
 
-        saveSnapshot(nextFree, nextPaid)
+        saveSnapshot(nextFree, nextPaid, nextSubscription)
     }
 
     fun addCredits(amount: Int) {
         val snapshot = currentSnapshot()
-        saveSnapshot(snapshot.freeCredits, snapshot.paidCredits + amount)
+        saveSnapshot(snapshot.freeCredits, snapshot.paidCredits + amount, snapshot.subscriptionCredits)
     }
 
     fun syncFromServer(remaining: Int) {
@@ -85,10 +89,11 @@ object CreditsManager {
         syncFromServer(freeCredits, paidCredits)
     }
 
-    fun syncFromServer(freeCredits: Int, paidCredits: Int) {
+    fun syncFromServer(freeCredits: Int, paidCredits: Int, subscriptionCredits: Int = 0) {
         saveSnapshot(
             freeCredits = freeCredits.coerceAtLeast(0),
             paidCredits = paidCredits.coerceAtLeast(0),
+            subscriptionCredits = subscriptionCredits.coerceAtLeast(0),
             syncDateToToday = true
         )
     }
@@ -97,7 +102,8 @@ object CreditsManager {
         resetFreeCreditsIfNewDay()
         return Snapshot(
             freeCredits = prefs?.getInt(KEY_FREE_CREDITS, DAILY_FREE) ?: DAILY_FREE,
-            paidCredits = prefs?.getInt(KEY_PAID_CREDITS, 0) ?: 0
+            paidCredits = prefs?.getInt(KEY_PAID_CREDITS, 0) ?: 0,
+            subscriptionCredits = prefs?.getInt(KEY_SUBSCRIPTION_CREDITS, 0) ?: 0
         )
     }
 
@@ -136,11 +142,13 @@ object CreditsManager {
     private fun saveSnapshot(
         freeCredits: Int,
         paidCredits: Int,
+        subscriptionCredits: Int,
         syncDateToToday: Boolean = false
     ) {
         prefs?.edit()?.apply {
             putInt(KEY_FREE_CREDITS, freeCredits)
             putInt(KEY_PAID_CREDITS, paidCredits)
+            putInt(KEY_SUBSCRIPTION_CREDITS, subscriptionCredits)
             if (syncDateToToday) {
                 putString(KEY_LAST_DATE, today())
             }

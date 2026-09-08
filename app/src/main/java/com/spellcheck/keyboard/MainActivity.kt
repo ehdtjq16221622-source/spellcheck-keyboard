@@ -43,14 +43,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -117,6 +120,7 @@ private enum class AppScreen {
     KEYBOARD,
     SPELLCHECK,
     FORMAL,
+    QUICK_CONTENT,
     PRIVACY,
     FEEDBACK
 }
@@ -157,10 +161,24 @@ class MainActivity : ComponentActivity() {
         SettingsManager.init(this)
         TrialManager.init(this)
         CreditsManager.init(this)
+        QuickContentStore.init(this)
+        EmojiRecentStore.init(this)
         BillingManager.init(this)
 
         setContent {
             맞춤법키보드Theme {
+                var activeNotice by remember { mutableStateOf<ApiClient.ActiveNotice?>(null) }
+                LaunchedEffect(Unit) {
+                    ApiClient.getActiveNotice { result ->
+                        runOnUiThread {
+                            result.getOrNull()?.let { notice ->
+                                val prefs = getSharedPreferences("notices", MODE_PRIVATE)
+                                val hiddenUntil = prefs.getLong("hidden_until_${notice.id}", 0L)
+                                if (hiddenUntil <= System.currentTimeMillis()) activeNotice = notice
+                            }
+                        }
+                    }
+                }
                 val themeMode = remember {
                     mutableStateOf(normalizeAppTheme(SettingsManager.appTheme))
                 }
@@ -196,6 +214,54 @@ class MainActivity : ComponentActivity() {
                             onOpenPrivacyPolicy = { AppLinks.privacyUrl },
                             onOpenFeedback = { AppLinks.feedbackUrl }
                         )
+                        activeNotice?.let { notice ->
+                            val context = LocalContext.current
+                            AlertDialog(
+                                onDismissRequest = { activeNotice = null },
+                                title = { Text(notice.title) },
+                                text = {
+                                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Text(notice.body)
+                                        Button(
+                                            onClick = {
+                                                val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                                clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Kingboard Instagram", "_kingboard"))
+                                                android.widget.Toast.makeText(context, "개발자 인스타그램 ID가 복사되었습니다.", android.widget.Toast.LENGTH_SHORT).show()
+                                            },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(14.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = colors.accent)
+                                        ) {
+                                            Text("개발자 인스타그램 복사", color = Color.White)
+                                        }
+                                    }
+                                },
+                                confirmButton = {
+                                    TextButton(onClick = {
+                                        val packageName = context.packageName
+                                        val marketIntent = android.content.Intent(
+                                            android.content.Intent.ACTION_VIEW,
+                                            android.net.Uri.parse("market://details?id=$packageName")
+                                        ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        val webIntent = android.content.Intent(
+                                            android.content.Intent.ACTION_VIEW,
+                                            android.net.Uri.parse("https://play.google.com/store/apps/details?id=$packageName")
+                                        ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        runCatching { context.startActivity(marketIntent) }
+                                            .recoverCatching { context.startActivity(webIntent) }
+                                        activeNotice = null
+                                    }) { Text("평가하기") }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = {
+                                        getSharedPreferences("notices", MODE_PRIVATE).edit()
+                                            .putLong("hidden_until_${notice.id}", System.currentTimeMillis() + 24L * 60L * 60L * 1000L)
+                                            .apply()
+                                        activeNotice = null
+                                    }) { Text("오늘 하루 보지 않기") }
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -236,6 +302,9 @@ private fun AppNavigator(
         }
         AppScreen.FORMAL -> SubScreenShell("말투 교정 설정", onBack = { screen = AppScreen.MAIN }) {
             FormalScreenContent()
+        }
+        AppScreen.QUICK_CONTENT -> SubScreenShell("텍스트 대치 · 메모 · 붙여넣기", onBack = { screen = AppScreen.MAIN }) {
+            QuickContentScreen()
         }
         AppScreen.PRIVACY -> WebScreen(
             title = "개인정보처리방침",
@@ -287,6 +356,8 @@ private fun MainScreen(
             KRow("맞춤법 교정 설정", "구두점, 사투리 교정", TrailingType.Chevron) { onNavigate(AppScreen.SPELLCHECK) }
             KDivider()
             KRow("말투 교정 설정", "말투 스타일 선택", TrailingType.Chevron) { onNavigate(AppScreen.FORMAL) }
+            KDivider()
+            KRow("텍스트 대치 · 메모 · 붙여넣기", "키보드에서 바로 입력할 내용 관리", TrailingType.Chevron) { onNavigate(AppScreen.QUICK_CONTENT) }
         }
 
         Spacer(Modifier.height(22.dp))
@@ -313,7 +384,7 @@ private fun MainScreen(
 
         Spacer(Modifier.height(24.dp))
         Text(
-            "버전 1.0",
+            "버전 ${BuildConfig.VERSION_NAME}",
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center,
             color = colors.textMuted,
@@ -1035,12 +1106,241 @@ private fun KeyboardDesignPreview(
 }
 
 @Composable
+private fun QuickContentScreen() {
+    val context = LocalContext.current
+    var tab by remember { mutableStateOf("텍스트 대치") }
+    var memos by remember { mutableStateOf(QuickContentStore.memos()) }
+    var replacements by remember { mutableStateOf(QuickContentStore.replacements()) }
+    var memoTitle by remember { mutableStateOf("") }
+    var memoContent by remember { mutableStateOf("") }
+    var shortcut by remember { mutableStateOf("") }
+    var replacementText by remember { mutableStateOf("") }
+    var feedback by remember { mutableStateOf<String?>(null) }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        runCatching {
+            context.contentResolver.openOutputStream(uri)?.bufferedWriter()?.use { writer ->
+                writer.write(QuickContentStore.exportJson())
+            } ?: error("백업 파일을 만들 수 없습니다.")
+        }.onSuccess { feedback = "메모와 텍스트 대치 백업을 저장했습니다." }
+            .onFailure { feedback = "백업 파일을 저장하지 못했습니다." }
+    }
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        runCatching {
+            context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { reader ->
+                QuickContentStore.importAndMerge(reader.readText())
+            } ?: error("백업 파일을 읽을 수 없습니다.")
+        }.onSuccess { result ->
+            memos = QuickContentStore.memos()
+            replacements = QuickContentStore.replacements()
+            feedback = "메모 ${result.memos}개와 텍스트 대치 ${result.replacements}개를 복원했습니다."
+        }.onFailure { feedback = it.message ?: "킹보드 백업 파일을 읽지 못했습니다." }
+    }
+
+    KSectionLabel("내 콘텐츠")
+    KSection {
+        Column(Modifier.padding(12.dp)) {
+            KSegmentedControl(
+                options = listOf("텍스트 대치", "메모", "붙여넣기"),
+                selected = tab,
+                onSelect = { tab = it }
+            )
+        }
+    }
+    Spacer(Modifier.height(12.dp))
+    KSectionLabel("백업")
+    KSection {
+        KRow("메모 · 텍스트 대치 백업", "파일로 저장해 Google Drive 등에서 보관", TrailingType.Chevron) {
+            exportLauncher.launch("kingboard-backup-${SimpleDateFormat("yyyyMMdd", Locale.KOREA).format(Date())}.json")
+        }
+        KDivider()
+        KRow("백업 파일 복원", "현재 항목에 합쳐서 복원", TrailingType.Chevron) {
+            importLauncher.launch(arrayOf("application/json", "text/json"))
+        }
+    }
+    Text(
+        "최근 복사 내용은 개인정보 보호를 위해 백업에 포함하지 않습니다.",
+        modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
+        color = LocalKColors.current.textMuted,
+        fontSize = 12.sp
+    )
+    feedback?.let {
+        Text(it, color = LocalKColors.current.accent, fontSize = 12.sp, modifier = Modifier.padding(bottom = 8.dp))
+    }
+
+    when (tab) {
+        "메모" -> {
+            KSectionLabel("메모 추가")
+            KSection {
+                Column(Modifier.padding(14.dp)) {
+                    OutlinedTextField(
+                        value = memoTitle,
+                        onValueChange = { memoTitle = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("제목 (선택)") },
+                        singleLine = true
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = memoContent,
+                        onValueChange = { memoContent = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("메모 내용") },
+                        minLines = 3
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    Button(
+                        onClick = {
+                            if (memoContent.isBlank()) return@Button
+                            QuickContentStore.saveMemos(
+                                listOf(QuickMemo(title = memoTitle.trim(), content = memoContent)) + memos
+                            )
+                            memos = QuickContentStore.memos()
+                            memoTitle = ""
+                            memoContent = ""
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = LocalKColors.current.accent)
+                    ) { Text("메모 추가") }
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            KSectionLabel("등록된 메모")
+            KSection {
+                if (memos.isEmpty()) {
+                    KRow("등록된 메모가 없어요", "자주 쓰는 내용을 추가해보세요.", TrailingType.Chevron) {}
+                } else {
+                    memos.forEachIndexed { index, memo ->
+                        if (index > 0) KDivider()
+                        KRow(memo.displayTitle, memo.content.replace('\n', ' ').take(64), TrailingType.Chevron) {
+                            QuickContentStore.saveMemos(memos.filterNot { it.id == memo.id })
+                            memos = QuickContentStore.memos()
+                        }
+                    }
+                }
+            }
+        }
+        "붙여넣기" -> {
+            KSectionLabel("최근 복사한 내용")
+            KSection {
+                val snippets = QuickContentStore.clipboardSnippets()
+                if (snippets.isEmpty()) {
+                    KRow("최근 복사한 내용이 없어요", "키보드의 붙여넣기 탭을 열면 최근 내용이 표시됩니다.", TrailingType.Chevron) {}
+                } else {
+                    snippets.forEachIndexed { index, item ->
+                        if (index > 0) KDivider()
+                        KRow(item.replace('\n', ' ').take(80), trailingType = TrailingType.Chevron) {}
+                    }
+                }
+            }
+        }
+        else -> {
+            KSectionLabel("텍스트 대치 추가")
+            KSection {
+                Column(Modifier.padding(14.dp)) {
+                    OutlinedTextField(
+                        value = shortcut,
+                        onValueChange = { shortcut = it.replace(" ", "") },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("단축어") },
+                        singleLine = true
+                    )
+                    Text("스페이스를 누르면 키보드 상단에 대치 텍스트 미리보기가 표시됩니다.", color = LocalKColors.current.textMuted, fontSize = 12.sp)
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = replacementText,
+                        onValueChange = { replacementText = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("대치 텍스트") },
+                        minLines = 3
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    Button(
+                        onClick = {
+                            if (shortcut.isBlank() || replacementText.isBlank()) return@Button
+                            val next = replacements.filterNot { it.shortcut == shortcut } +
+                                TextReplacement(shortcut = shortcut, replacement = replacementText)
+                            QuickContentStore.saveReplacements(next)
+                            replacements = QuickContentStore.replacements()
+                            shortcut = ""
+                            replacementText = ""
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = LocalKColors.current.accent)
+                    ) { Text("텍스트 대치 추가") }
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            KSectionLabel("등록된 텍스트 대치")
+            KSection {
+                if (replacements.isEmpty()) {
+                    KRow("등록된 텍스트 대치가 없어요", "단축어를 추가해보세요.", TrailingType.Chevron) {}
+                } else {
+                    replacements.forEachIndexed { index, item ->
+                        if (index > 0) KDivider()
+                        KRow(item.shortcut, item.replacement.replace('\n', ' ').take(64), TrailingType.Chevron) {
+                            QuickContentStore.saveReplacements(replacements.filterNot { it.id == item.id })
+                            replacements = QuickContentStore.replacements()
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun SpellcheckScreenContent() {
     var includePunct by remember { mutableStateOf(SettingsManager.includePunct) }
     var includeDialect by remember { mutableStateOf(SettingsManager.includeDialect) }
+    var autoCorrectEnabled by remember { mutableStateOf(SettingsManager.autoCorrectEnabled) }
+    var autoCorrectDelayMs by remember { mutableFloatStateOf(SettingsManager.autoCorrectDelayMs.toFloat()) }
 
     KSectionLabel("맞춤법")
     KSection {
+        KRow(
+            title = "맞춤법 자동 교정",
+            subtitle = if (autoCorrectEnabled) {
+                String.format(Locale.KOREA, "%.1f초 후 자동 교정, 요청 시작 시 10크레딧 사용", autoCorrectDelayMs / 1000f)
+            } else {
+                "자동 교정을 사용하지 않음"
+            },
+            trailingType = TrailingType.Toggle(autoCorrectEnabled) {
+                autoCorrectEnabled = it
+                SettingsManager.autoCorrectEnabled = it
+            }
+        )
+        if (autoCorrectEnabled) {
+            KDivider()
+            Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                Text("자동 교정 시간", color = LocalKColors.current.textSecondary, fontSize = 13.sp)
+                Slider(
+                    value = autoCorrectDelayMs,
+                    onValueChange = { autoCorrectDelayMs = (it / 100f).roundToInt() * 100f },
+                    onValueChangeFinished = {
+                        SettingsManager.autoCorrectDelayMs = autoCorrectDelayMs.roundToInt().toLong()
+                    },
+                    valueRange = 1000f..3000f,
+                    steps = 19,
+                    colors = SliderDefaults.colors(
+                        thumbColor = LocalKColors.current.accent,
+                        activeTrackColor = LocalKColors.current.accent
+                    )
+                )
+                Text(
+                    String.format(Locale.KOREA, "%.1f초", autoCorrectDelayMs / 1000f),
+                    color = LocalKColors.current.textMuted,
+                    fontSize = 12.sp
+                )
+            }
+        }
+        KDivider()
         KRow(
             title = "구두점 포함 교정",
             subtitle = "쉼표, 마침표, 위치까지 교정",
@@ -1065,28 +1365,58 @@ private fun SpellcheckScreenContent() {
 private fun FormalScreenContent() {
     var formalLevel by remember { mutableStateOf(normalizeFormalLevel(SettingsManager.formalLevel)) }
     var formalIncludePunct by remember { mutableStateOf(SettingsManager.formalIncludePunct) }
+    var customPrompt by remember { mutableStateOf(SettingsManager.customTonePrompt) }
 
     KSectionLabel("말투 스타일")
     KSection {
         val items = listOf(
-            "존댓말" to "부드럽고 자연스러운 존댓말로 교정",
-            "격식체" to "격식 있는 문장으로 정리",
-            "사내 메시지" to "업무용 메신저 톤으로 다듬기",
-            "고객 안내" to "고객 응대용 문장으로 정중하게 정리",
-            "공문 안내" to "안내문과 공지문처럼 또렷하게 정리",
-            "친근체" to "가볍고 편한 말투로 바꾸기"
+            Triple("smart", "스마트 교정(추천)", "상황에 맞는 문장으로"),
+            Triple("polite", "존댓말", "부드럽고 자연스러운 존댓말로 교정"),
+            Triple("formal", "격식체", "격식 있는 문장으로 정리"),
+            Triple("business", "비즈니스", "사내외 업무 메시지 톤으로 다듬기"),
+            Triple("customer", "고객 안내", "고객 응대용 문장으로 정중하게 정리"),
+            Triple("parent", "학부모 안내", "따뜻하고 정중하게 학부모께 전달"),
+            Triple("dating", "소개팅체", "자연스럽고 호감 가는 말투로 바꾸기"),
+            Triple("custom", "커스텀", "내가 입력한 프롬프트로 교정")
         )
-        items.forEachIndexed { index, (title, subtitle) ->
+        items.forEachIndexed { index, (key, title, subtitle) ->
             if (index > 0) KDivider()
             KRow(
                 title = title,
                 subtitle = subtitle,
-                trailingType = TrailingType.Checkmark(formalLevel == title),
+                trailingType = TrailingType.Checkmark(formalLevel == key),
                 onClick = {
-                    formalLevel = title
-                    SettingsManager.formalLevel = title
+                    formalLevel = key
+                    SettingsManager.formalLevel = key
                 }
             )
+        }
+    }
+
+    if (formalLevel == "custom") {
+        Spacer(Modifier.height(18.dp))
+        KSectionLabel("커스텀 프롬프트")
+        KSection {
+            Column(Modifier.padding(14.dp)) {
+                OutlinedTextField(
+                    value = customPrompt,
+                    onValueChange = {
+                        customPrompt = it.take(500)
+                        SettingsManager.customTonePrompt = customPrompt
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("원하는 말투 설명") },
+                    minLines = 4
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "${customPrompt.length} / 500",
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.End,
+                    color = LocalKColors.current.textMuted,
+                    fontSize = 12.sp
+                )
+            }
         }
     }
 
@@ -1135,7 +1465,7 @@ private fun CreditSectionCard() {
             trackColor = c.sliderInactive
         )
         Text(
-            "매일 자정 무료 크레딧 50 자동 지급",
+            "크레딧은 서버와 자동 동기화됩니다.",
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
             color = c.textSecondary
@@ -1200,7 +1530,7 @@ private fun PlanSectionCard() {
                             Text("/ 월", fontSize = 12.sp, color = c.textMuted)
                         }
                         HorizontalDivider(color = c.border, thickness = 0.5.dp)
-                        Text("매일 5,000 크레딧", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = c.textPrimary)
+                        Text("매월 4,000 크레딧", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = c.textPrimary)
                     }
                     Button(
                         onClick = { activity?.let { BillingManager.launchSubscriptionPurchase(it, 1) } },
@@ -1272,7 +1602,7 @@ private fun PlanSectionCard() {
                             Text("/ 월", fontSize = 12.sp, color = c.textMuted)
                         }
                         HorizontalDivider(color = c.border, thickness = 0.5.dp)
-                        Text("매일 10,000 크레딧", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = c.textPrimary)
+                        Text("매월 9,000 크레딧", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = c.textPrimary)
                     }
                     Box(
                         modifier = Modifier.fillMaxWidth().height(40.dp).padding(top = 4.dp)
@@ -1300,7 +1630,7 @@ private fun PlanSectionCard() {
             }
 
             Text(
-                "광고비와 구독비는 요약 AI 서비스 비용으로 사용됩니다. 따로 수익은 거의 없어요.",
+                "구독 크레딧은 매 결제일에 새로 제공되며 다음 달로 이월되지 않습니다. AI 요청이 시작되면 크레딧이 사용됩니다.",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 color = c.textSecondary,
@@ -1667,12 +1997,15 @@ private fun normalizeAppTheme(value: String): String = when {
 }
 
 private fun normalizeFormalLevel(value: String): String = when {
-    value.contains("격") -> "격식체"
-    value.contains("사내") -> "사내 메시지"
-    value.contains("고객") -> "고객 안내"
-    value.contains("공문") -> "공문 안내"
-    value.contains("친근") -> "친근체"
-    else -> "존댓말"
+    value == "smart" || value.contains("스마트") -> "smart"
+    value == "polite" || value.contains("존댓말") -> "polite"
+    value == "formal" || value.contains("격") -> "formal"
+    value == "business" || value.contains("비즈니스") || value.contains("사내") -> "business"
+    value == "customer" || value.contains("고객") -> "customer"
+    value == "parent" || value.contains("공문") || value.contains("학부모") -> "parent"
+    value == "dating" || value.contains("친근") || value.contains("소개팅") -> "dating"
+    value == "custom" || value.contains("커스텀") -> "custom"
+    else -> "smart"
 }
 
 private fun formatSubscriptionDate(timeMillis: Long): String {

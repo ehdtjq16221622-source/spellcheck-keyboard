@@ -7,14 +7,22 @@ import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.Executors
+import java.util.UUID
 
 object ApiClient {
 
+    data class ActiveNotice(
+        val id: String,
+        val title: String,
+        val body: String
+    )
+
     data class CreditState(
         val freeCredits: Int,
-        val paidCredits: Int
+        val paidCredits: Int,
+        val subscriptionCredits: Int = 0
     ) {
-        val totalCredits: Int get() = freeCredits + paidCredits
+        val totalCredits: Int get() = freeCredits + paidCredits + subscriptionCredits
     }
 
     sealed class Result {
@@ -46,6 +54,7 @@ object ApiClient {
         includeDialect: Boolean,
         formalLevel: String,
         formalIncludePunct: Boolean,
+        customPrompt: String = "",
         callback: (Result) -> Unit
     ) {
         executor.execute {
@@ -57,7 +66,11 @@ object ApiClient {
                     put("includeDialect", includeDialect)
                     put("formalLevel", formalLevel)
                     put("formalIncludePunct", formalIncludePunct)
+                    if (customPrompt.isNotBlank()) put("customPrompt", customPrompt)
                     put("deviceId", CreditsManager.deviceId)
+                    // The server uses this id to make charging idempotent and
+                    // refund the exact request when the AI provider fails.
+                    put("requestId", UUID.randomUUID().toString())
                 }
                 val response = callServer("correct", body)
                 parseAndSyncCredits(response)
@@ -77,6 +90,7 @@ object ApiClient {
                     put("text", text)
                     put("targetLang", targetLang)
                     put("deviceId", CreditsManager.deviceId)
+                    put("requestId", UUID.randomUUID().toString())
                 }
                 val response = callServer("translate", body)
                 parseAndSyncCredits(response)
@@ -132,14 +146,32 @@ object ApiClient {
         }
     }
 
+    fun getActiveNotice(callback: (kotlin.Result<ActiveNotice?>) -> Unit) {
+        executor.execute {
+            runCatching {
+                val response = callServer("get_active_notice", JSONObject())
+                if (!response.optBoolean("active", false)) {
+                    null
+                } else {
+                    ActiveNotice(
+                        id = response.optString("id").ifBlank { "default" },
+                        title = response.optString("title").ifBlank { "킹보드 소식" },
+                        body = response.optString("body")
+                    )
+                }
+            }.also(callback)
+        }
+    }
+
     private class NoCreditsException(val remaining: Int) : Exception()
 
     private fun parseAndSyncCredits(response: JSONObject): CreditState? {
         val freeCredits = response.optInt("free_credits_remaining", -1)
         val paidCredits = response.optInt("paid_credits_remaining", -1)
         if (freeCredits >= 0 && paidCredits >= 0) {
-            CreditsManager.syncFromServer(freeCredits, paidCredits)
-            return CreditState(freeCredits, paidCredits)
+            val subscriptionCredits = response.optInt("subscription_credits_remaining", 0)
+            CreditsManager.syncFromServer(freeCredits, paidCredits, subscriptionCredits)
+            return CreditState(freeCredits, paidCredits, subscriptionCredits)
         }
 
         val credits = response.optInt("credits_remaining", -1)
