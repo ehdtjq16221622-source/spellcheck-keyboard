@@ -493,8 +493,10 @@ private fun KeyboardScreenContent() {
     val scope = rememberCoroutineScope()
 
     var vibration by remember { mutableStateOf(SettingsManager.vibrationEnabled) }
+    var vibrationIntensity by remember { mutableFloatStateOf(SettingsManager.vibrationIntensity) }
     var doubleSpace by remember { mutableStateOf(SettingsManager.doubleSpacePeriod) }
     var keyPopup by remember { mutableStateOf(SettingsManager.keyPopup) }
+    var numberRow by remember { mutableStateOf(SettingsManager.numberRowEnabled) }
     var defaultMode by remember { mutableStateOf(normalizeDefaultMode(SettingsManager.defaultMode)) }
     var keyboardTheme by remember { mutableStateOf(normalizeKeyboardTheme(SettingsManager.keyboardTheme)) }
     var customImagePath by remember { mutableStateOf(SettingsManager.customImagePath) }
@@ -781,6 +783,30 @@ private fun KeyboardScreenContent() {
         KRow("키 진동", trailingType = TrailingType.Toggle(vibration) {
             vibration = it
             SettingsManager.vibrationEnabled = it
+        })
+        if (vibration) {
+            KDivider()
+            Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+                LabelValueRow("진동 세기", "${(vibrationIntensity * 100).roundToInt()}%")
+                Slider(
+                    value = vibrationIntensity,
+                    onValueChange = {
+                        vibrationIntensity = it
+                        SettingsManager.vibrationIntensity = it
+                    },
+                    valueRange = 0.1f..1f,
+                    colors = SliderDefaults.colors(
+                        thumbColor = colors.accent,
+                        activeTrackColor = colors.accent,
+                        inactiveTrackColor = colors.sliderInactive
+                    )
+                )
+            }
+        }
+        KDivider()
+        KRow("숫자열 표시", trailingType = TrailingType.Toggle(numberRow) {
+            numberRow = it
+            SettingsManager.numberRowEnabled = it
         })
         KDivider()
         KRow("키 크게 보기", trailingType = TrailingType.Toggle(keyPopup) {

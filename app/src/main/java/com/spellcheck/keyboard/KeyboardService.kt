@@ -175,8 +175,9 @@ class KeyboardService : InputMethodService() {
                         keyboardView.findViewById<View>(R.id.formalOptionsRow)?.visibility = View.GONE
                     }
                 }
-                "auto_correct_enabled", "auto_correct_delay_ms" -> {
+                "auto_correct_enabled", "auto_correct_delay_ms", "number_row_enabled" -> {
                     if (::keyboardView.isInitialized) updateToolbarStatus()
+                    if (key == "number_row_enabled" && ::keyboardView.isInitialized) updateKeyboardMode()
                 }
             }
         }
@@ -1388,10 +1389,12 @@ class KeyboardService : InputMethodService() {
                 val performed = keyboardView.performHapticFeedback(feedbackConstant)
                 if (!performed) {
                     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                        vibrator.vibrate(VibrationEffect.createOneShot(keyVibrationDurationMs, VibrationEffect.DEFAULT_AMPLITUDE))
+                        val amplitude = (SettingsManager.vibrationIntensity * 255f).roundToInt().coerceIn(1, 255)
+                        val duration = (keyVibrationDurationMs * (0.65f + SettingsManager.vibrationIntensity * 0.35f)).roundToInt().toLong()
+                        vibrator.vibrate(VibrationEffect.createOneShot(duration, amplitude))
                     } else {
                         @Suppress("DEPRECATION")
-                        vibrator.vibrate(keyVibrationDurationMs)
+                        vibrator.vibrate((keyVibrationDurationMs * (0.65f + SettingsManager.vibrationIntensity * 0.35f)).roundToInt().toLong())
                     }
                 }
             } catch (e: Exception) { }
@@ -1917,7 +1920,7 @@ class KeyboardService : InputMethodService() {
 
         // ?レ옄 ?? ?щ낵 紐⑤뱶?먯꽌 ?④?
         keyboardView.findViewById<View>(R.id.rowNumbers)?.visibility =
-            if (isSymbolMode) View.GONE else View.VISIBLE
+            if (isSymbolMode || !SettingsManager.numberRowEnabled) View.GONE else View.VISIBLE
 
         val spec = currentThemeSpec()
 

@@ -64,13 +64,21 @@ object SettingsManager {
         get() = prefs?.getBoolean("vibration", true) ?: true
         set(v) { prefs?.edit()?.putBoolean("vibration", v)?.apply() }
 
+    var vibrationIntensity: Float
+        get() = (prefs?.getFloat("vibration_intensity", 0.7f) ?: 0.7f).coerceIn(0f, 1f)
+        set(v) { prefs?.edit()?.putFloat("vibration_intensity", v.coerceIn(0f, 1f))?.apply() }
+
     var doubleSpacePeriod: Boolean
-        get() = prefs?.getBoolean("double_space_period", false) ?: false
+        get() = prefs?.getBoolean("double_space_period", true) ?: true
         set(v) { prefs?.edit()?.putBoolean("double_space_period", v)?.apply() }
 
     var keyPopup: Boolean
-        get() = prefs?.getBoolean("key_popup", true) ?: true
+        get() = prefs?.getBoolean("key_popup", false) ?: false
         set(v) { prefs?.edit()?.putBoolean("key_popup", v)?.apply() }
+
+    var numberRowEnabled: Boolean
+        get() = prefs?.getBoolean("number_row_enabled", false) ?: false
+        set(v) { prefs?.edit()?.putBoolean("number_row_enabled", v)?.apply() }
 
     var formalDefault: Boolean
         get() = prefs?.getBoolean("formal_default", false) ?: false
@@ -160,7 +168,7 @@ object SettingsManager {
         set(v) { prefs?.edit()?.putFloat("custom_image_offset_y", v)?.apply() }
 
     var soundEnabled: Boolean
-        get() = prefs?.getBoolean("sound_enabled", false) ?: false
+        get() = prefs?.getBoolean("sound_enabled", true) ?: true
         set(v) { prefs?.edit()?.putBoolean("sound_enabled", v)?.apply() }
 
     var appTheme: String
