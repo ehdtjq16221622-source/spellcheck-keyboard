@@ -53,6 +53,9 @@ Deno.serve(async (req: Request) => {
         if (payload.bundleId !== expectedBundleId) {
           throw new Error('JWS bundleId does not match expected app bundle.')
         }
+        if (payload.productId !== productId) {
+          throw new Error('JWS productId does not match the requested product.')
+        }
         const expiryMs = typeof payload.expiresDate === 'number' ? payload.expiresDate : null
         const isActive = expiryMs != null && expiryMs > Date.now()
         verified = {
@@ -84,6 +87,56 @@ Deno.serve(async (req: Request) => {
 
     if (existingError) throw existingError
 
+    const purchaseToken =
+      verified.originalTransactionId ??
+      verified.orderId ??
+      `ios:${deviceId}:${productId}`
+    const row: DeviceSubscriptionRow = {
+      device_id: deviceId,
+      product_id: productId,
+      purchase_token: purchaseToken,
+      subscription_state: verified.state,
+      expiry_time_millis: verified.expiryTimeMillis,
+      latest_order_id: verified.orderId,
+      last_cycle_key: verified.cycleKey,
+    }
+
+    const timestamps = {
+      last_verified_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+
+    // A StoreKit subscription keeps the same original transaction ID when the
+    // user changes plans or reinstalls the app. Move that verified entitlement
+    // to the current local device row instead of failing the unique-token check.
+    const { data: tokenOwner, error: tokenOwnerError } = await supabase
+      .from('device_subscriptions')
+      .select('device_id')
+      .eq('purchase_token', purchaseToken)
+      .maybeSingle()
+    if (tokenOwnerError) throw tokenOwnerError
+
+    let upsertError: unknown = null
+    if (tokenOwner && tokenOwner.device_id !== deviceId) {
+      const { error: removeCurrentError } = await supabase
+        .from('device_subscriptions')
+        .delete()
+        .eq('device_id', deviceId)
+      if (removeCurrentError) throw removeCurrentError
+
+      const { error } = await supabase
+        .from('device_subscriptions')
+        .update({ ...row, ...timestamps })
+        .eq('purchase_token', purchaseToken)
+      upsertError = error
+    } else {
+      const { error } = await supabase
+        .from('device_subscriptions')
+        .upsert({ ...row, ...timestamps }, { onConflict: 'device_id' })
+      upsertError = error
+    }
+    if (upsertError) throw upsertError
+
     let monthlyGrantApplied = false
     if (verified.active && verified.cycleKey) {
       const grantKey = [
@@ -107,31 +160,6 @@ Deno.serve(async (req: Request) => {
       monthlyGrantApplied = grant.applied
     }
 
-    const row: DeviceSubscriptionRow = {
-      device_id: deviceId,
-      product_id: productId,
-      purchase_token:
-        verified.originalTransactionId ??
-        verified.orderId ??
-        `ios:${deviceId}:${productId}`,
-      subscription_state: verified.state,
-      expiry_time_millis: verified.expiryTimeMillis,
-      latest_order_id: verified.orderId,
-      last_cycle_key: verified.cycleKey,
-    }
-
-    const { error: upsertError } = await supabase
-      .from('device_subscriptions')
-      .upsert(
-        {
-          ...row,
-          last_verified_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'device_id' }
-      )
-    if (upsertError) throw upsertError
-
     const credits = await getCredits(supabase, deviceId)
 
     return new Response(
@@ -149,8 +177,9 @@ Deno.serve(async (req: Request) => {
     )
   } catch (e) {
     console.error('[sync_subscription_ios]', e)
+    const message = e instanceof Error ? e.message : JSON.stringify(e)
     return new Response(
-      JSON.stringify({ error: String(e) }),
+      JSON.stringify({ error: message }),
       { status: 500, headers: { ...cors, 'Content-Type': 'application/json' } }
     )
   }
