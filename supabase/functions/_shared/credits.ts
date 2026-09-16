@@ -3,11 +3,13 @@ import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 export const DAILY_FREE = 100
 export const PLAN1_MONTHLY_CREDITS = 4000
 export const PLAN2_MONTHLY_CREDITS = 9000
+export const PLAN3_MONTHLY_CREDITS = 30000
 export const MONTHLY_SUBSCRIPTION_CREDITS = PLAN1_MONTHLY_CREDITS
 export const REWARDED_AD_CREDITS = 200
 
 const PLAN1_PRODUCT_ID = 'com.kingboard.app.monthly_basic'
 const PLAN2_PRODUCT_ID = 'com.kingboard.app.monthly_premium'
+const PLAN3_PRODUCT_ID = 'com.kingboard.app.monthly_pro'
 
 export type CreditSnapshot = {
   freeCredits: number
@@ -45,6 +47,7 @@ function toSnapshot(row: Pick<CreditRow, 'free_credits' | 'paid_credits'>): Cred
 }
 
 export function subscriptionCreditsForProduct(productId: string): number {
+  if (productId === PLAN3_PRODUCT_ID) return PLAN3_MONTHLY_CREDITS
   if (productId === PLAN2_PRODUCT_ID) return PLAN2_MONTHLY_CREDITS
   if (productId === PLAN1_PRODUCT_ID) return PLAN1_MONTHLY_CREDITS
   return MONTHLY_SUBSCRIPTION_CREDITS
