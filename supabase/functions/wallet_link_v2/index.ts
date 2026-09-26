@@ -81,11 +81,13 @@ Deno.serve(async (req: Request) => {
     }
 
     if (body.action === 'register' || body.action === 'register_after_logout') {
-      if (Deno.env.get('WALLET_SESSIONS_ENABLED') !== 'true' ||
-          Deno.env.get('WALLET_GUEST_V2_ENABLED') !== 'true') {
-        return respond({ error: 'Not found.' }, 404)
-      }
       if (!isHexSecret(body.walletSecret)) return respond({ error: 'Invalid wallet proof.' }, 400)
+      const guestEnabled = Deno.env.get('WALLET_SESSIONS_ENABLED') === 'true' &&
+        Deno.env.get('WALLET_GUEST_V2_ENABLED') === 'true'
+      const markedCanary = !guestEnabled && canaryEnabled && body.action === 'register' &&
+        typeof body.deviceToken === 'string' &&
+        await isBonusCanaryDevice(body.deviceToken)
+      if (!guestEnabled && !markedCanary) return respond({ error: 'Not found.' }, 404)
       if (body.action === 'register_after_logout') {
         if (!isHexSecret(body.sessionToken)) return respond({ error: 'Invalid wallet session.' }, 400)
         const { data: session, error } = await supabase.from('credit_wallet_sessions')
@@ -99,7 +101,7 @@ Deno.serve(async (req: Request) => {
       }
       const secretHash = await sha256(body.walletSecret)
       let initialBonus = 0
-      if (body.action === 'register') {
+      if (body.action === 'register' && !markedCanary) {
         if (Deno.env.get('WALLET_DEVICECHECK_BONUS_ENABLED') === 'true') {
           if (typeof body.deviceToken !== 'string') {
             return respond({ error: 'Device verification required.' }, 409)
@@ -133,8 +135,8 @@ Deno.serve(async (req: Request) => {
     }
 
     if (body.action === 'activate') {
-      if (Deno.env.get('WALLET_SESSIONS_ENABLED') !== 'true' ||
-          Deno.env.get('WALLET_GUEST_V2_ENABLED') !== 'true') {
+      if (!canaryEnabled && (Deno.env.get('WALLET_SESSIONS_ENABLED') !== 'true' ||
+          Deno.env.get('WALLET_GUEST_V2_ENABLED') !== 'true')) {
         return respond({ error: 'Not found.' }, 404)
       }
       if (!isHexSecret(body.walletSecret) || typeof body.walletId !== 'string' ||

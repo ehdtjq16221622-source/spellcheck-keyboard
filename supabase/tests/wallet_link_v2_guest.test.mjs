@@ -120,7 +120,7 @@ test('canary registration requires the Apple identity even on a marked device', 
   assert.equal(denied.rpcCalls.length, 0);
 });
 
-test('canary alone leaves ordinary registration and activation disabled', async () => {
+test('marked canary uses normal guest registration and activation without enabling everyone', async () => {
   const settings = { canaryEnabled: true, sessionsEnabled: false,
     guestEnabled: false, marked: true, balance: 0 };
   const trial = await invoke('register_canary', {
@@ -128,11 +128,21 @@ test('canary alone leaves ordinary registration and activation disabled', async 
   }, settings);
   assert.equal(trial.status, 201);
   assert.equal(trial.rpcCalls[0].args.p_initial_bonus, 0);
-  for (const action of ['register', 'register_after_logout', 'activate', 'sign_in']) {
+  const registered = await invoke('register', { deviceToken: 'a'.repeat(64) }, settings);
+  assert.equal(registered.status, 201);
+  assert.equal(registered.rpcCalls[0].args.p_initial_bonus, 0);
+  const activated = await invoke('activate', {}, settings);
+  assert.equal(activated.status, 200);
+  for (const action of ['register_after_logout', 'sign_in']) {
     const denied = await invoke(action, { identityToken: 'apple-token' }, settings);
     assert.equal(denied.status, 404, action);
     assert.equal(denied.rpcCalls.length, 0, action);
   }
+  const unmarked = await invoke('register', { deviceToken: 'a'.repeat(64) }, {
+    ...settings, marked: false,
+  });
+  assert.equal(unmarked.status, 404);
+  assert.equal(unmarked.rpcCalls.length, 0);
 });
 
 test('new guest registers for 500 without Apple authentication', async () => {
