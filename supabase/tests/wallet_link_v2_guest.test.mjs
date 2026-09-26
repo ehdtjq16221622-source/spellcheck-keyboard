@@ -38,6 +38,7 @@ async function invoke(action, extras = {}, options = {}) {
   globalThis.__walletTokenHash = async (value) => value;
   globalThis.__isCanaryDevice = async (token) => {
     deviceCalls.push({ action: 'query', token });
+    if (options.queryFails) throw new Error('DeviceCheck query failed');
     return options.marked === true;
   };
   globalThis.__enrollDevice = async (token) => {
@@ -133,6 +134,7 @@ test('marked canary uses normal guest registration and activation without enabli
   assert.equal(registered.rpcCalls[0].args.p_initial_bonus, 0);
   const activated = await invoke('activate', {}, settings);
   assert.equal(activated.status, 200);
+  assert.equal(activated.rpcCalls[0].name, 'activate_guest_wallet_v2');
   for (const action of ['register_after_logout', 'sign_in']) {
     const denied = await invoke(action, { identityToken: 'apple-token' }, settings);
     assert.equal(denied.status, 404, action);
@@ -143,6 +145,19 @@ test('marked canary uses normal guest registration and activation without enabli
   });
   assert.equal(unmarked.status, 404);
   assert.equal(unmarked.rpcCalls.length, 0);
+});
+
+test('a missing or failed DeviceCheck proof cannot create a canary wallet', async () => {
+  const settings = { canaryEnabled: true, sessionsEnabled: false, guestEnabled: false };
+  const missing = await invoke('register', {}, settings);
+  assert.equal(missing.status, 404);
+  assert.equal(missing.rpcCalls.length, 0);
+
+  const failed = await invoke('register', { deviceToken: 'a'.repeat(64) }, {
+    ...settings, queryFails: true,
+  });
+  assert.equal(failed.status, 500);
+  assert.equal(failed.rpcCalls.length, 0);
 });
 
 test('new guest registers for 500 without Apple authentication', async () => {
