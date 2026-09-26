@@ -21,6 +21,7 @@ async function invoke(action, extras = {}, options = {}) {
     env: { get: (key) => ({
       WALLET_SESSIONS_ENABLED: options.sessionsEnabled === false ? undefined : 'true',
       WALLET_GUEST_V2_ENABLED: options.guestEnabled === false ? undefined : 'true',
+      WALLET_DEVICECHECK_BONUS_ENABLED: options.deviceCheckBonusEnabled ? 'true' : undefined,
       WALLET_BONUS_CANARY_ENABLED: options.canaryEnabled ? 'true' : undefined,
       WALLET_LINK_V2_ENABLED: options.appleEnabled ? 'true' : undefined,
       WALLET_LINK_V2_CANARY_APPLE_IDS: options.appleEnabled || options.canaryEnabled ? 'apple' : undefined,
@@ -39,7 +40,10 @@ async function invoke(action, extras = {}, options = {}) {
     deviceCalls.push({ action: 'query', token });
     return options.marked === true;
   };
-  globalThis.__enrollDevice = async (token) => { deviceCalls.push({ action: 'enroll', token }); };
+  globalThis.__enrollDevice = async (token) => {
+    deviceCalls.push({ action: 'enroll', token });
+    if (options.enrollFails) throw new Error('DeviceCheck enrollment failed');
+  };
   globalThis.__createClient = () => ({
     rpc: async (name, args) => {
       rpcCalls.push({ name, args });
@@ -137,6 +141,39 @@ test('new guest registers for 500 without Apple authentication', async () => {
   assert.equal(result.body.freeCredits, 500);
   assert.equal(result.rpcCalls[0].args.p_initial_bonus, 500);
   assert.equal(result.appleVerified, false);
+});
+
+test('DeviceCheck blocks a repeat install bonus when enabled', async () => {
+  const token = 'a'.repeat(64);
+  const repeated = await invoke('register', { deviceToken: token }, {
+    deviceCheckBonusEnabled: true, marked: true, balance: 0,
+  });
+  assert.equal(repeated.status, 201);
+  assert.equal(repeated.rpcCalls[0].args.p_initial_bonus, 0);
+  assert.deepEqual(repeated.deviceCalls, [{ action: 'query', token }]);
+
+  const first = await invoke('register', { deviceToken: token }, {
+    deviceCheckBonusEnabled: true, balance: 500,
+  });
+  assert.equal(first.status, 201);
+  assert.equal(first.rpcCalls[0].args.p_initial_bonus, 500);
+  assert.deepEqual(first.deviceCalls, [
+    { action: 'query', token }, { action: 'enroll', token },
+  ]);
+});
+
+test('DeviceCheck fails closed without a device token', async () => {
+  const result = await invoke('register', {}, { deviceCheckBonusEnabled: true });
+  assert.equal(result.status, 409);
+  assert.equal(result.rpcCalls.length, 0);
+});
+
+test('a failed DeviceCheck enrollment cannot create a bonus wallet', async () => {
+  const result = await invoke('register', { deviceToken: 'a'.repeat(64) }, {
+    deviceCheckBonusEnabled: true, enrollFails: true,
+  });
+  assert.equal(result.status, 500);
+  assert.equal(result.rpcCalls.length, 0);
 });
 
 test('logout guest requires an active wallet session and receives zero', async () => {

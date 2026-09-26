@@ -98,9 +98,22 @@ Deno.serve(async (req: Request) => {
         }
       }
       const secretHash = await sha256(body.walletSecret)
+      let initialBonus = 0
+      if (body.action === 'register') {
+        if (Deno.env.get('WALLET_DEVICECHECK_BONUS_ENABLED') === 'true') {
+          if (typeof body.deviceToken !== 'string') {
+            return respond({ error: 'Device verification required.' }, 409)
+          }
+          const alreadyGranted = await isBonusCanaryDevice(body.deviceToken)
+          if (!alreadyGranted) await enrollBonusCanaryDevice(body.deviceToken)
+          initialBonus = alreadyGranted ? 0 : 500
+        } else {
+          initialBonus = 500
+        }
+      }
       const { data: walletId, error } = await supabase.rpc('register_guest_wallet_v2', {
         p_secret_hash: secretHash,
-        p_initial_bonus: body.action === 'register' ? 500 : 0,
+        p_initial_bonus: initialBonus,
       })
       if (error) throw error
       if (typeof walletId !== 'string' || !walletId.startsWith('v2:')) {
