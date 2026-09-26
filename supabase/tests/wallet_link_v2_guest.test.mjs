@@ -48,6 +48,17 @@ async function invoke(action, extras = {}, options = {}) {
   globalThis.__createClient = () => ({
     rpc: async (name, args) => {
       rpcCalls.push({ name, args });
+      if (name === 'register_guest_wallet_v2' && options.registrationFails) {
+        return { data: null, error: { message: 'simulated registration failure' } };
+      }
+      if (name === 'reserve_guest_install_bonus') {
+        return { data: options.reservation ?? 'pending', error: null };
+      }
+      if (name === 'complete_guest_install_bonus') {
+        return options.completeFails
+          ? { data: null, error: { message: 'simulated completion failure' } }
+          : { data: options.pendingClaim ?? true, error: null };
+      }
       return { data: name === 'register_guest_wallet_v2' ? walletId
         : name === 'merge_verified_v2_guest_wallet_once' ? [{
           decision: 'merged', canonical_wallet_id: 'apple-wallet',
@@ -110,8 +121,8 @@ test('only marked canary device receives a zero-credit fresh wallet', async () =
   assert.equal(marked.rpcCalls[0].args.p_initial_bonus, 0);
   const generic = await invoke('register', {},
     { canaryEnabled: true, guestEnabled: true, marked: true });
-  assert.equal(generic.status, 201);
-  assert.equal(generic.rpcCalls[0].args.p_initial_bonus, 500);
+  assert.equal(generic.status, 503);
+  assert.equal(generic.rpcCalls.length, 0);
 });
 
 test('canary registration requires the Apple identity even on a marked device', async () => {
@@ -161,10 +172,16 @@ test('a missing or failed DeviceCheck proof cannot create a canary wallet', asyn
 });
 
 test('new guest registers for 500 without Apple authentication', async () => {
-  const result = await invoke('register');
+  const result = await invoke('register', { deviceToken: 'a'.repeat(64) }, {
+    deviceCheckBonusEnabled: true,
+  });
   assert.equal(result.status, 201);
   assert.equal(result.body.freeCredits, 500);
-  assert.equal(result.rpcCalls[0].args.p_initial_bonus, 500);
+  assert.deepEqual(result.rpcCalls.map((call) => call.name), [
+    'register_guest_wallet_v2', 'reserve_guest_install_bonus',
+    'complete_guest_install_bonus',
+  ]);
+  assert.equal(result.rpcCalls[0].args.p_initial_bonus, 0);
   assert.equal(result.appleVerified, false);
 });
 
@@ -175,13 +192,16 @@ test('DeviceCheck blocks a repeat install bonus when enabled', async () => {
   });
   assert.equal(repeated.status, 201);
   assert.equal(repeated.rpcCalls[0].args.p_initial_bonus, 0);
+  assert.deepEqual(repeated.rpcCalls.map((call) => call.name), [
+    'register_guest_wallet_v2', 'complete_guest_install_bonus',
+  ]);
   assert.deepEqual(repeated.deviceCalls, [{ action: 'query', token }]);
 
   const first = await invoke('register', { deviceToken: token }, {
     deviceCheckBonusEnabled: true, balance: 500,
   });
   assert.equal(first.status, 201);
-  assert.equal(first.rpcCalls[0].args.p_initial_bonus, 500);
+  assert.equal(first.rpcCalls[0].args.p_initial_bonus, 0);
   assert.deepEqual(first.deviceCalls, [
     { action: 'query', token }, { action: 'enroll', token },
   ]);
@@ -198,7 +218,37 @@ test('a failed DeviceCheck enrollment cannot create a bonus wallet', async () =>
     deviceCheckBonusEnabled: true, enrollFails: true,
   });
   assert.equal(result.status, 500);
-  assert.equal(result.rpcCalls.length, 0);
+  assert.deepEqual(result.rpcCalls.map((call) => call.name), [
+    'register_guest_wallet_v2', 'reserve_guest_install_bonus',
+  ]);
+});
+
+test('registration failure cannot mark the device as granted', async () => {
+  const token = 'a'.repeat(64);
+  const first = await invoke('register', { deviceToken: token }, {
+    deviceCheckBonusEnabled: true, registrationFails: true,
+  });
+  assert.equal(first.status, 500);
+  assert.deepEqual(first.deviceCalls, [{ action: 'query', token }]);
+});
+
+test('a completion failure after DeviceCheck enrollment retries the pending claim', async () => {
+  const token = 'a'.repeat(64);
+  const first = await invoke('register', { deviceToken: token }, {
+    deviceCheckBonusEnabled: true, completeFails: true,
+  });
+  assert.equal(first.status, 500);
+  assert.deepEqual(first.deviceCalls, [
+    { action: 'query', token }, { action: 'enroll', token },
+  ]);
+  const retry = await invoke('register', { deviceToken: token }, {
+    deviceCheckBonusEnabled: true, marked: true, pendingClaim: true,
+    balance: 500,
+  });
+  assert.equal(retry.status, 201);
+  assert.equal(retry.rpcCalls[0].args.p_initial_bonus, 0);
+  assert.equal(retry.rpcCalls[1].name, 'complete_guest_install_bonus');
+  assert.equal(retry.body.freeCredits, 500);
 });
 
 test('logout guest requires an active wallet session and receives zero', async () => {

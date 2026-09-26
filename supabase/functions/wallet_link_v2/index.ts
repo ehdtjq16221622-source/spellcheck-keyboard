@@ -88,6 +88,10 @@ Deno.serve(async (req: Request) => {
         typeof body.deviceToken === 'string' &&
         await isBonusCanaryDevice(body.deviceToken)
       if (!guestEnabled && !markedCanary) return respond({ error: 'Not found.' }, 404)
+      if (guestEnabled && body.action === 'register' &&
+          Deno.env.get('WALLET_DEVICECHECK_BONUS_ENABLED') !== 'true') {
+        return respond({ error: 'Device verification is not ready.' }, 503)
+      }
       if (body.action === 'register_after_logout') {
         if (!isHexSecret(body.sessionToken)) return respond({ error: 'Invalid wallet session.' }, 400)
         const { data: session, error } = await supabase.from('credit_wallet_sessions')
@@ -101,14 +105,15 @@ Deno.serve(async (req: Request) => {
       }
       const secretHash = await sha256(body.walletSecret)
       let initialBonus = 0
+      let deviceAlreadyMarked = false
+      const deviceCheckBonus = body.action === 'register' && !markedCanary &&
+        Deno.env.get('WALLET_DEVICECHECK_BONUS_ENABLED') === 'true'
       if (body.action === 'register' && !markedCanary) {
-        if (Deno.env.get('WALLET_DEVICECHECK_BONUS_ENABLED') === 'true') {
+        if (deviceCheckBonus) {
           if (typeof body.deviceToken !== 'string') {
             return respond({ error: 'Device verification required.' }, 409)
           }
-          const alreadyGranted = await isBonusCanaryDevice(body.deviceToken)
-          if (!alreadyGranted) await enrollBonusCanaryDevice(body.deviceToken)
-          initialBonus = alreadyGranted ? 0 : 500
+          deviceAlreadyMarked = await isBonusCanaryDevice(body.deviceToken)
         } else {
           initialBonus = 500
         }
@@ -120,6 +125,26 @@ Deno.serve(async (req: Request) => {
       if (error) throw error
       if (typeof walletId !== 'string' || !walletId.startsWith('v2:')) {
         throw new Error('Missing registered wallet ID')
+      }
+      if (deviceCheckBonus) {
+        if (!deviceAlreadyMarked) {
+          const { data: reservation, error: reserveError } = await supabase
+            .rpc('reserve_guest_install_bonus', {
+              p_wallet_id: walletId, p_secret_hash: secretHash,
+            })
+          if (reserveError) throw reserveError
+          if (reservation !== 'pending' && reservation !== 'granted') {
+            throw new Error('Missing install bonus reservation')
+          }
+          await enrollBonusCanaryDevice(body.deviceToken)
+        }
+        // A retry after DeviceCheck succeeded but the final DB write failed
+        // completes the pending claim for this same wallet secret only.
+        const { error: completeError } = await supabase
+          .rpc('complete_guest_install_bonus', {
+            p_wallet_id: walletId, p_secret_hash: secretHash,
+          })
+        if (completeError) throw completeError
       }
       const { data: wallet, error: walletError } = await supabase.from('device_credits')
         .select('free_credits, paid_credits, apple_user_id')
