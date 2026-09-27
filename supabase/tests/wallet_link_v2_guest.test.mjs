@@ -7,6 +7,7 @@ const source = readFileSync(new URL('../functions/wallet_link_v2/index.ts', impo
 const runnable = stripTypeScriptTypes(source
   .replace(/^import \{ createClient \} from .*$/m, 'const createClient = globalThis.__createClient;')
   .replace(/^import \{ verifyAppleIdentityToken \} from .*$/m, 'const verifyAppleIdentityToken = globalThis.__verifyApple;')
+  .replace(/^import \{ verifyActiveApplePurchase \} from .*$/m, 'const verifyActiveApplePurchase = globalThis.__verifyActiveApplePurchase;')
   .replace(/^import \{ walletTokenHash \} from .*$/m, 'const walletTokenHash = globalThis.__walletTokenHash;')
   .replace(/^import \{ enrollBonusCanaryDevice, isBonusCanaryDevice \} from .*$/m,
     'const enrollBonusCanaryDevice = globalThis.__enrollDevice; const isBonusCanaryDevice = globalThis.__isCanaryDevice;'));
@@ -34,6 +35,9 @@ async function invoke(action, extras = {}, options = {}) {
     appleVerified = true;
     if (options.appleEnabled || options.canaryEnabled) return { sub: 'apple' };
     throw new Error('Guest flow should not verify Apple JWT');
+  };
+  globalThis.__verifyActiveApplePurchase = async () => {
+    throw new Error('Unexpected Apple subscription status lookup');
   };
   globalThis.__walletTokenHash = async (value) => value;
   globalThis.__isCanaryDevice = async (token) => {

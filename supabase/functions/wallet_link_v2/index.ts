@@ -1,6 +1,7 @@
 // Feature-flagged guest registration and canary-only Apple linking.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { verifyAppleIdentityToken } from '../_shared/apple_auth.ts'
+import { verifyActiveApplePurchase } from '../_shared/apple_subscription_status.ts'
 import { walletTokenHash } from '../_shared/wallet_auth.ts'
 import { enrollBonusCanaryDevice, isBonusCanaryDevice } from '../_shared/devicecheck.ts'
 
@@ -343,6 +344,55 @@ Deno.serve(async (req: Request) => {
       })
     }
 
+    if (body.action === 'merge_subscribed_guest') {
+      const subscriptionCanaries = new Set(
+        (Deno.env.get('WALLET_SUBSCRIPTION_MERGE_CANARY_APPLE_IDS') ?? '')
+          .split(',').map((id) => id.trim()).filter(Boolean),
+      )
+      if (!subscriptionCanaries.has(identity.sub) || !isHexSecret(body.sessionToken) ||
+          typeof body.idempotencyKey !== 'string' || body.idempotencyKey.length < 1 ||
+          body.idempotencyKey.length > 128) {
+        return respond({ error: 'Subscription transfer unavailable.' }, 409)
+      }
+      const { data: guestCredential, error: credentialError } = await supabase
+        .from('wallet_v2_credentials').select('secret_hash, state')
+        .eq('wallet_id', body.walletId).maybeSingle()
+      if (credentialError) throw credentialError
+      if (guestCredential?.secret_hash !== secretHash || guestCredential.state !== 'active') {
+        return respond({ error: 'Guest wallet proof failed.' }, 403)
+      }
+      const { data: sourcePurchase, error: purchaseError } = await supabase
+        .from('device_subscriptions').select('product_id, purchase_token')
+        .eq('device_id', body.walletId).maybeSingle()
+      if (purchaseError) throw purchaseError
+      if (!sourcePurchase?.product_id || !sourcePurchase.purchase_token) {
+        return respond({ error: 'Subscription transfer requires review.' }, 409)
+      }
+      if (!await verifyActiveApplePurchase(
+        sourcePurchase.purchase_token, sourcePurchase.product_id, BUNDLE_ID,
+      )) {
+        return respond({ error: 'Apple subscription does not match this wallet.' }, 409)
+      }
+      const { data, error } = await supabase.rpc('merge_verified_v2_subscribed_guest_once', {
+        p_guest_wallet_id: body.walletId,
+        p_guest_secret_hash: secretHash,
+        p_apple_sub: identity.sub,
+        p_session_token_hash: await walletTokenHash(body.sessionToken),
+        p_request_id: body.idempotencyKey,
+        p_purchase_token: sourcePurchase.purchase_token,
+      })
+      if (error?.code === 'P0001') return respond({ error: 'Subscription transfer requires review.' }, 409)
+      if (error) throw error
+      const result = data?.[0]
+      if (!result) throw new Error('Missing subscription transfer result')
+      return respond({
+        decision: result.decision,
+        canonicalWalletId: result.canonical_wallet_id,
+        freeCredits: result.free_credits_remaining,
+        paidCredits: result.paid_credits_remaining,
+      })
+    }
+
     if (body.action === 'link') {
       if (typeof body.idempotencyKey !== 'string' ||
           body.idempotencyKey.length < 1 || body.idempotencyKey.length > 128) {
@@ -358,10 +408,23 @@ Deno.serve(async (req: Request) => {
       if (error) throw error
       const result = data?.[0]
       if (!result) throw new Error('Missing wallet link result')
+      let needsSubscriptionTransfer = false
+      if (result.decision === 'apple_existing_unmerged') {
+        const { data: purchase, error: purchaseError } = await supabase
+          .from('device_subscriptions').select('device_id')
+          .eq('device_id', body.walletId).maybeSingle()
+        if (purchaseError) throw purchaseError
+        const { data: source, error: sourceError } = await supabase
+          .from('device_credits').select('subscription_credits')
+          .eq('device_id', body.walletId).single()
+        if (sourceError) throw sourceError
+        needsSubscriptionTransfer = purchase !== null || source.subscription_credits !== 0
+      }
       return respond({
         decision: result.decision,
         canonicalWalletId: result.canonical_wallet_id,
         guestTransferred: false,
+        needsSubscriptionTransfer,
       })
     }
 

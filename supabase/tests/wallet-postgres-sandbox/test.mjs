@@ -12,11 +12,11 @@ const walletLinkSql = await readFile(
   'utf8',
 );
 const walletMergeSql = await readFile(
-  new URL('../../migrations/20260926020000_verified_apple_wallet_merge.sql', import.meta.url),
+  new URL('../../migrations/20260926234627_verified_apple_wallet_merge.sql', import.meta.url),
   'utf8',
 );
 const walletSessionsSql = await readFile(
-  new URL('../../migrations/20260926030000_wallet_sessions.sql', import.meta.url),
+  new URL('../../migrations/20260926234634_wallet_sessions.sql', import.meta.url),
   'utf8',
 );
 const guestWalletBonusSql = await readFile(
@@ -28,11 +28,19 @@ const pendingGuestBonusSql = await readFile(
   'utf8',
 );
 const verifiedGuestMergeSql = await readFile(
-  new URL('../../migrations/20260926050000_verified_guest_wallet_merge.sql', import.meta.url),
+  new URL('../../migrations/20260926234642_verified_guest_wallet_merge.sql', import.meta.url),
   'utf8',
 );
 const verifiedLegacyMergeSql = await readFile(
-  new URL('../../migrations/20260926060000_verified_legacy_wallet_merge.sql', import.meta.url),
+  new URL('../../migrations/20260926234650_verified_legacy_wallet_merge.sql', import.meta.url),
+  'utf8',
+);
+const iosSubscriptionSql = await readFile(
+  new URL('../../migrations/20260927010000_atomic_ios_subscription_candidate.sql', import.meta.url),
+  'utf8',
+);
+const subscribedGuestMergeSql = await readFile(
+  new URL('../../migrations/20260927021208_verified_guest_subscription_transfer_canary.sql', import.meta.url),
   'utf8',
 );
 
@@ -68,7 +76,14 @@ async function database() {
     );
     create table device_subscriptions (
       device_id text primary key,
-      purchase_token text unique
+      product_id text not null default 'monthly',
+      purchase_token text unique,
+      subscription_state text not null default 'SUBSCRIPTION_STATE_ACTIVE',
+      expiry_time_millis bigint,
+      latest_order_id text,
+      last_cycle_key text,
+      last_verified_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
     );
   `);
   await db.exec(adGrantSql);
@@ -79,6 +94,8 @@ async function database() {
   await db.exec(pendingGuestBonusSql);
   await db.exec(verifiedGuestMergeSql);
   await db.exec(verifiedLegacyMergeSql);
+  await db.exec(iosSubscriptionSql);
+  await db.exec(subscribedGuestMergeSql);
   return db;
 }
 
@@ -212,6 +229,117 @@ test('a subscription grant to the old device ID does not increase the Apple wall
     await db.exec("update device_credits set subscription_credits = 4000 where device_id = 'local'");
     assert.equal((await balance(db, 'local')).subscription_credits, 4000);
     assert.equal((await balance(db, 'apple')).subscription_credits, 0);
+  } finally {
+    await db.close();
+  }
+});
+
+test('candidate subscription sync grants once and never creates free install credits', async () => {
+  const db = await database();
+  try {
+    const sql = `select * from public.sync_ios_subscription_once(
+      'apple', 'monthly', 'purchase-1', 'SUBSCRIPTION_STATE_ACTIVE',
+      1800000000000, 'order-1', 'cycle-1', 9000, '{}'::jsonb)`;
+    assert.equal((await db.query(sql)).rows[0].applied, true);
+    assert.deepEqual(await balance(db, 'apple'), {
+      free_credits: 0, paid_credits: 0, subscription_credits: 9000,
+    });
+    await db.exec("update device_credits set subscription_credits = 8990 where device_id = 'apple'");
+    assert.equal((await db.query(sql)).rows[0].applied, false);
+    assert.equal((await balance(db, 'apple')).subscription_credits, 8990);
+    assert.equal((await db.query("select count(*)::int as count from credit_transactions where transaction_type = 'subscription_monthly_grant'")).rows[0].count, 1);
+  } finally {
+    await db.close();
+  }
+});
+
+test('candidate subscription sync rolls back ownership record and grant together', async () => {
+  const db = await database();
+  try {
+    await db.exec(`create function reject_grant() returns trigger language plpgsql as $$
+      begin if new.transaction_type = 'subscription_monthly_grant' then
+        raise exception 'injected ledger failure'; end if; return new; end $$;
+      create trigger reject_grant before insert on credit_transactions
+      for each row execute function reject_grant();`);
+    const sql = `select * from public.sync_ios_subscription_once(
+      'apple', 'monthly', 'purchase-1', 'SUBSCRIPTION_STATE_ACTIVE',
+      1800000000000, 'order-1', 'cycle-1', 9000, '{}'::jsonb)`;
+    await assert.rejects(db.query(sql));
+    assert.equal((await db.query('select count(*)::int as count from device_subscriptions')).rows[0].count, 0);
+    assert.equal(await balance(db, 'apple'), null);
+    await db.exec('drop trigger reject_grant on credit_transactions');
+    assert.equal((await db.query(sql)).rows[0].applied, true);
+  } finally {
+    await db.close();
+  }
+});
+
+test('candidate subscription sync refuses ambiguous ownership without changing either wallet', async () => {
+  const db = await database();
+  try {
+    await db.exec(`insert into device_credits (device_id, free_credits, subscription_credits)
+      values ('old', 50, 100), ('new', 70, 0)`);
+    await db.exec(`insert into device_subscriptions (device_id, purchase_token)
+      values ('old', 'purchase-1')`);
+    await assert.rejects(db.query(`select * from public.sync_ios_subscription_once(
+      'new', 'monthly', 'purchase-1', 'SUBSCRIPTION_STATE_ACTIVE',
+      1800000000000, 'order-1', 'cycle-1', 9000, '{}'::jsonb)`));
+    assert.equal((await db.query("select device_id from device_subscriptions where purchase_token = 'purchase-1'")).rows[0].device_id, 'old');
+    assert.equal((await balance(db, 'new')).subscription_credits, 0);
+  } finally {
+    await db.close();
+  }
+});
+
+test('candidate subscription sync records an expired purchase without granting credits', async () => {
+  const db = await database();
+  try {
+    const result = await db.query(`select * from public.sync_ios_subscription_once(
+      'apple', 'monthly', 'purchase-1', 'SUBSCRIPTION_STATE_EXPIRED',
+      1700000000000, 'order-1', null, 9000, '{}'::jsonb)`);
+    assert.equal(result.rows[0].applied, false);
+    assert.equal(result.rows[0].credits_remaining, 0);
+    assert.equal(await balance(db, 'apple'), null);
+    assert.equal((await db.query('select count(*)::int as count from device_subscriptions')).rows[0].count, 1);
+  } finally {
+    await db.close();
+  }
+});
+
+test('candidate subscription sync refuses an ambiguous plan change without a second grant', async () => {
+  const db = await database();
+  try {
+    await db.query(`select * from public.sync_ios_subscription_once(
+      'apple', 'monthly', 'purchase-1', 'SUBSCRIPTION_STATE_ACTIVE',
+      1800000000000, 'order-1', 'cycle-1', 9000, '{}'::jsonb)`);
+    await assert.rejects(db.query(`select * from public.sync_ios_subscription_once(
+      'apple', 'annual', 'purchase-1', 'SUBSCRIPTION_STATE_ACTIVE',
+      1800000000000, 'order-2', 'cycle-1-annual', 10000, '{}'::jsonb)`));
+    assert.equal((await balance(db, 'apple')).subscription_credits, 9000);
+    assert.equal((await db.query("select count(*)::int as count from credit_transactions where transaction_type = 'subscription_monthly_grant'")).rows[0].count, 1);
+  } finally {
+    await db.close();
+  }
+});
+
+test('candidate subscription sync is service-role only', async () => {
+  const db = await database();
+  try {
+    const result = await db.query(`select has_function_privilege(
+      'anon',
+      'public.sync_ios_subscription_once(text,text,text,text,bigint,text,text,integer,jsonb)',
+      'EXECUTE') as anon_allowed,
+      has_function_privilege(
+      'authenticated',
+      'public.sync_ios_subscription_once(text,text,text,text,bigint,text,text,integer,jsonb)',
+      'EXECUTE') as authenticated_allowed,
+      has_function_privilege(
+      'service_role',
+      'public.sync_ios_subscription_once(text,text,text,text,bigint,text,text,integer,jsonb)',
+      'EXECUTE') as service_allowed`);
+    assert.deepEqual(result.rows[0], {
+      anon_allowed: false, authenticated_allowed: false, service_allowed: true,
+    });
   } finally {
     await db.close();
   }
@@ -659,6 +787,105 @@ test('verified guest merge is atomic, idempotent, and keeps only larger free bal
     assert.equal((await db.query(
       'select canonical_wallet_id from credit_wallet_aliases where source_wallet_id = $1', [guestId],
     )).rows[0].canonical_wallet_id, 'apple-wallet');
+  } finally {
+    await db.close();
+  }
+});
+
+test('verified guest subscription moves once and a same-cycle refresh does not grant again', async () => {
+  const db = await database();
+  try {
+    await db.exec("insert into device_credits (device_id, apple_user_id, free_credits, paid_credits) values ('apple-wallet', 'apple-sub', 100, 200)");
+    const guestId = (await db.query(
+      'select public.register_guest_wallet_v2($1, 500) as id', [proofHash],
+    )).rows[0].id;
+    await db.query('select public.activate_guest_wallet_v2($1, $2)', [guestId, proofHash]);
+    await db.query(
+      'update device_credits set paid_credits = 100, subscription_credits = 3000 where device_id = $1',
+      [guestId],
+    );
+    await db.query(`
+      insert into device_subscriptions (device_id, product_id, purchase_token, expiry_time_millis)
+      values ($1, 'monthly', 'purchase-1', (extract(epoch from now() + interval '30 days') * 1000)::bigint)
+    `, [guestId]);
+    await db.query(`
+      insert into credit_transactions (device_id, transaction_type, idempotency_key)
+      values ($1, 'subscription_monthly_grant', 'purchase-1:monthly:cycle-1')
+    `, [guestId]);
+    const sessionHash = await appleSession(db, 'apple-sub');
+    await db.query('select public.activate_apple_wallet_session($1)', [sessionHash]);
+    const transfer = (request = 'subscription-merge-1', secret = proofHash) => db.query(
+      'select * from public.merge_verified_v2_subscribed_guest_once($1, $2, $3, $4, $5, $6)',
+      [guestId, secret, 'apple-sub', sessionHash, request, 'purchase-1'],
+    );
+    assert.deepEqual((await transfer()).rows[0], {
+      decision: 'merged', canonical_wallet_id: 'apple-wallet',
+      free_credits_remaining: 500, paid_credits_remaining: 3300,
+    });
+    assert.deepEqual(await balance(db, guestId), {
+      free_credits: 0, paid_credits: 0, subscription_credits: 0,
+    });
+    assert.deepEqual(await balance(db, 'apple-wallet'), {
+      free_credits: 500, paid_credits: 300, subscription_credits: 3000,
+    });
+    assert.equal((await db.query(
+      "select device_id from device_subscriptions where purchase_token = 'purchase-1'",
+    )).rows[0].device_id, 'apple-wallet');
+    assert.equal((await db.query(
+      "select device_id from credit_transactions where idempotency_key = 'purchase-1:monthly:cycle-1'",
+    )).rows[0].device_id, guestId);
+    assert.equal((await transfer()).rows[0].decision, 'already_merged');
+    await assert.rejects(transfer('different-request'));
+    const refresh = await db.query(`select * from public.sync_ios_subscription_once(
+      'apple-wallet', 'monthly', 'purchase-1', 'SUBSCRIPTION_STATE_ACTIVE',
+      (extract(epoch from now() + interval '30 days') * 1000)::bigint,
+      'order-1', 'purchase-1:monthly:cycle-1', 4000, '{}'::jsonb)`);
+    assert.equal(refresh.rows[0].applied, false);
+    assert.equal((await balance(db, 'apple-wallet')).subscription_credits, 3000);
+    const renewal = await db.query(`select * from public.sync_ios_subscription_once(
+      'apple-wallet', 'monthly', 'purchase-1', 'SUBSCRIPTION_STATE_ACTIVE',
+      (extract(epoch from now() + interval '60 days') * 1000)::bigint,
+      'order-2', 'purchase-1:monthly:cycle-2', 4000, '{}'::jsonb)`);
+    assert.equal(renewal.rows[0].applied, true);
+    assert.equal((await balance(db, 'apple-wallet')).subscription_credits, 4000);
+    assert.equal((await db.query(
+      "select device_id from credit_transactions where idempotency_key = 'purchase-1:monthly:cycle-2'",
+    )).rows[0].device_id, 'apple-wallet');
+  } finally {
+    await db.close();
+  }
+});
+
+test('guest subscription transfer rolls back on bad proof or competing Apple purchase', async () => {
+  const db = await database();
+  try {
+    await db.exec("insert into device_credits (device_id, apple_user_id) values ('apple-wallet', 'apple-sub')");
+    const guestId = (await db.query(
+      'select public.register_guest_wallet_v2($1, 500) as id', [proofHash],
+    )).rows[0].id;
+    await db.query('select public.activate_guest_wallet_v2($1, $2)', [guestId, proofHash]);
+    await db.query('update device_credits set subscription_credits = 3000 where device_id = $1', [guestId]);
+    await db.query(`
+      insert into device_subscriptions (device_id, purchase_token, expiry_time_millis)
+      values ($1, 'purchase-1', (extract(epoch from now() + interval '30 days') * 1000)::bigint)
+    `, [guestId]);
+    const sessionHash = await appleSession(db, 'apple-sub');
+    await db.query('select public.activate_apple_wallet_session($1)', [sessionHash]);
+    const transfer = (secret = proofHash) => db.query(
+      'select * from public.merge_verified_v2_subscribed_guest_once($1, $2, $3, $4, $5, $6)',
+      [guestId, secret, 'apple-sub', sessionHash, 'subscription-merge-1', 'purchase-1'],
+    );
+    await assert.rejects(transfer('b'.repeat(64)));
+    await db.exec("insert into device_subscriptions (device_id, purchase_token) values ('apple-wallet', 'purchase-2')");
+    await assert.rejects(transfer());
+    assert.equal((await balance(db, guestId)).subscription_credits, 3000);
+    assert.equal((await balance(db, 'apple-wallet')).subscription_credits, 0);
+    assert.equal((await db.query(
+      "select device_id from device_subscriptions where purchase_token = 'purchase-1'",
+    )).rows[0].device_id, guestId);
+    assert.equal((await db.query(
+      'select count(*)::integer as n from credit_v2_subscription_transfers',
+    )).rows[0].n, 0);
   } finally {
     await db.close();
   }
