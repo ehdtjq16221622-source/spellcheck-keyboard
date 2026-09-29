@@ -39,6 +39,10 @@ const iosSubscriptionSql = await readFile(
   new URL('../../migrations/20260927010000_atomic_ios_subscription_candidate.sql', import.meta.url),
   'utf8',
 );
+const verifiedPlanChangeSql = await readFile(
+  new URL('../../migrations/20260930034000_verified_ios_subscription_plan_change.sql', import.meta.url),
+  'utf8',
+);
 const subscribedGuestMergeSql = await readFile(
   new URL('../../migrations/20260927021208_verified_guest_subscription_transfer_canary.sql', import.meta.url),
   'utf8',
@@ -95,6 +99,7 @@ async function database() {
   await db.exec(verifiedGuestMergeSql);
   await db.exec(verifiedLegacyMergeSql);
   await db.exec(iosSubscriptionSql);
+  await db.exec(verifiedPlanChangeSql);
   await db.exec(subscribedGuestMergeSql);
   return db;
 }
@@ -248,6 +253,128 @@ test('candidate subscription sync grants once and never creates free install cre
     assert.equal((await db.query(sql)).rows[0].applied, false);
     assert.equal((await balance(db, 'apple')).subscription_credits, 8990);
     assert.equal((await db.query("select count(*)::int as count from credit_transactions where transaction_type = 'subscription_monthly_grant'")).rows[0].count, 1);
+  } finally {
+    await db.close();
+  }
+});
+
+test('candidate subscription sync blocks a plan upgrade without current Apple status', async () => {
+  const db = await database();
+  try {
+    await db.query(`select * from public.sync_ios_subscription_once(
+      'apple', 'monthly_basic', 'purchase-1', 'SUBSCRIPTION_STATE_ACTIVE',
+      1800000000000, 'order-1', 'purchase-1:monthly_basic:cycle-1', 4000, '{}'::jsonb)`);
+    await assert.rejects(db.query(`select * from public.sync_ios_subscription_once(
+      'apple', 'monthly_premium', 'purchase-1', 'SUBSCRIPTION_STATE_ACTIVE',
+      1800000100000, 'order-2', 'purchase-1:monthly_premium:cycle-2', 9000, '{}'::jsonb)`),
+    /subscription plan change requires Apple current-status verification/);
+    assert.deepEqual(await balance(db, 'apple'), {
+      free_credits: 0, paid_credits: 0, subscription_credits: 4000,
+    });
+    assert.equal((await db.query("select count(*)::int as count from credit_transactions where transaction_type = 'subscription_monthly_grant'")).rows[0].count, 1);
+  } finally {
+    await db.close();
+  }
+});
+
+test('verified plan upgrade replaces subscription credits once and preserves paid credits', async () => {
+  const db = await database();
+  try {
+    const basic = `select * from public.sync_ios_subscription_once(
+      'apple', 'monthly_basic', 'purchase-1', 'SUBSCRIPTION_STATE_ACTIVE',
+      1800000000000, 'order-1', 'purchase-1:monthly_basic:cycle-1',
+      4000, '{}'::jsonb)`;
+    const premium = `select * from public.sync_ios_subscription_once(
+      'apple', 'monthly_premium', 'purchase-1', 'SUBSCRIPTION_STATE_ACTIVE',
+      1800000100000, 'order-2', 'purchase-1:monthly_premium:cycle-2',
+      9000, '{"apple_current_product_verified":true}'::jsonb)`;
+    assert.equal((await db.query(basic)).rows[0].applied, true);
+    await db.exec("update device_credits set paid_credits = 200, subscription_credits = 3500 where device_id = 'apple'");
+    assert.equal((await db.query(premium)).rows[0].applied, true);
+    assert.deepEqual(await balance(db, 'apple'), {
+      free_credits: 0, paid_credits: 200, subscription_credits: 9000,
+    });
+    await db.exec("update device_credits set subscription_credits = 8990 where device_id = 'apple'");
+    const restoredPremium = premium.replace(
+      '{"apple_current_product_verified":true}', '{}',
+    );
+    assert.equal((await db.query(restoredPremium)).rows[0].applied, false);
+    assert.equal((await balance(db, 'apple')).subscription_credits, 8990);
+    assert.equal((await db.query("select count(*)::int as count from credit_transactions where transaction_type = 'subscription_monthly_grant'")).rows[0].count, 2);
+    await assert.rejects(db.query(basic), /subscription plan change requires Apple current-status verification/);
+    assert.equal((await balance(db, 'apple')).subscription_credits, 8990);
+  } finally {
+    await db.close();
+  }
+});
+
+test('older subscription expiry cannot replace a newer verified cycle', async () => {
+  const db = await database();
+  try {
+    await db.query(`select * from public.sync_ios_subscription_once(
+      'apple', 'monthly_premium', 'purchase-1', 'SUBSCRIPTION_STATE_ACTIVE',
+      1800000100000, 'order-2', 'purchase-1:monthly_premium:cycle-2',
+      9000, '{}'::jsonb)`);
+    await assert.rejects(db.query(`select * from public.sync_ios_subscription_once(
+      'apple', 'monthly_premium', 'purchase-1', 'SUBSCRIPTION_STATE_ACTIVE',
+      1800000000000, 'order-1', 'purchase-1:monthly_premium:cycle-1',
+      9000, '{}'::jsonb)`), /stale subscription transaction/);
+    assert.equal((await balance(db, 'apple')).subscription_credits, 9000);
+  } finally {
+    await db.close();
+  }
+});
+
+test('failed plan upgrade rolls back and retry grants the new plan once', async () => {
+  const db = await database();
+  try {
+    await db.query(`select * from public.sync_ios_subscription_once(
+      'apple', 'monthly_basic', 'purchase-1', 'SUBSCRIPTION_STATE_ACTIVE',
+      1800000000000, 'order-1', 'purchase-1:monthly_basic:cycle-1',
+      4000, '{}'::jsonb)`);
+    const upgrade = `select * from public.sync_ios_subscription_once(
+      'apple', 'monthly_premium', 'purchase-1', 'SUBSCRIPTION_STATE_ACTIVE',
+      1800000100000, 'order-2', 'purchase-1:monthly_premium:cycle-2',
+      9000, '{"apple_current_product_verified":true}'::jsonb)`;
+    await db.exec(`create function reject_upgrade() returns trigger language plpgsql as $$
+      begin if new.idempotency_key = 'purchase-1:monthly_premium:cycle-2'
+        then raise exception 'injected upgrade ledger failure'; end if;
+        return new; end $$;
+      create trigger reject_upgrade before insert on credit_transactions
+      for each row execute function reject_upgrade();`);
+    await assert.rejects(db.query(upgrade), /injected upgrade ledger failure/);
+    assert.equal((await balance(db, 'apple')).subscription_credits, 4000);
+    assert.equal((await db.query("select product_id from device_subscriptions where device_id = 'apple'")).rows[0].product_id, 'monthly_basic');
+    await db.exec('drop trigger reject_upgrade on credit_transactions');
+    assert.equal((await db.query(upgrade)).rows[0].applied, true);
+    assert.equal((await db.query(upgrade)).rows[0].applied, false);
+    assert.equal((await balance(db, 'apple')).subscription_credits, 9000);
+    assert.equal((await db.query("select count(*)::int as count from credit_transactions where transaction_type = 'subscription_monthly_grant'")).rows[0].count, 2);
+  } finally {
+    await db.close();
+  }
+});
+
+test('legacy subscription record move strands a grant on the old wallet', async () => {
+  const db = await database();
+  try {
+    await db.query(`select * from public.sync_ios_subscription_once(
+      'old', 'monthly', 'purchase-1', 'SUBSCRIPTION_STATE_ACTIVE',
+      1800000000000, 'order-1', 'purchase-1:monthly:cycle-1', 9000, '{}'::jsonb)`);
+    await db.exec("insert into device_credits (device_id, apple_user_id) values ('apple', 'apple-sub')");
+
+    // The legacy restore path reassigns the purchase row separately from credits.
+    await db.exec("update device_subscriptions set device_id = 'apple' where purchase_token = 'purchase-1'");
+    assert.equal((await balance(db, 'apple')).subscription_credits, 0);
+    assert.equal((await balance(db, 'old')).subscription_credits, 9000);
+    assert.equal((await db.query(`select device_id from credit_transactions
+      where transaction_type = 'subscription_monthly_grant'
+      and idempotency_key = 'purchase-1:monthly:cycle-1'`)).rows[0].device_id, 'old');
+
+    await assert.rejects(db.query(`select * from public.sync_ios_subscription_once(
+      'apple', 'monthly', 'purchase-1', 'SUBSCRIPTION_STATE_ACTIVE',
+      1800000000000, 'order-1', 'purchase-1:monthly:cycle-1', 9000, '{}'::jsonb)`));
+    assert.equal((await balance(db, 'apple')).subscription_credits, 0);
   } finally {
     await db.close();
   }
