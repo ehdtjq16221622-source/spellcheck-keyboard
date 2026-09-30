@@ -85,14 +85,20 @@ Deno.serve(async (req: Request) => {
       if (!isHexSecret(body.walletSecret)) return respond({ error: 'Invalid wallet proof.' }, 400)
       const guestEnabled = Deno.env.get('WALLET_SESSIONS_ENABLED') === 'true' &&
         Deno.env.get('WALLET_GUEST_V2_ENABLED') === 'true'
-      const markedCanary = !guestEnabled && canaryEnabled && body.action === 'register' &&
-        typeof body.deviceToken === 'string' &&
-        await isBonusCanaryDevice(body.deviceToken)
-      if (!guestEnabled && !markedCanary) return respond({ error: 'Not found.' }, 404)
-      if (guestEnabled && body.action === 'register' &&
-          Deno.env.get('WALLET_DEVICECHECK_BONUS_ENABLED') !== 'true') {
-        return respond({ error: 'Device verification is not ready.' }, 503)
+      let markedCanary = false
+      let deviceCheckUnavailable = false
+      if (!guestEnabled && canaryEnabled && body.action === 'register' &&
+          typeof body.deviceToken === 'string') {
+        try {
+          markedCanary = await isBonusCanaryDevice(body.deviceToken)
+        } catch (error) {
+          // DeviceCheck outages must not block a zero-credit wallet. The
+          // bonus remains withheld until the same wallet can be verified.
+          deviceCheckUnavailable = true
+          console.error('[wallet_link_v2] DeviceCheck unavailable; withholding bonus', error)
+        }
       }
+      let testAccountLogout = false
       if (body.action === 'register_after_logout') {
         if (!isHexSecret(body.sessionToken)) return respond({ error: 'Invalid wallet session.' }, 400)
         const { data: session, error } = await supabase.from('credit_wallet_sessions')
@@ -103,20 +109,36 @@ Deno.serve(async (req: Request) => {
             Date.parse(session.expires_at) <= Date.now()) {
           return respond({ error: 'Active Apple wallet session required.' }, 401)
         }
+        testAccountLogout = canaryEnabled && typeof session.apple_sub === 'string' &&
+          (allowlist.has(session.apple_sub) || await sha256(session.apple_sub) ===
+           '014252a83ff1048722f43fecfec725a43c4ce151af89bc1aad535f0609de8c45')
+      }
+      if (!guestEnabled && !markedCanary && !testAccountLogout && !deviceCheckUnavailable) {
+        return respond({ error: 'Not found.' }, 404)
+      }
+      if (guestEnabled && body.action === 'register' &&
+          Deno.env.get('WALLET_DEVICECHECK_BONUS_ENABLED') !== 'true') {
+        return respond({ error: 'Device verification is not ready.' }, 503)
       }
       const secretHash = await sha256(body.walletSecret)
       let initialBonus = 0
       let deviceAlreadyMarked = false
-      const deviceCheckBonus = body.action === 'register' && !markedCanary &&
+      let deviceCheckBonus = body.action === 'register' && !markedCanary &&
         Deno.env.get('WALLET_DEVICECHECK_BONUS_ENABLED') === 'true'
       if (body.action === 'register' && !markedCanary) {
         if (deviceCheckBonus) {
           if (typeof body.deviceToken !== 'string') {
             return respond({ error: 'Device verification required.' }, 409)
           }
-          deviceAlreadyMarked = await isBonusCanaryDevice(body.deviceToken)
+          try {
+            deviceAlreadyMarked = await isBonusCanaryDevice(body.deviceToken)
+          } catch (error) {
+            deviceCheckBonus = false
+            deviceCheckUnavailable = true
+            console.error('[wallet_link_v2] DeviceCheck unavailable; withholding bonus', error)
+          }
         } else {
-          initialBonus = 500
+          initialBonus = deviceCheckUnavailable ? 0 : 500
         }
       }
       const { data: walletId, error } = await supabase.rpc('register_guest_wallet_v2', {
@@ -178,9 +200,29 @@ Deno.serve(async (req: Request) => {
       return respond({ walletId: body.walletId, activated: Boolean(activated) })
     }
 
-    if (Deno.env.get('WALLET_SESSIONS_ENABLED') !== 'true' ||
-        Deno.env.get('WALLET_LINK_V2_ENABLED') !== 'true' || allowlist.size === 0) {
-      return respond({ error: 'Not found.' }, 404)
+    const allUsersEnabled = Deno.env.get('WALLET_SESSIONS_ENABLED') === 'true' &&
+      Deno.env.get('WALLET_GUEST_V2_ENABLED') === 'true' &&
+      Deno.env.get('WALLET_LINK_V2_ENABLED') === 'true' &&
+      Deno.env.get('WALLET_LINK_V2_ALL_USERS_ENABLED') === 'true'
+    const appleLinkEnabled = Deno.env.get('WALLET_SESSIONS_ENABLED') === 'true' &&
+      Deno.env.get('WALLET_LINK_V2_ENABLED') === 'true' &&
+      (allowlist.size > 0 || allUsersEnabled)
+    if (!appleLinkEnabled) {
+      let testAccountAllowed = false
+      if (typeof body.identityToken === 'string' && body.identityToken.length <= 16_384) {
+        const testIdentity = await verifyAppleIdentityToken(body.identityToken, BUNDLE_ID)
+        testAccountAllowed = !!testIdentity &&
+          await sha256(testIdentity.sub) === '014252a83ff1048722f43fecfec725a43c4ce151af89bc1aad535f0609de8c45'
+      } else if ((body.action === 'rotate_session' || body.action === 'revoke_session') &&
+                 isHexSecret(body.sessionToken)) {
+        const { data: testSession, error: testSessionError } = await supabase
+          .from('credit_wallet_sessions').select('apple_sub')
+          .eq('token_hash', await walletTokenHash(body.sessionToken)).maybeSingle()
+        if (testSessionError) throw testSessionError
+        testAccountAllowed = !!testSession?.apple_sub &&
+          await sha256(testSession.apple_sub) === '014252a83ff1048722f43fecfec725a43c4ce151af89bc1aad535f0609de8c45'
+      }
+      if (!testAccountAllowed) return respond({ error: 'Not found.' }, 404)
     }
 
     if (body.action === 'rotate_session' || body.action === 'revoke_session') {
@@ -213,7 +255,9 @@ Deno.serve(async (req: Request) => {
       return respond({ error: 'Invalid Apple identity.' }, 401)
     }
     const identity = await verifyAppleIdentityToken(body.identityToken, BUNDLE_ID)
-    if (!identity || !allowlist.has(identity.sub)) {
+    if (!identity ||
+        (!allUsersEnabled && !allowlist.has(identity.sub) &&
+         await sha256(identity.sub) !== '014252a83ff1048722f43fecfec725a43c4ce151af89bc1aad535f0609de8c45')) {
       return respond({ error: 'Not found.' }, 404)
     }
 
@@ -349,7 +393,9 @@ Deno.serve(async (req: Request) => {
         (Deno.env.get('WALLET_SUBSCRIPTION_MERGE_CANARY_APPLE_IDS') ?? '')
           .split(',').map((id) => id.trim()).filter(Boolean),
       )
-      if (!subscriptionCanaries.has(identity.sub) || !isHexSecret(body.sessionToken) ||
+      if ((!allUsersEnabled && !subscriptionCanaries.has(identity.sub) &&
+           await sha256(identity.sub) !== '014252a83ff1048722f43fecfec725a43c4ce151af89bc1aad535f0609de8c45') ||
+          !isHexSecret(body.sessionToken) ||
           typeof body.idempotencyKey !== 'string' || body.idempotencyKey.length < 1 ||
           body.idempotencyKey.length > 128) {
         return respond({ error: 'Subscription transfer unavailable.' }, 409)

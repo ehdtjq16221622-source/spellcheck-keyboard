@@ -30,13 +30,17 @@ async function request(path: 'query_two_bits' | 'update_two_bits', token: string
     body: JSON.stringify({ device_token: token, transaction_id: crypto.randomUUID(),
       timestamp: Date.now(), ...bits }),
   })
+  const responseText = await result.text()
   if (!result.ok) throw new Error(`DeviceCheck ${path} failed: ${result.status}`)
-  return result
+  try {
+    return JSON.parse(responseText)
+  } catch {
+    throw new Error(`DeviceCheck ${path} returned an invalid response`)
+  }
 }
 
 export async function isBonusCanaryDevice(token: string): Promise<boolean> {
-  const result = await request('query_two_bits', token)
-  const data = await result.json()
+  const data = await request('query_two_bits', token)
   if (typeof data?.bit1 !== 'boolean') throw new Error('DeviceCheck state unavailable')
   return data.bit1
 }

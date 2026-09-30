@@ -25,6 +25,7 @@ async function invoke(action, extras = {}, options = {}) {
       WALLET_DEVICECHECK_BONUS_ENABLED: options.deviceCheckBonusEnabled ? 'true' : undefined,
       WALLET_BONUS_CANARY_ENABLED: options.canaryEnabled ? 'true' : undefined,
       WALLET_LINK_V2_ENABLED: options.appleEnabled ? 'true' : undefined,
+      WALLET_LINK_V2_ALL_USERS_ENABLED: options.allUsersEnabled ? 'true' : undefined,
       WALLET_LINK_V2_CANARY_APPLE_IDS: options.appleEnabled || options.canaryEnabled ? 'apple' : undefined,
       WALLET_LEGACY_MERGE_ENABLED: options.legacyEnabled ? 'true' : undefined,
       WALLET_LEGACY_MERGE_CANARY_PAIRS: options.legacyPairs,
@@ -33,8 +34,8 @@ async function invoke(action, extras = {}, options = {}) {
   };
   globalThis.__verifyApple = async () => {
     appleVerified = true;
-    if (options.appleEnabled || options.canaryEnabled) return { sub: 'apple' };
-    throw new Error('Guest flow should not verify Apple JWT');
+    if (options.appleEnabled || options.canaryEnabled) return { sub: options.appleSubject ?? 'apple' };
+    return null;
   };
   globalThis.__verifyActiveApplePurchase = async () => {
     throw new Error('Unexpected Apple subscription status lookup');
@@ -150,11 +151,15 @@ test('marked canary uses normal guest registration and activation without enabli
   const activated = await invoke('activate', {}, settings);
   assert.equal(activated.status, 200);
   assert.equal(activated.rpcCalls[0].name, 'activate_guest_wallet_v2');
-  for (const action of ['register_after_logout', 'sign_in']) {
-    const denied = await invoke(action, { identityToken: 'apple-token' }, settings);
-    assert.equal(denied.status, 404, action);
-    assert.equal(denied.rpcCalls.length, 0, action);
-  }
+  const deniedLogin = await invoke('sign_in', { identityToken: 'apple-token' }, settings);
+  assert.equal(deniedLogin.status, 404);
+  assert.equal(deniedLogin.rpcCalls.length, 0);
+  const deniedLogout = await invoke('register_after_logout', {
+    sessionToken: 'b'.repeat(64),
+  }, { ...settings, session: { apple_sub: 'other-apple', revoked_at: null,
+    expires_at: new Date(Date.now() + 60_000).toISOString() } });
+  assert.equal(deniedLogout.status, 404);
+  assert.equal(deniedLogout.rpcCalls.length, 0);
   const unmarked = await invoke('register', { deviceToken: 'a'.repeat(64) }, {
     ...settings, marked: false,
   });
@@ -162,17 +167,19 @@ test('marked canary uses normal guest registration and activation without enabli
   assert.equal(unmarked.rpcCalls.length, 0);
 });
 
-test('a missing or failed DeviceCheck proof cannot create a canary wallet', async () => {
+test('a missing DeviceCheck proof blocks canary registration, but an outage creates zero-credit wallet', async () => {
   const settings = { canaryEnabled: true, sessionsEnabled: false, guestEnabled: false };
   const missing = await invoke('register', {}, settings);
   assert.equal(missing.status, 404);
   assert.equal(missing.rpcCalls.length, 0);
 
   const failed = await invoke('register', { deviceToken: 'a'.repeat(64) }, {
-    ...settings, queryFails: true,
+    ...settings, queryFails: true, balance: 0,
   });
-  assert.equal(failed.status, 500);
-  assert.equal(failed.rpcCalls.length, 0);
+  assert.equal(failed.status, 201);
+  assert.equal(failed.body.freeCredits, 0);
+  assert.deepEqual(failed.rpcCalls.map((call) => call.name), ['register_guest_wallet_v2']);
+  assert.equal(failed.rpcCalls[0].args.p_initial_bonus, 0);
 });
 
 test('new guest registers for 500 without Apple authentication', async () => {
@@ -269,6 +276,83 @@ test('logout guest requires an active wallet session and receives zero', async (
   assert.equal(result.body.freeCredits, 0);
   assert.equal(result.rpcCalls[0].args.p_initial_bonus, 0);
   assert.equal(result.appleVerified, false);
+});
+
+test('general Apple access stays closed until guest logout is enabled too', async () => {
+  const account = { appleEnabled: true, appleSubject: 'another-apple' };
+  for (const settings of [
+    account,
+    { ...account, allUsersEnabled: true, guestEnabled: false },
+    { ...account, allUsersEnabled: true, sessionsEnabled: false },
+  ]) {
+    const result = await invoke('sign_in', { identityToken: 'apple-token' }, settings);
+    assert.equal(result.status, 404);
+    assert.equal(result.rpcCalls.length, 0);
+  }
+});
+
+test('an allowlisted canary can log out with zero credits while guest rollout is off', async () => {
+  const settings = {
+    canaryEnabled: true, appleEnabled: true, guestEnabled: false,
+    balance: 0,
+    session: { apple_sub: 'apple', revoked_at: null,
+      expires_at: new Date(Date.now() + 60_000).toISOString() },
+  };
+  const result = await invoke('register_after_logout', {
+    sessionToken: 'b'.repeat(64),
+  }, settings);
+  assert.equal(result.status, 201);
+  assert.equal(result.body.freeCredits, 0);
+  assert.equal(result.rpcCalls[0].args.p_initial_bonus, 0);
+
+  const revoked = await invoke('register_after_logout', {
+    sessionToken: 'b'.repeat(64),
+  }, { ...settings, session: { ...settings.session, revoked_at: new Date().toISOString() } });
+  assert.equal(revoked.status, 401);
+  assert.equal(revoked.rpcCalls.length, 0);
+});
+
+test('general Apple login, zero-credit logout, and re-login use the same guarded path', async () => {
+  const settings = {
+    appleEnabled: true, allUsersEnabled: true, appleSubject: 'another-apple',
+    session: { apple_sub: 'another-apple', revoked_at: null,
+      expires_at: new Date(Date.now() + 60_000).toISOString() },
+    balance: 0,
+  };
+  const firstLogin = await invoke('sign_in', { identityToken: 'apple-token' }, settings);
+  assert.equal(firstLogin.status, 200);
+  assert.equal(firstLogin.rpcCalls[0].name, 'issue_apple_wallet_session');
+  assert.equal(firstLogin.rpcCalls[0].args.p_apple_sub, 'another-apple');
+
+  const logout = await invoke('register_after_logout', {
+    sessionToken: 'b'.repeat(64),
+  }, settings);
+  assert.equal(logout.status, 201);
+  assert.equal(logout.body.freeCredits, 0);
+  assert.equal(logout.body.paidCredits, 0);
+  assert.equal(logout.rpcCalls[0].args.p_initial_bonus, 0);
+
+  const activation = await invoke('activate', {}, settings);
+  assert.equal(activation.status, 200);
+  const revocation = await invoke('revoke_session', {
+    sessionToken: 'b'.repeat(64),
+  }, settings);
+  assert.equal(revocation.status, 200);
+  assert.equal(revocation.rpcCalls[0].name, 'revoke_apple_wallet_session');
+  const secondLogin = await invoke('sign_in', { identityToken: 'apple-token' }, settings);
+  assert.equal(secondLogin.status, 200);
+});
+
+test('expired Apple session cannot register a logout wallet or receive credits', async () => {
+  const result = await invoke('register_after_logout', {
+    sessionToken: 'b'.repeat(64),
+  }, {
+    appleEnabled: true, allUsersEnabled: true,
+    session: { apple_sub: 'another-apple', revoked_at: null,
+      expires_at: new Date(Date.now() - 60_000).toISOString() },
+  });
+  assert.equal(result.status, 401);
+  assert.equal(result.rpcCalls.length, 0);
 });
 
 test('guest activation proves possession before the wallet can be used', async () => {
