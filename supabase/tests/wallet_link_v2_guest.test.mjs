@@ -28,6 +28,7 @@ async function invoke(action, extras = {}, options = {}) {
       WALLET_LINK_V2_ALL_USERS_ENABLED: options.allUsersEnabled ? 'true' : undefined,
       WALLET_LINK_V2_CANARY_APPLE_IDS: options.appleEnabled || options.canaryEnabled ? 'apple' : undefined,
       WALLET_LEGACY_MERGE_ENABLED: options.legacyEnabled ? 'true' : undefined,
+      WALLET_LEGACY_MERGE_ALL_USERS_ENABLED: options.legacyAllUsersEnabled ? 'true' : undefined,
       WALLET_LEGACY_MERGE_CANARY_PAIRS: options.legacyPairs,
     })[key] },
     serve: (callback) => { handler = callback; },
@@ -403,4 +404,25 @@ test('legacy merge is closed unless the exact Apple/source pair is approved', as
   assert.equal(approved.status, 200);
   assert.equal(approved.rpcCalls[0].name, 'merge_verified_legacy_wallet_once');
   assert.equal(approved.rpcCalls[0].args.p_source_wallet_id, 'legacy-wallet');
+});
+
+test('all-user legacy merge needs both the v2 rollout and its own rollout switch', async () => {
+  const body = {
+    sourceWalletId: 'legacy-wallet', identityToken: 'verified-apple-jwt',
+    sessionToken: 'b'.repeat(64), idempotencyKey: 'legacy-merge-1',
+  };
+  const legacyOnly = await invoke('merge_legacy', body, {
+    appleEnabled: true, legacyEnabled: true, legacyAllUsersEnabled: true,
+  });
+  assert.equal(legacyOnly.status, 409);
+  assert.equal(legacyOnly.rpcCalls.length, 0);
+
+  const allUsers = await invoke('merge_legacy', body, {
+    appleEnabled: true, allUsersEnabled: true, legacyEnabled: true,
+    legacyAllUsersEnabled: true, appleSubject: 'another-apple',
+  });
+  assert.equal(allUsers.status, 200);
+  assert.equal(allUsers.rpcCalls[0].name, 'merge_verified_legacy_wallet_once');
+  assert.equal(allUsers.rpcCalls[0].args.p_source_wallet_id, 'legacy-wallet');
+  assert.equal(allUsers.rpcCalls[0].args.p_apple_sub, 'another-apple');
 });

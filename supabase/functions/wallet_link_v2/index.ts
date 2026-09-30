@@ -332,11 +332,17 @@ Deno.serve(async (req: Request) => {
       if (Deno.env.get('WALLET_LEGACY_MERGE_ENABLED') !== 'true') {
         return respond({ error: 'Wallet transfer requires review.' }, 409)
       }
+      // Keep the production rollout separate from the existing exact-pair
+      // canary. The all-user switch is effective only after the complete v2
+      // wallet path is enabled, so deploying this code alone changes nothing.
+      const legacyAllUsersEnabled = allUsersEnabled &&
+        Deno.env.get('WALLET_LEGACY_MERGE_ALL_USERS_ENABLED') === 'true'
       const approvedPairs = JSON.parse(
         Deno.env.get('WALLET_LEGACY_MERGE_CANARY_PAIRS') ?? '{}',
       ) as Record<string, string[]>
-      if (!Array.isArray(approvedPairs[identity.sub]) ||
-          !approvedPairs[identity.sub].includes(body.sourceWalletId)) {
+      if (!legacyAllUsersEnabled &&
+          (!Array.isArray(approvedPairs[identity.sub]) ||
+           !approvedPairs[identity.sub].includes(body.sourceWalletId))) {
         return respond({ error: 'Wallet transfer requires review.' }, 409)
       }
       const { data, error } = await supabase.rpc('merge_verified_legacy_wallet_once', {
