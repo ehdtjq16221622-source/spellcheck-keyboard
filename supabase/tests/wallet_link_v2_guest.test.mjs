@@ -7,7 +7,8 @@ const source = readFileSync(new URL('../functions/wallet_link_v2/index.ts', impo
 const runnable = stripTypeScriptTypes(source
   .replace(/^import \{ createClient \} from .*$/m, 'const createClient = globalThis.__createClient;')
   .replace(/^import \{ verifyAppleIdentityToken \} from .*$/m, 'const verifyAppleIdentityToken = globalThis.__verifyApple;')
-  .replace(/^import \{ verifyActiveApplePurchase \} from .*$/m, 'const verifyActiveApplePurchase = globalThis.__verifyActiveApplePurchase;')
+  .replace(/^import \{ verifyAppleSubscriptionRecord \} from .*$/m,
+    'const verifyAppleSubscriptionRecord = globalThis.__verifyAppleSubscriptionRecord;')
   .replace(/^import \{ walletTokenHash \} from .*$/m, 'const walletTokenHash = globalThis.__walletTokenHash;')
   .replace(/^import \{ enrollBonusCanaryDevice, isBonusCanaryDevice \} from .*$/m,
     'const enrollBonusCanaryDevice = globalThis.__enrollDevice; const isBonusCanaryDevice = globalThis.__isCanaryDevice;'));
@@ -41,6 +42,7 @@ async function invoke(action, extras = {}, options = {}) {
   globalThis.__verifyActiveApplePurchase = async () => {
     throw new Error('Unexpected Apple subscription status lookup');
   };
+  globalThis.__verifyAppleSubscriptionRecord = async () => options.historicalPurchaseValid ?? false;
   globalThis.__walletTokenHash = async (value) => value;
   globalThis.__isCanaryDevice = async (token) => {
     deviceCalls.push({ action: 'query', token });
@@ -69,25 +71,31 @@ async function invoke(action, extras = {}, options = {}) {
         : name === 'merge_verified_v2_guest_wallet_once' ? [{
           decision: 'merged', canonical_wallet_id: 'apple-wallet',
           free_credits_remaining: 500, paid_credits_remaining: 100,
-        }] : name === 'merge_verified_legacy_wallet_once' ? [{
+        }] : name === 'merge_verified_legacy_wallet_once' ||
+            name === 'merge_verified_legacy_wallet_v2_once' ? [{
           decision: 'merged', canonical_wallet_id: 'apple-wallet',
           free_credits_remaining: 500, paid_credits_remaining: 100,
+          subscription_credits_remaining: 0,
         }] : true, error: null };
     },
-    from: (table) => ({
-      select: () => ({
-        eq: () => ({
+    from: (table) => {
+      const query = {
+          eq: () => query,
+          order: () => query,
+          limit: () => query,
           lt: () => ({ limit: async () => ({ data: options.freeUsed ? [{ id: 1 }] : [], error: null }) }),
-          maybeSingle: async () => ({ data: options.session ?? null, error: null }),
+          maybeSingle: async () => ({ data: table === 'device_credits'
+            ? { subscription_credits: options.sourceSubscriptionCredits ?? 0 }
+            : options.session ?? null, error: null }),
           single: async () => ({
             data: table === 'device_credits'
               ? { free_credits: options.balance ?? 500, paid_credits: 0, apple_user_id: null }
               : { state: 'pending' },
             error: null,
           }),
-        }),
-      }),
-    }),
+      };
+      return { select: () => query };
+    },
   });
   await import(`data:text/javascript,${encodeURIComponent(runnable)}#${crypto.randomUUID()}`);
   const response = await handler(new Request('http://localhost/wallet_link_v2', {
@@ -402,11 +410,11 @@ test('legacy merge is closed unless the exact Apple/source pair is approved', as
     legacyPairs: JSON.stringify({ apple: ['legacy-wallet'] }),
   });
   assert.equal(approved.status, 200);
-  assert.equal(approved.rpcCalls[0].name, 'merge_verified_legacy_wallet_once');
+  assert.equal(approved.rpcCalls[0].name, 'merge_verified_legacy_wallet_v2_once');
   assert.equal(approved.rpcCalls[0].args.p_source_wallet_id, 'legacy-wallet');
 });
 
-test('all-user legacy merge needs both the v2 rollout and its own rollout switch', async () => {
+test('all-user rollout flags never bypass exact legacy wallet ownership review', async () => {
   const body = {
     sourceWalletId: 'legacy-wallet', identityToken: 'verified-apple-jwt',
     sessionToken: 'b'.repeat(64), idempotencyKey: 'legacy-merge-1',
@@ -421,8 +429,6 @@ test('all-user legacy merge needs both the v2 rollout and its own rollout switch
     appleEnabled: true, allUsersEnabled: true, legacyEnabled: true,
     legacyAllUsersEnabled: true, appleSubject: 'another-apple',
   });
-  assert.equal(allUsers.status, 200);
-  assert.equal(allUsers.rpcCalls[0].name, 'merge_verified_legacy_wallet_once');
-  assert.equal(allUsers.rpcCalls[0].args.p_source_wallet_id, 'legacy-wallet');
-  assert.equal(allUsers.rpcCalls[0].args.p_apple_sub, 'another-apple');
+  assert.equal(allUsers.status, 409);
+  assert.equal(allUsers.rpcCalls.length, 0);
 });

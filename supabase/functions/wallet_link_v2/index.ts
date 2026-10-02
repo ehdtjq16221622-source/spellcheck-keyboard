@@ -1,7 +1,7 @@
 // Feature-flagged guest registration and canary-only Apple linking.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { verifyAppleIdentityToken } from '../_shared/apple_auth.ts'
-import { verifyActiveApplePurchase } from '../_shared/apple_subscription_status.ts'
+import { verifyAppleSubscriptionRecord } from '../_shared/apple_subscription_status.ts'
 import { walletTokenHash } from '../_shared/wallet_auth.ts'
 import { enrollBonusCanaryDevice, isBonusCanaryDevice } from '../_shared/devicecheck.ts'
 
@@ -204,10 +204,12 @@ Deno.serve(async (req: Request) => {
       Deno.env.get('WALLET_GUEST_V2_ENABLED') === 'true' &&
       Deno.env.get('WALLET_LINK_V2_ENABLED') === 'true' &&
       Deno.env.get('WALLET_LINK_V2_ALL_USERS_ENABLED') === 'true'
+    const walletAutoMergeAllUsersEnabled = allUsersEnabled &&
+      Deno.env.get('WALLET_AUTO_MERGE_ALL_USERS_ENABLED') === 'true'
     const appleLinkEnabled = Deno.env.get('WALLET_SESSIONS_ENABLED') === 'true' &&
       Deno.env.get('WALLET_LINK_V2_ENABLED') === 'true' &&
       (allowlist.size > 0 || allUsersEnabled)
-    if (!appleLinkEnabled) {
+    if (!appleLinkEnabled && body.action !== 'resume_guest_merge') {
       let testAccountAllowed = false
       if (typeof body.identityToken === 'string' && body.identityToken.length <= 16_384) {
         const testIdentity = await verifyAppleIdentityToken(body.identityToken, BUNDLE_ID)
@@ -249,6 +251,95 @@ Deno.serve(async (req: Request) => {
       if (error?.code === 'P0001') return respond({ error: 'Wallet session must be renewed by Apple sign-in.' }, 401)
       if (error) throw error
       return respond({ walletId, expiresInSeconds: 29 * 86400, state: 'active' })
+    }
+
+    if (body.action === 'resume_guest_merge') {
+      if (!isHexSecret(body.sessionToken) || !isHexSecret(body.walletSecret) ||
+          typeof body.walletId !== 'string' || !body.walletId.startsWith('v2:') ||
+          typeof body.idempotencyKey !== 'string' || body.idempotencyKey.length < 1 ||
+          body.idempotencyKey.length > 128) {
+        return respond({ error: 'Invalid wallet merge proof.' }, 400)
+      }
+      const sessionHash = await walletTokenHash(body.sessionToken)
+      const { data: session, error: sessionError } = await supabase
+        .from('credit_wallet_sessions').select('apple_sub, wallet_id, expires_at, revoked_at')
+        .eq('token_hash', sessionHash).maybeSingle()
+      if (sessionError) throw sessionError
+      if (!session || session.revoked_at || Date.parse(session.expires_at) <= Date.now()) {
+        return respond({ error: 'Active Apple wallet session required.' }, 401)
+      }
+      const appleSub = session.apple_sub as string
+      if (!walletAutoMergeAllUsersEnabled &&
+          await sha256(appleSub) !== '014252a83ff1048722f43fecfec725a43c4ce151af89bc1aad535f0609de8c45') {
+        return respond({ error: 'Wallet merge unavailable.' }, 404)
+      }
+      const { data: canonical, error: canonicalError } = await supabase
+        .from('device_credits').select('device_id').eq('apple_user_id', appleSub).maybeSingle()
+      if (canonicalError) throw canonicalError
+      if (!canonical || canonical.device_id !== session.wallet_id) {
+        return respond({ error: 'Wallet session does not match canonical wallet.' }, 403)
+      }
+      const secretHash = await sha256(body.walletSecret)
+      const { data: history, error: historyError } = await supabase
+        .from('credit_v2_subscription_transfer_grants').select('purchase_token, request_id')
+        .eq('guest_wallet_id', body.walletId).maybeSingle()
+      if (historyError) throw historyError
+      const { data: credential, error: credentialError } = await supabase
+        .from('wallet_v2_credentials').select('secret_hash, state')
+        .eq('wallet_id', body.walletId).maybeSingle()
+      if (credentialError) throw credentialError
+      if (credential?.secret_hash !== secretHash ||
+          !['active', 'linked'].includes(credential.state)) {
+        return respond({ error: 'Guest wallet proof failed.' }, 403)
+      }
+      let result: Record<string, unknown> | null = null
+      if (history) {
+        if (history.request_id !== body.idempotencyKey) {
+          return respond({ error: 'Wallet merge request does not match.' }, 409)
+        }
+        const { data, error } = await supabase.rpc('merge_verified_v2_subscribed_guest_preserving_once', {
+          p_guest_wallet_id: body.walletId, p_guest_secret_hash: secretHash,
+          p_apple_sub: appleSub, p_session_token_hash: sessionHash,
+          p_request_id: body.idempotencyKey, p_purchase_token: history.purchase_token,
+        })
+        if (error?.code === 'P0001') return respond({ error: 'Subscription transfer requires review.' }, 409)
+        if (error) throw error
+        result = data?.[0] ?? null
+      } else {
+        const { data: purchase, error: purchaseError } = await supabase
+          .from('device_subscriptions').select('product_id, purchase_token')
+          .eq('device_id', body.walletId).maybeSingle()
+        if (purchaseError) throw purchaseError
+        const { data: balance, error: balanceError } = await supabase
+          .from('device_credits').select('subscription_credits')
+          .eq('device_id', body.walletId).maybeSingle()
+        if (balanceError) throw balanceError
+        if (purchase || (balance?.subscription_credits ?? 0) > 0) {
+          if (!purchase?.product_id || !purchase.purchase_token ||
+              !await verifyAppleSubscriptionRecord(
+                purchase.purchase_token, purchase.product_id, BUNDLE_ID, false,
+              )) return respond({ error: 'Subscription transfer requires review.' }, 409)
+          const { data, error } = await supabase.rpc('merge_verified_v2_subscribed_guest_preserving_once', {
+            p_guest_wallet_id: body.walletId, p_guest_secret_hash: secretHash,
+            p_apple_sub: appleSub, p_session_token_hash: sessionHash,
+            p_request_id: body.idempotencyKey, p_purchase_token: purchase.purchase_token,
+          })
+          if (error?.code === 'P0001') return respond({ error: 'Subscription transfer requires review.' }, 409)
+          if (error) throw error
+          result = data?.[0] ?? null
+        } else {
+          const { data, error } = await supabase.rpc('merge_verified_v2_guest_wallet_once', {
+            p_guest_wallet_id: body.walletId, p_guest_secret_hash: secretHash,
+            p_apple_sub: appleSub, p_session_token_hash: sessionHash,
+            p_request_id: body.idempotencyKey,
+          })
+          if (error?.code === 'P0001') return respond({ error: 'Wallet transfer requires review.' }, 409)
+          if (error) throw error
+          result = data?.[0] ?? null
+        }
+      }
+      if (!result) throw new Error('Missing resumed wallet merge result')
+      return respond({ decision: result.decision, canonicalWalletId: result.canonical_wallet_id })
     }
 
     if (typeof body?.identityToken !== 'string' || body.identityToken.length > 16_384) {
@@ -332,24 +423,66 @@ Deno.serve(async (req: Request) => {
       if (Deno.env.get('WALLET_LEGACY_MERGE_ENABLED') !== 'true') {
         return respond({ error: 'Wallet transfer requires review.' }, 409)
       }
-      // Keep the production rollout separate from the existing exact-pair
-      // canary. The all-user switch is effective only after the complete v2
-      // wallet path is enabled, so deploying this code alone changes nothing.
-      const legacyAllUsersEnabled = allUsersEnabled &&
-        Deno.env.get('WALLET_LEGACY_MERGE_ALL_USERS_ENABLED') === 'true'
+      // A legacy wallet ID is public and cannot prove possession. No global
+      // rollout flag may bypass the separately reviewed exact-pair allowlist.
       const approvedPairs = JSON.parse(
         Deno.env.get('WALLET_LEGACY_MERGE_CANARY_PAIRS') ?? '{}',
       ) as Record<string, string[]>
-      if (!legacyAllUsersEnabled &&
-          (!Array.isArray(approvedPairs[identity.sub]) ||
-           !approvedPairs[identity.sub].includes(body.sourceWalletId))) {
+      if (!Array.isArray(approvedPairs[identity.sub]) ||
+          !approvedPairs[identity.sub].includes(body.sourceWalletId)) {
         return respond({ error: 'Wallet transfer requires review.' }, 409)
       }
-      const { data, error } = await supabase.rpc('merge_verified_legacy_wallet_once', {
+      const { data: sourceWallet, error: sourceWalletError } = await supabase
+        .from('device_credits')
+        .select('subscription_credits')
+        .eq('device_id', body.sourceWalletId)
+        .maybeSingle()
+      if (sourceWalletError) throw sourceWalletError
+      const { data: sourcePurchase, error: sourcePurchaseError } = await supabase
+        .from('device_subscriptions')
+        .select('product_id, purchase_token')
+        .eq('device_id', body.sourceWalletId)
+        .maybeSingle()
+      if (sourcePurchaseError) throw sourcePurchaseError
+
+      let verifiedSubscriptionToken: string | null = null
+      let verifiedProductId: string | null = null
+      if (Number(sourceWallet?.subscription_credits ?? 0) > 0 && !sourcePurchase) {
+        const { data: latestGrant, error: grantError } = await supabase
+          .from('credit_transactions')
+          .select('metadata')
+          .eq('device_id', body.sourceWalletId)
+          .eq('transaction_type', 'subscription_monthly_grant')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        if (grantError) throw grantError
+        const metadata = latestGrant?.metadata as Record<string, unknown> | null
+        const originalTransactionId = metadata?.originalTransactionId
+        const productId = metadata?.productId
+        if (typeof originalTransactionId === 'string' && typeof productId === 'string') {
+          verifiedSubscriptionToken = originalTransactionId
+          verifiedProductId = productId
+        }
+      } else if (sourcePurchase) {
+        verifiedSubscriptionToken = sourcePurchase.purchase_token
+        verifiedProductId = sourcePurchase.product_id
+      }
+      if ((Number(sourceWallet?.subscription_credits ?? 0) > 0 || sourcePurchase) &&
+          (!verifiedSubscriptionToken || !verifiedProductId ||
+           !await verifyAppleSubscriptionRecord(
+             verifiedSubscriptionToken, verifiedProductId, BUNDLE_ID,
+           ))) {
+        return respond({ error: 'Subscription transfer requires review.' }, 409)
+      }
+
+      const { data, error } = await supabase.rpc('merge_verified_legacy_wallet_v2_once', {
         p_source_wallet_id: body.sourceWalletId,
         p_apple_sub: identity.sub,
         p_session_token_hash: await walletTokenHash(body.sessionToken),
         p_request_id: body.idempotencyKey,
+        p_verified_subscription_token: verifiedSubscriptionToken,
+        p_verified_product_id: verifiedProductId,
       })
       if (error?.code === 'P0001') return respond({ error: 'Wallet transfer requires review.' }, 409)
       if (error) throw error
@@ -360,6 +493,7 @@ Deno.serve(async (req: Request) => {
         canonicalWalletId: result.canonical_wallet_id,
         freeCredits: result.free_credits_remaining,
         paidCredits: result.paid_credits_remaining,
+        subscriptionCredits: result.subscription_credits_remaining,
       })
     }
 
@@ -406,32 +540,52 @@ Deno.serve(async (req: Request) => {
           body.idempotencyKey.length > 128) {
         return respond({ error: 'Subscription transfer unavailable.' }, 409)
       }
+      const { data: priorTransfer, error: priorTransferError } = await supabase
+        .from('credit_v2_subscription_transfer_grants').select('purchase_token, request_id')
+        .eq('guest_wallet_id', body.walletId).maybeSingle()
+      if (priorTransferError) throw priorTransferError
       const { data: guestCredential, error: credentialError } = await supabase
         .from('wallet_v2_credentials').select('secret_hash, state')
         .eq('wallet_id', body.walletId).maybeSingle()
       if (credentialError) throw credentialError
-      if (guestCredential?.secret_hash !== secretHash || guestCredential.state !== 'active') {
+      if (guestCredential?.secret_hash !== secretHash ||
+          guestCredential.state !== (priorTransfer ? 'linked' : 'active')) {
         return respond({ error: 'Guest wallet proof failed.' }, 403)
       }
-      const { data: sourcePurchase, error: purchaseError } = await supabase
-        .from('device_subscriptions').select('product_id, purchase_token')
-        .eq('device_id', body.walletId).maybeSingle()
-      if (purchaseError) throw purchaseError
-      if (!sourcePurchase?.product_id || !sourcePurchase.purchase_token) {
+      let purchaseToken = priorTransfer?.purchase_token as string | undefined
+      if (priorTransfer && priorTransfer.request_id !== body.idempotencyKey) {
         return respond({ error: 'Subscription transfer requires review.' }, 409)
       }
-      if (!await verifyActiveApplePurchase(
-        sourcePurchase.purchase_token, sourcePurchase.product_id, BUNDLE_ID,
+      let sourcePurchase: { product_id: string; purchase_token: string } | null = null
+      if (!priorTransfer) {
+        const { data, error: purchaseError } = await supabase
+          .from('device_subscriptions').select('product_id, purchase_token')
+          .eq('device_id', body.walletId).maybeSingle()
+        if (purchaseError) throw purchaseError
+        sourcePurchase = data
+        purchaseToken = sourcePurchase?.purchase_token
+        if (!sourcePurchase?.product_id || !purchaseToken) {
+          return respond({ error: 'Subscription transfer requires review.' }, 409)
+        }
+      }
+      if (!priorTransfer && !await verifyAppleSubscriptionRecord(
+        purchaseToken!, sourcePurchase!.product_id, BUNDLE_ID, false,
       )) {
+        // A failed purchase check must never move subscription credits. For
+        // approved test accounts, defer the transfer without blocking sign-in.
+        if (subscriptionCanaries.has(identity.sub) ||
+            await sha256(identity.sub) === '014252a83ff1048722f43fecfec725a43c4ce151af89bc1aad535f0609de8c45') {
+          return respond({ error: 'Subscription transfer requires review.' }, 409)
+        }
         return respond({ error: 'Apple subscription does not match this wallet.' }, 409)
       }
-      const { data, error } = await supabase.rpc('merge_verified_v2_subscribed_guest_once', {
+      const { data, error } = await supabase.rpc('merge_verified_v2_subscribed_guest_preserving_once', {
         p_guest_wallet_id: body.walletId,
         p_guest_secret_hash: secretHash,
         p_apple_sub: identity.sub,
         p_session_token_hash: await walletTokenHash(body.sessionToken),
         p_request_id: body.idempotencyKey,
-        p_purchase_token: sourcePurchase.purchase_token,
+        p_purchase_token: purchaseToken!,
       })
       if (error?.code === 'P0001') return respond({ error: 'Subscription transfer requires review.' }, 409)
       if (error) throw error

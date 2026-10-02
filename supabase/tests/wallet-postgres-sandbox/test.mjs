@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { stripTypeScriptTypes } from 'node:module';
 import { test } from 'node:test';
 import { PGlite } from '@electric-sql/pglite';
 import { readFile } from 'node:fs/promises';
@@ -9,6 +10,14 @@ const adGrantSql = await readFile(
 );
 const walletLinkSql = await readFile(
   new URL('../../migrations/20260926010000_wallet_link_v2.sql', import.meta.url),
+  'utf8',
+);
+const idempotentGuestActivationSql = await readFile(
+  new URL('../../migrations/20261001133132_activate_guest_wallet_v2_idempotent.sql', import.meta.url),
+  'utf8',
+);
+const walletCreationDefaultsSql = await readFile(
+  new URL('../../migrations/20261001185145_unify_wallet_creation_bonus_defaults.sql', import.meta.url),
   'utf8',
 );
 const walletMergeSql = await readFile(
@@ -35,6 +44,10 @@ const verifiedLegacyMergeSql = await readFile(
   new URL('../../migrations/20260926234650_verified_legacy_wallet_merge.sql', import.meta.url),
   'utf8',
 );
+const verifiedLegacySubscriptionMergeSql = await readFile(
+  new URL('../../migrations/20261001140712_preserve_verified_legacy_subscription_balance.sql', import.meta.url),
+  'utf8',
+);
 const iosSubscriptionSql = await readFile(
   new URL('../../migrations/20260927010000_atomic_ios_subscription_candidate.sql', import.meta.url),
   'utf8',
@@ -43,12 +56,29 @@ const verifiedPlanChangeSql = await readFile(
   new URL('../../migrations/20260930034000_verified_ios_subscription_plan_change.sql', import.meta.url),
   'utf8',
 );
+const googleSubscriptionSql = await readFile(
+  new URL('../../migrations/20261001232517_sync_google_subscription_atomically.sql', import.meta.url),
+  'utf8',
+);
+const atomicUsageSyncSql = await readFile(
+  new URL('../../migrations/20261002120000_atomic_client_usage_sync.sql', import.meta.url),
+  'utf8',
+);
 const subscribedGuestMergeSql = await readFile(
   new URL('../../migrations/20260927021208_verified_guest_subscription_transfer_canary.sql', import.meta.url),
   'utf8',
 );
+const preserveSubscribedGuestBalancesSql = await readFile(
+  new URL('../../migrations/20261002190049_preserve_subscribed_guest_balances.sql', import.meta.url),
+  'utf8',
+);
+const sharedCreditsSource = stripTypeScriptTypes(
+  (await readFile(new URL('../../functions/_shared/credits.ts', import.meta.url), 'utf8'))
+    .replace(/^import \{ SupabaseClient \} from .*$/m, ''),
+);
+const sharedCredits = await import(`data:text/javascript,${encodeURIComponent(sharedCreditsSource)}`);
 
-async function database() {
+async function database({ uuidLedger = false } = {}) {
   const db = new PGlite();
   await db.exec(`
     create role anon;
@@ -65,6 +95,7 @@ async function database() {
       updated_at timestamptz not null default now()
     );
     create table credit_transactions (
+      id ${uuidLedger ? 'uuid default gen_random_uuid()' : 'bigserial'} primary key,
       device_id text not null,
       transaction_type text not null,
       idempotency_key text not null,
@@ -98,9 +129,15 @@ async function database() {
   await db.exec(pendingGuestBonusSql);
   await db.exec(verifiedGuestMergeSql);
   await db.exec(verifiedLegacyMergeSql);
+  await db.exec(verifiedLegacySubscriptionMergeSql);
   await db.exec(iosSubscriptionSql);
   await db.exec(verifiedPlanChangeSql);
   await db.exec(subscribedGuestMergeSql);
+  await db.exec(preserveSubscribedGuestBalancesSql);
+  await db.exec(idempotentGuestActivationSql);
+  await db.exec(walletCreationDefaultsSql);
+  await db.exec(googleSubscriptionSql);
+  await db.exec(atomicUsageSyncSql);
   return db;
 }
 
@@ -110,6 +147,76 @@ async function balance(db, id) {
     [id],
   );
   return result.rows[0] ?? null;
+}
+
+function creditsClient(db) {
+  return {
+    async rpc(name, args) {
+      try {
+        const result = await db.query(
+          `select * from public.${name}($1, $2, $3, $4, $5)`,
+          [args.p_device_id, args.p_event_id, args.p_requested_free,
+            args.p_requested_paid, JSON.stringify(args.p_metadata ?? {})],
+        );
+        return { data: result.rows, error: null };
+      } catch (error) {
+        return { data: null, error: { code: error.code, message: error.message } };
+      }
+    },
+    from(table) {
+      let operation = 'select';
+      let payload = null;
+      let columns = '*';
+      const filters = [];
+      const execute = async () => {
+        try {
+          let result;
+          if (operation === 'select') {
+            const where = filters.map((filter, index) => `"${filter.column}" = $${index + 1}`).join(' and ');
+            result = await db.query(
+              `select ${columns} from ${table}${where ? ` where ${where}` : ''}`,
+              filters.map((filter) => filter.value),
+            );
+            return { data: result.rows, error: null };
+          }
+          const entries = Object.entries(payload);
+          const values = entries.map(([key, value]) =>
+            key === 'metadata' && typeof value !== 'string' ? JSON.stringify(value) : value);
+          if (operation === 'insert') {
+            const names = entries.map(([key]) => `"${key}"`).join(', ');
+            const placeholders = entries.map((_, index) => `$${index + 1}`).join(', ');
+            result = await db.query(
+              `insert into ${table} (${names}) values (${placeholders})${columns !== '*' ? ` returning ${columns}` : ''}`,
+              values,
+            );
+          } else {
+            const sets = entries.map(([key], index) => `"${key}" = $${index + 1}`);
+            const where = filters.map((filter, index) =>
+              `"${filter.column}" = $${entries.length + index + 1}`);
+            result = await db.query(
+              `update ${table} set ${sets.join(', ')}${where.length ? ` where ${where.join(' and ')}` : ''}`,
+              [...values, ...filters.map((filter) => filter.value)],
+            );
+          }
+          return { data: result.rows ?? null, error: null };
+        } catch (error) {
+          return { data: null, error: { code: error.code, message: error.message } };
+        }
+      };
+      const builder = {
+        select(value = '*') { columns = value; return builder; },
+        eq(column, value) { filters.push({ column, value }); return builder; },
+        insert(value) { operation = 'insert'; payload = value; return builder; },
+        update(value) { operation = 'update'; payload = value; return builder; },
+        async maybeSingle() {
+          const result = await execute();
+          return { data: Array.isArray(result.data) ? result.data[0] ?? null : result.data, error: result.error };
+        },
+        then(resolve, reject) { return execute().then(resolve, reject); },
+      };
+      return builder;
+    },
+  };
 }
 
 async function wallets(db) {
@@ -138,6 +245,249 @@ test('legacy split link can lose the local wallet if the move fails', async () =
     );
     assert.equal(await balance(db, 'local'), null);
     assert.equal((await balance(db, 'apple')).paid_credits, 200);
+  } finally {
+    await db.close();
+  }
+});
+
+test('subscription grant on a missing wallet grants subscription credits without an install bonus', async () => {
+  const db = await database();
+  try {
+    const grant = await db.query(
+      `select * from public.reset_subscription_credits(
+         'new-subscriber', 4000, 'cycle-new-subscriber', '{}'::jsonb
+       )`,
+    );
+    assert.deepEqual(grant.rows[0], {
+      applied: true,
+      free_credits_remaining: 0,
+      paid_credits_remaining: 4000,
+      credits_remaining: 4000,
+    });
+    assert.deepEqual(await balance(db, 'new-subscriber'), {
+      free_credits: 0, paid_credits: 0, subscription_credits: 4000,
+    });
+    const ledger = await db.query(
+      `select count(*)::int as count from credit_transactions
+       where transaction_type = 'subscription_monthly_grant'
+         and idempotency_key = 'cycle-new-subscriber'`,
+    );
+    assert.equal(ledger.rows[0].count, 1);
+  } finally {
+    await db.close();
+  }
+});
+
+test('subscription retry returns current balance; same cycle key cannot be replayed to another wallet', async () => {
+  const db = await database();
+  try {
+    await db.query(
+      `select * from public.reset_subscription_credits(
+         'subscriber-a', 4000, 'cycle-shared', '{}'::jsonb
+       )`,
+    );
+    await db.query(
+      `update device_credits set subscription_credits = 3970 where device_id = 'subscriber-a'`,
+    );
+    const retry = await db.query(
+      `select * from public.reset_subscription_credits(
+         'subscriber-a', 4000, 'cycle-shared', '{}'::jsonb
+       )`,
+    );
+    assert.deepEqual(retry.rows[0], {
+      applied: false,
+      free_credits_remaining: 0,
+      paid_credits_remaining: 3970,
+      credits_remaining: 3970,
+    });
+    await assert.rejects(
+      db.query(`select * from public.reset_subscription_credits(
+        'subscriber-b', 4000, 'cycle-shared', '{}'::jsonb
+      )`),
+      /subscription cycle key belongs to another wallet/,
+    );
+    assert.equal(await balance(db, 'subscriber-b'), null);
+  } finally {
+    await db.close();
+  }
+});
+
+test('AI usage cannot mint an install bonus for a missing wallet and retries stay idempotent', async () => {
+  const db = await database();
+  try {
+    const first = await db.query(
+      `select * from public.consume_ai_credits('ai-new-wallet', 'ai-request-1', 'correct')`,
+    );
+    assert.deepEqual(first.rows[0], {
+      accepted: false,
+      already_processed: false,
+      free_credits_remaining: 0,
+      paid_credits_remaining: 0,
+      credits_remaining: 0,
+    });
+    const retry = await db.query(
+      `select * from public.consume_ai_credits('ai-new-wallet', 'ai-request-1', 'correct')`,
+    );
+    assert.deepEqual(retry.rows[0], {
+      accepted: false,
+      already_processed: false,
+      free_credits_remaining: 0,
+      paid_credits_remaining: 0,
+      credits_remaining: 0,
+    });
+    assert.deepEqual(await balance(db, 'ai-new-wallet'), {
+      free_credits: 0, paid_credits: 0, subscription_credits: 0,
+    });
+  } finally {
+    await db.close();
+  }
+});
+
+test('usage synchronization cannot mint an install bonus for an absent wallet', async () => {
+  const db = await database();
+  try {
+    const supabase = creditsClient(db);
+    const synced = await sharedCredits.applyUsageEventOnce(
+      supabase, 'legacy-new-device', 'legacy-first-use', 10, 0,
+    );
+    assert.deepEqual(synced.snapshot, { freeCredits: 0, paidCredits: 0, remaining: 0 });
+    assert.deepEqual(await balance(db, 'legacy-new-device'), {
+      free_credits: 0, paid_credits: 0, subscription_credits: 0,
+    });
+
+    const display = await sharedCredits.getCredits(supabase, 'legacy-display-only');
+    assert.deepEqual(display, { freeCredits: 0, paidCredits: 0, remaining: 0 });
+  } finally {
+    await db.close();
+  }
+});
+
+test('usage sync applies a wallet debit once and returns the same snapshot on retry', async () => {
+  const db = await database();
+  try {
+    await wallets(db);
+    const supabase = creditsClient(db);
+    const first = await sharedCredits.applyUsageEventOnce(
+      supabase, 'local', 'legacy-debit-1', 10, 5, { kind: 'correct' },
+    );
+    const retry = await sharedCredits.applyUsageEventOnce(
+      supabase, 'local', 'legacy-debit-1', 10, 5, { kind: 'correct' },
+    );
+    assert.equal(first.applied, true);
+    assert.equal(retry.applied, false);
+    assert.deepEqual(first.snapshot, { freeCredits: 485, paidCredits: 100, remaining: 585 });
+    assert.deepEqual(retry.snapshot, first.snapshot);
+    assert.equal((await db.query(`
+      select count(*)::int as count from credit_transactions
+      where transaction_type = 'client_usage_sync' and idempotency_key = 'legacy-debit-1'
+    `)).rows[0].count, 1);
+  } finally {
+    await db.close();
+  }
+});
+
+test('concurrent retries of one usage event apply only one debit', async () => {
+  const db = await database();
+  try {
+    await wallets(db);
+    const supabase = creditsClient(db);
+    const results = await Promise.all([
+      sharedCredits.applyUsageEventOnce(supabase, 'local', 'legacy-concurrent-event', 10, 0),
+      sharedCredits.applyUsageEventOnce(supabase, 'local', 'legacy-concurrent-event', 10, 0),
+    ]);
+    assert.equal(results.filter((result) => result.applied).length, 1);
+    assert.deepEqual(await balance(db, 'local'), {
+      free_credits: 490, paid_credits: 100, subscription_credits: 0,
+    });
+    assert.equal((await db.query(`
+      select count(*)::int as count from credit_transactions
+      where transaction_type = 'client_usage_sync' and idempotency_key = 'legacy-concurrent-event'
+    `)).rows[0].count, 1);
+  } finally {
+    await db.close();
+  }
+});
+
+test('usage sync supports the production UUID transaction ID and retries once', async () => {
+  const db = await database({ uuidLedger: true });
+  try {
+    await wallets(db);
+    const client = creditsClient(db);
+    const first = await sharedCredits.applyUsageEventOnce(client, 'local', 'uuid-usage', 10, 0);
+    const retry = await sharedCredits.applyUsageEventOnce(client, 'local', 'uuid-usage', 10, 0);
+    assert.equal(first.applied, true);
+    assert.equal(retry.applied, false);
+    assert.deepEqual(first.snapshot, retry.snapshot);
+    assert.equal(first.snapshot.remaining, 590);
+    assert.equal((await db.query("select count(*)::int as n from credit_transactions where idempotency_key = 'uuid-usage'")).rows[0].n, 1);
+  } finally {
+    await db.close();
+  }
+});
+
+test('usage sync rolls back the debit if updating its ledger entry fails', async () => {
+  const db = await database();
+  try {
+    await wallets(db);
+    await db.exec(`
+      create function fail_usage_ledger_update() returns trigger language plpgsql as $$
+      begin
+        if new.transaction_type = 'client_usage_sync' then raise exception 'injected ledger failure'; end if;
+        return new;
+      end $$;
+      create trigger fail_usage_ledger_update before update on credit_transactions
+      for each row execute function fail_usage_ledger_update();
+    `);
+    const supabase = creditsClient(db);
+    await assert.rejects(sharedCredits.applyUsageEventOnce(
+      supabase, 'local', 'legacy-debit-failure', 10, 0,
+    ), (error) => error?.message === 'injected ledger failure');
+    assert.deepEqual(await balance(db, 'local'), {
+      free_credits: 500, paid_credits: 100, subscription_credits: 0,
+    });
+    assert.equal((await db.query(`
+      select count(*)::int as count from credit_transactions
+      where transaction_type = 'client_usage_sync' and idempotency_key = 'legacy-debit-failure'
+    `)).rows[0].count, 0);
+  } finally {
+    await db.close();
+  }
+});
+
+test('usage event keys cannot be replayed against a different wallet', async () => {
+  const db = await database();
+  try {
+    await wallets(db);
+    const supabase = creditsClient(db);
+    await sharedCredits.applyUsageEventOnce(supabase, 'local', 'wallet-bound-event', 10, 0);
+    await assert.rejects(sharedCredits.applyUsageEventOnce(
+      supabase, 'apple', 'wallet-bound-event', 10, 0,
+    ), (error) => error?.message?.includes('belongs to another wallet'));
+    assert.deepEqual(await balance(db, 'apple'), {
+      free_credits: 0, paid_credits: 200, subscription_credits: 0,
+    });
+  } finally {
+    await db.close();
+  }
+});
+
+test('legacy incomplete usage markers fail closed instead of risking a second debit', async () => {
+  const db = await database();
+  try {
+    await wallets(db);
+    await db.exec(`
+      update device_credits set free_credits = 490 where device_id = 'local';
+      insert into credit_transactions
+        (device_id, transaction_type, idempotency_key, free_delta, metadata)
+      values ('local', 'client_usage_sync', 'legacy-pending-event', 0,
+        '{"applied":false}'::jsonb);
+    `);
+    await assert.rejects(sharedCredits.applyUsageEventOnce(
+      creditsClient(db), 'local', 'legacy-pending-event', 10, 0,
+    ), (error) => error?.message?.includes('requires reconciliation'));
+    assert.deepEqual(await balance(db, 'local'), {
+      free_credits: 490, paid_credits: 100, subscription_credits: 0,
+    });
   } finally {
     await db.close();
   }
@@ -253,6 +603,118 @@ test('candidate subscription sync grants once and never creates free install cre
     assert.equal((await db.query(sql)).rows[0].applied, false);
     assert.equal((await balance(db, 'apple')).subscription_credits, 8990);
     assert.equal((await db.query("select count(*)::int as count from credit_transactions where transaction_type = 'subscription_monthly_grant'")).rows[0].count, 1);
+  } finally {
+    await db.close();
+  }
+});
+
+test('Google subscription row and monthly grant commit atomically and retries do not double grant', async () => {
+  const db = await database();
+  try {
+    const sql = `select * from public.sync_google_subscription_once(
+      'android-wallet', 'basic.monthly', 'google-purchase-1', 'SUBSCRIPTION_STATE_ACTIVE',
+      1800000000000, 'google-order-1', 'google:fp-google-1',
+      4000, '{"audit_id":"audit-google-1","transaction_fingerprint":"fp-google-1","google_purchase_verified":true}'::jsonb)`;
+    const first = (await db.query(sql)).rows[0];
+    assert.equal(first.applied, true);
+    assert.equal(first.credits_remaining, 4000);
+    assert.deepEqual(await balance(db, 'android-wallet'), {
+      free_credits: 0, paid_credits: 0, subscription_credits: 4000,
+    });
+    const subscription = (await db.query(
+      "select device_id, purchase_token, subscription_state from device_subscriptions where device_id = 'android-wallet'",
+    )).rows[0];
+    assert.deepEqual(subscription, {
+      device_id: 'android-wallet',
+      purchase_token: 'google-purchase-1',
+      subscription_state: 'SUBSCRIPTION_STATE_ACTIVE',
+    });
+    const ledger = (await db.query(
+      "select idempotency_key, metadata->>'audit_id' as audit_id, metadata->>'transaction_fingerprint' as transaction_fingerprint, metadata ? 'purchase_token' as has_purchase_token from credit_transactions where transaction_type = 'subscription_monthly_grant'",
+    )).rows[0];
+    assert.equal(ledger.audit_id, 'audit-google-1');
+    assert.equal(ledger.transaction_fingerprint, 'fp-google-1');
+    assert.equal(ledger.has_purchase_token, false);
+    assert.equal(ledger.idempotency_key.includes('google-purchase-1'), false);
+
+    assert.equal((await db.query(sql)).rows[0].applied, false);
+    assert.equal((await db.query(
+      "select count(*)::int as count from credit_transactions where transaction_type = 'subscription_monthly_grant'",
+    )).rows[0].count, 1);
+  } finally {
+    await db.close();
+  }
+});
+
+test('Google atomic rollout reuses the legacy idempotency key for an already-paid billing cycle', async () => {
+  const db = await database();
+  try {
+    const legacyCycleKey = 'google-purchase-1:basic.monthly:cycle-1';
+    await db.query(`select * from public.reset_subscription_credits(
+      'android-wallet', 4000, $1, '{"legacy_path":true}'::jsonb)`, [legacyCycleKey]);
+    await db.exec("update device_credits set subscription_credits = 3000 where device_id = 'android-wallet'");
+
+    const migrated = (await db.query(`select * from public.sync_google_subscription_once(
+      'android-wallet', 'basic.monthly', 'google-purchase-1', 'SUBSCRIPTION_STATE_ACTIVE',
+      1800000000000, 'google-order-1', $1, 4000,
+      '{"audit_id":"audit-google-rollout","google_purchase_verified":true}'::jsonb)`,
+    [legacyCycleKey])).rows[0];
+
+    assert.equal(migrated.applied, false);
+    assert.equal(migrated.credits_remaining, 3000);
+    assert.equal((await balance(db, 'android-wallet')).subscription_credits, 3000);
+    assert.equal((await db.query(
+      "select count(*)::int as count from credit_transactions where transaction_type = 'subscription_monthly_grant'",
+    )).rows[0].count, 1);
+  } finally {
+    await db.close();
+  }
+});
+
+test('Google subscription owner conflict leaves both wallets and rows unchanged', async () => {
+  const db = await database();
+  try {
+    await db.query(`select * from public.sync_google_subscription_once(
+      'owner-wallet', 'basic.monthly', 'google-purchase-1', 'SUBSCRIPTION_STATE_ACTIVE',
+      1800000000000, 'google-order-1', 'google-purchase-1:basic.monthly:cycle-1',
+      4000, '{"google_purchase_verified":true}'::jsonb)`);
+    await db.exec("insert into device_credits (device_id, free_credits, paid_credits, subscription_credits) values ('other-wallet', 120, 30, 40)");
+
+    await assert.rejects(db.query(`select * from public.sync_google_subscription_once(
+      'other-wallet', 'basic.monthly', 'google-purchase-1', 'SUBSCRIPTION_STATE_ACTIVE',
+      1800000000000, 'google-order-1', 'google-purchase-1:basic.monthly:cycle-1',
+      4000, '{"google_purchase_verified":true}'::jsonb)`), /Google subscription owner transfer requires review/);
+    assert.deepEqual(await balance(db, 'owner-wallet'), {
+      free_credits: 0, paid_credits: 0, subscription_credits: 4000,
+    });
+    assert.deepEqual(await balance(db, 'other-wallet'), {
+      free_credits: 120, paid_credits: 30, subscription_credits: 40,
+    });
+    assert.equal((await db.query('select count(*)::int as count from device_subscriptions')).rows[0].count, 1);
+    assert.equal((await db.query("select count(*)::int as count from credit_transactions where transaction_type = 'subscription_monthly_grant'")).rows[0].count, 1);
+  } finally {
+    await db.close();
+  }
+});
+
+test('Google subscription RPC is service-role only', async () => {
+  const db = await database();
+  try {
+    const result = await db.query(`select has_function_privilege(
+      'anon',
+      'public.sync_google_subscription_once(text,text,text,text,bigint,text,text,integer,jsonb)',
+      'EXECUTE') as anon_allowed,
+      has_function_privilege(
+      'authenticated',
+      'public.sync_google_subscription_once(text,text,text,text,bigint,text,text,integer,jsonb)',
+      'EXECUTE') as authenticated_allowed,
+      has_function_privilege(
+      'service_role',
+      'public.sync_google_subscription_once(text,text,text,text,bigint,text,text,integer,jsonb)',
+      'EXECUTE') as service_allowed`);
+    assert.deepEqual(result.rows[0], {
+      anon_allowed: false, authenticated_allowed: false, service_allowed: true,
+    });
   } finally {
     await db.close();
   }
@@ -832,7 +1294,37 @@ test('new guest receives 500 once and retry keeps the same wallet and balance', 
   }
 });
 
-test('a fresh guest secret still creates another 500 after Apple free credits were spent', async () => {
+test('concurrent registration retries with the same persisted secret resolve to one 500-credit wallet', async () => {
+  const db = await database();
+  try {
+    const secretHash = 'c'.repeat(64);
+    const registrations = await Promise.all([
+      db.query('select public.register_guest_wallet_v2($1, 0) as id', [secretHash]),
+      db.query('select public.register_guest_wallet_v2($1, 0) as id', [secretHash]),
+    ]);
+    const walletIds = registrations.map((result) => result.rows[0].id);
+    assert.equal(walletIds[0], walletIds[1]);
+
+    await Promise.all(walletIds.map((id) => db.query(
+      'select public.reserve_guest_install_bonus($1, $2)', [id, secretHash],
+    )));
+    await Promise.all(walletIds.map((id) => db.query(
+      'select public.complete_guest_install_bonus($1, $2)', [id, secretHash],
+    )));
+
+    assert.deepEqual(await balance(db, walletIds[0]), {
+      free_credits: 500, paid_credits: 0, subscription_credits: 0,
+    });
+    assert.equal((await db.query(
+      "select count(*)::int as count from credit_transactions where transaction_type = 'install_bonus'",
+    )).rows[0].count, 1);
+    assert.equal((await db.query('select count(*)::int as count from wallet_v2_credentials')).rows[0].count, 1);
+  } finally {
+    await db.close();
+  }
+});
+
+test('service-role guest registration can create multiple 500 wallets for fresh secrets', async () => {
   const db = await database();
   try {
     await db.exec(`
@@ -919,10 +1411,10 @@ test('verified guest merge is atomic, idempotent, and keeps only larger free bal
   }
 });
 
-test('verified guest subscription moves once and a same-cycle refresh does not grant again', async () => {
+test('verified guest subscription adds to existing Apple balance and replay returns current balance', async () => {
   const db = await database();
   try {
-    await db.exec("insert into device_credits (device_id, apple_user_id, free_credits, paid_credits) values ('apple-wallet', 'apple-sub', 100, 200)");
+    await db.exec("insert into device_credits (device_id, apple_user_id, free_credits, paid_credits, subscription_credits) values ('apple-wallet', 'apple-sub', 100, 200, 600)");
     const guestId = (await db.query(
       'select public.register_guest_wallet_v2($1, 500) as id', [proofHash],
     )).rows[0].id;
@@ -936,24 +1428,30 @@ test('verified guest subscription moves once and a same-cycle refresh does not g
       values ($1, 'monthly', 'purchase-1', (extract(epoch from now() + interval '30 days') * 1000)::bigint)
     `, [guestId]);
     await db.query(`
-      insert into credit_transactions (device_id, transaction_type, idempotency_key)
-      values ($1, 'subscription_monthly_grant', 'purchase-1:monthly:cycle-1')
+      insert into credit_transactions (device_id, transaction_type, idempotency_key, metadata)
+      values ($1, 'subscription_monthly_grant', 'purchase-1:monthly:cycle-1',
+        '{"originalTransactionId":"purchase-1","productId":"monthly","subscription_credits":4000}'::jsonb)
     `, [guestId]);
+    await db.query(`
+      insert into credit_transactions (device_id, transaction_type, idempotency_key, metadata)
+      values ('apple-wallet', 'subscription_monthly_grant', 'purchase-1:monthly:previous-cycle',
+        '{"originalTransactionId":"purchase-1","productId":"monthly","subscription_credits":4000}'::jsonb)
+    `);
     const sessionHash = await appleSession(db, 'apple-sub');
     await db.query('select public.activate_apple_wallet_session($1)', [sessionHash]);
     const transfer = (request = 'subscription-merge-1', secret = proofHash) => db.query(
-      'select * from public.merge_verified_v2_subscribed_guest_once($1, $2, $3, $4, $5, $6)',
+      'select * from public.merge_verified_v2_subscribed_guest_preserving_once($1, $2, $3, $4, $5, $6)',
       [guestId, secret, 'apple-sub', sessionHash, request, 'purchase-1'],
     );
     assert.deepEqual((await transfer()).rows[0], {
       decision: 'merged', canonical_wallet_id: 'apple-wallet',
-      free_credits_remaining: 500, paid_credits_remaining: 3300,
+      free_credits_remaining: 500, paid_credits_remaining: 3900,
     });
     assert.deepEqual(await balance(db, guestId), {
       free_credits: 0, paid_credits: 0, subscription_credits: 0,
     });
     assert.deepEqual(await balance(db, 'apple-wallet'), {
-      free_credits: 500, paid_credits: 300, subscription_credits: 3000,
+      free_credits: 500, paid_credits: 300, subscription_credits: 3600,
     });
     assert.equal((await db.query(
       "select device_id from device_subscriptions where purchase_token = 'purchase-1'",
@@ -961,20 +1459,28 @@ test('verified guest subscription moves once and a same-cycle refresh does not g
     assert.equal((await db.query(
       "select device_id from credit_transactions where idempotency_key = 'purchase-1:monthly:cycle-1'",
     )).rows[0].device_id, guestId);
-    assert.equal((await transfer()).rows[0].decision, 'already_merged');
+    await db.query("update device_credits set subscription_credits = 2500 where device_id = 'apple-wallet'");
+    assert.deepEqual((await transfer()).rows[0], {
+      decision: 'already_merged', canonical_wallet_id: 'apple-wallet',
+      free_credits_remaining: 500, paid_credits_remaining: 2800,
+    });
     await assert.rejects(transfer('different-request'));
     const refresh = await db.query(`select * from public.sync_ios_subscription_once(
       'apple-wallet', 'monthly', 'purchase-1', 'SUBSCRIPTION_STATE_ACTIVE',
       (extract(epoch from now() + interval '30 days') * 1000)::bigint,
       'order-1', 'purchase-1:monthly:cycle-1', 4000, '{}'::jsonb)`);
     assert.equal(refresh.rows[0].applied, false);
-    assert.equal((await balance(db, 'apple-wallet')).subscription_credits, 3000);
+    assert.equal((await balance(db, 'apple-wallet')).subscription_credits, 2500);
     const renewal = await db.query(`select * from public.sync_ios_subscription_once(
       'apple-wallet', 'monthly', 'purchase-1', 'SUBSCRIPTION_STATE_ACTIVE',
       (extract(epoch from now() + interval '60 days') * 1000)::bigint,
       'order-2', 'purchase-1:monthly:cycle-2', 4000, '{}'::jsonb)`);
     assert.equal(renewal.rows[0].applied, true);
     assert.equal((await balance(db, 'apple-wallet')).subscription_credits, 4000);
+    assert.deepEqual((await transfer()).rows[0], {
+      decision: 'already_merged', canonical_wallet_id: 'apple-wallet',
+      free_credits_remaining: 500, paid_credits_remaining: 4300,
+    });
     assert.equal((await db.query(
       "select device_id from credit_transactions where idempotency_key = 'purchase-1:monthly:cycle-2'",
     )).rows[0].device_id, 'apple-wallet');
@@ -999,10 +1505,11 @@ test('guest subscription transfer rolls back on bad proof or competing Apple pur
     const sessionHash = await appleSession(db, 'apple-sub');
     await db.query('select public.activate_apple_wallet_session($1)', [sessionHash]);
     const transfer = (secret = proofHash) => db.query(
-      'select * from public.merge_verified_v2_subscribed_guest_once($1, $2, $3, $4, $5, $6)',
+      'select * from public.merge_verified_v2_subscribed_guest_preserving_once($1, $2, $3, $4, $5, $6)',
       [guestId, secret, 'apple-sub', sessionHash, 'subscription-merge-1', 'purchase-1'],
     );
     await assert.rejects(transfer('b'.repeat(64)));
+    await assert.rejects(transfer());
     await db.exec("insert into device_subscriptions (device_id, purchase_token) values ('apple-wallet', 'purchase-2')");
     await assert.rejects(transfer());
     assert.equal((await balance(db, guestId)).subscription_credits, 3000);
@@ -1011,7 +1518,7 @@ test('guest subscription transfer rolls back on bad proof or competing Apple pur
       "select device_id from device_subscriptions where purchase_token = 'purchase-1'",
     )).rows[0].device_id, guestId);
     assert.equal((await db.query(
-      'select count(*)::integer as n from credit_v2_subscription_transfers',
+      'select count(*)::integer as n from credit_v2_subscription_transfer_grants',
     )).rows[0].n, 0);
   } finally {
     await db.close();
@@ -1170,6 +1677,152 @@ test('legacy merge keeps the Apple free balance after recorded free use', async 
   }
 });
 
+test('verified legacy merge preserves remaining subscription balance exactly once', async () => {
+  const db = await database();
+  try {
+    await db.exec(`
+      insert into device_credits
+        (device_id, apple_user_id, free_credits, paid_credits, subscription_credits)
+      values ('apple-wallet', 'apple-sub', 40, 60, 1100),
+             ('legacy-device', null, 490, 20, 4000);
+      insert into credit_transactions
+        (device_id, transaction_type, idempotency_key, free_delta, metadata, created_at)
+      values ('legacy-device', 'server_ai_usage', 'legacy-free-use', -10,
+        '{}'::jsonb, now() - interval '10 minutes'),
+        ('legacy-device', 'subscription_monthly_grant', 'legacy-sub-grant', 0,
+         '{"originalTransactionId":"1234567890","productId":"com.kingboard.app.monthly_basic","subscription_credits":5000}'::jsonb, now()),
+        ('apple-wallet', 'subscription_monthly_grant', 'apple-sub-grant', 0,
+         '{"originalTransactionId":"1234567890","productId":"com.kingboard.app.monthly_basic","subscription_credits":4000}'::jsonb, now());
+      insert into device_subscriptions (device_id, product_id, purchase_token)
+      values ('legacy-device', 'com.kingboard.app.monthly_basic', '1234567890');
+    `);
+    const sessionHash = await appleSession(db, 'apple-sub');
+    await db.query('select public.activate_apple_wallet_session($1)', [sessionHash]);
+    const merge = (requestId = 'legacy-subscription-merge') => db.query(
+      `select * from public.merge_verified_legacy_wallet_v2_once(
+        $1, $2, $3, $4, $5, $6
+      )`,
+      ['legacy-device', 'apple-sub', sessionHash, requestId,
+       '1234567890', 'com.kingboard.app.monthly_basic'],
+    );
+    assert.deepEqual((await merge()).rows[0], {
+      decision: 'merged', canonical_wallet_id: 'apple-wallet',
+      free_credits_remaining: 40, paid_credits_remaining: 80,
+      subscription_credits_remaining: 5100,
+    });
+    assert.deepEqual(await balance(db, 'legacy-device'), {
+      free_credits: 0, paid_credits: 0, subscription_credits: 0,
+    });
+    assert.deepEqual(await balance(db, 'apple-wallet'), {
+      free_credits: 40, paid_credits: 80, subscription_credits: 5100,
+    });
+    assert.equal((await db.query(
+      "select count(*)::int as n from device_subscriptions where device_id = 'apple-wallet'",
+    )).rows[0].n, 1);
+    await db.exec(`
+      update device_credits
+      set free_credits = 35, paid_credits = 75, subscription_credits = 5050
+      where device_id = 'apple-wallet';
+    `);
+    const retry = await merge();
+    assert.deepEqual(retry.rows[0], {
+      decision: 'already_merged', canonical_wallet_id: 'apple-wallet',
+      free_credits_remaining: 35, paid_credits_remaining: 75,
+      subscription_credits_remaining: 5050,
+    });
+    const transfer = await db.query(`
+      select free_delta, paid_delta, metadata from credit_transactions
+      where device_id = 'apple-wallet' and transaction_type = 'legacy_wallet_merge'
+        and idempotency_key = 'legacy-merge:legacy-subscription-merge'
+    `);
+    assert.equal(transfer.rows.length, 1);
+    assert.equal(transfer.rows[0].paid_delta, 20);
+    assert.equal(transfer.rows[0].metadata.subscription_delta, 4000);
+    assert.equal(transfer.rows[0].metadata.subscription_credits_after, 5100);
+    await assert.rejects(merge('different-request'));
+    assert.equal((await balance(db, 'apple-wallet')).subscription_credits, 5050);
+  } finally {
+    await db.close();
+  }
+});
+
+test('verified legacy merge transfers a zero-balance purchase mapping without granting credits', async () => {
+  const db = await database();
+  try {
+    await db.exec(`
+      insert into device_credits
+        (device_id, apple_user_id, free_credits, paid_credits, subscription_credits)
+      values ('apple-wallet', 'apple-sub', 40, 60, 0),
+             ('legacy-device', null, 500, 0, 0);
+      insert into device_subscriptions (device_id, product_id, purchase_token)
+      values ('legacy-device', 'com.kingboard.app.monthly_basic', '1234567890');
+    `);
+    const sessionHash = await appleSession(db, 'apple-sub');
+    await db.query('select public.activate_apple_wallet_session($1)', [sessionHash]);
+    const merge = (key) => db.query(
+      `select * from public.merge_verified_legacy_wallet_v2_once(
+        'legacy-device', 'apple-sub', $1, $2, '1234567890', 'com.kingboard.app.monthly_basic'
+      )`, [sessionHash, key],
+    );
+    assert.deepEqual((await merge('zero-sub-map')).rows[0], {
+      decision: 'merged', canonical_wallet_id: 'apple-wallet',
+      free_credits_remaining: 500, paid_credits_remaining: 60,
+      subscription_credits_remaining: 0,
+    });
+    assert.deepEqual(await balance(db, 'legacy-device'), {
+      free_credits: 0, paid_credits: 0, subscription_credits: 0,
+    });
+    assert.deepEqual(await balance(db, 'apple-wallet'), {
+      free_credits: 500, paid_credits: 60, subscription_credits: 0,
+    });
+    assert.equal((await db.query(
+      "select count(*)::int as n from device_subscriptions where device_id = 'apple-wallet'",
+    )).rows[0].n, 1);
+    assert.equal((await merge('zero-sub-map')).rows[0].decision, 'already_merged');
+    assert.equal((await db.query(
+      "select count(*)::int as n from credit_transactions where device_id = 'apple-wallet' and transaction_type = 'legacy_wallet_merge'",
+    )).rows[0].n, 1);
+  } finally {
+    await db.close();
+  }
+});
+
+test('verified legacy subscription merge rejects missing or mismatched Apple evidence without mutation', async () => {
+  const db = await database();
+  try {
+    await db.exec(`
+      insert into device_credits
+        (device_id, apple_user_id, subscription_credits)
+      values ('apple-wallet', 'apple-sub', 100), ('legacy-device', null, 300);
+      insert into credit_transactions
+        (device_id, transaction_type, idempotency_key, metadata)
+      values ('legacy-device', 'subscription_monthly_grant', 'legacy-grant',
+        '{"originalTransactionId":"1234567890","productId":"com.kingboard.app.monthly_basic","subscription_credits":500}'::jsonb);
+      insert into device_subscriptions (device_id, product_id, purchase_token)
+      values ('legacy-device', 'com.kingboard.app.monthly_basic', '1234567890');
+    `);
+    const sessionHash = await appleSession(db, 'apple-sub');
+    await db.query('select public.activate_apple_wallet_session($1)', [sessionHash]);
+    const call = (token, product) => db.query(
+      `select * from public.merge_verified_legacy_wallet_v2_once(
+        'legacy-device', 'apple-sub', $1, 'legacy-subscription-merge', $2, $3
+      )`, [sessionHash, token, product],
+    );
+    await assert.rejects(call(null, null));
+    await assert.rejects(call('9999999999', 'com.kingboard.app.monthly_basic'));
+    await assert.rejects(call('1234567890', 'com.kingboard.app.monthly_pro'));
+    assert.deepEqual(await balance(db, 'legacy-device'), {
+      free_credits: 0, paid_credits: 0, subscription_credits: 300,
+    });
+    assert.deepEqual(await balance(db, 'apple-wallet'), {
+      free_credits: 0, paid_credits: 0, subscription_credits: 100,
+    });
+    assert.equal((await db.query('select count(*)::int as n from credit_wallet_aliases')).rows[0].n, 0);
+  } finally {
+    await db.close();
+  }
+});
+
 test('v2 registration starts with zero bonus and rejects a legacy wallet claim', async () => {
   const db = await database();
   try {
@@ -1206,7 +1859,7 @@ test('v2 activation needs possession proof; Apple link is atomic and idempotent'
     )).rows[0].activated, true);
     assert.equal((await db.query(
       'select public.activate_guest_wallet_v2($1, $2) as activated', [id, proofHash],
-    )).rows[0].activated, false);
+    )).rows[0].activated, true);
 
     const link = (subject, key) => db.query(
       'select * from public.link_apple_wallet_v2($1, $2, $3, $4)',
@@ -1215,6 +1868,9 @@ test('v2 activation needs possession proof; Apple link is atomic and idempotent'
     assert.deepEqual((await link('apple', 'attempt-1')).rows[0], {
       decision: 'linked', canonical_wallet_id: id,
     });
+    assert.equal((await db.query(
+      'select public.activate_guest_wallet_v2($1, $2) as activated', [id, proofHash],
+    )).rows[0].activated, false);
     assert.deepEqual((await link('apple', 'attempt-1')).rows[0], {
       decision: 'linked', canonical_wallet_id: id,
     });
