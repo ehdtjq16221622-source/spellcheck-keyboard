@@ -80,7 +80,7 @@ class KeyboardService : InputMethodService() {
     private var suggestionMode = SuggestionMode.CORRECTION
     private var selectedTranslationLang = SettingsManager.translateLang
     private var quickContentPage = QuickContentPage.MEMO
-    private var selectedEmojiCategory = "최근"
+    private var selectedEmojiCategory = "요청"
     private var pendingTextReplacement: PendingTextReplacement? = null
 
     private val formalOptionButtons = mapOf(
@@ -844,6 +844,7 @@ class KeyboardService : InputMethodService() {
 
     private fun renderQuickEmoji(container: LinearLayout) {
         val categories = linkedMapOf(
+            "요청" to listOf("★", "☆", "♥", "♡"),
             "최근" to EmojiRecentStore.recent(),
             "스마일" to listOf("😀", "😁", "😂", "🥹", "😊", "😍", "😘", "😎", "🥳", "😭", "😡", "🤔"),
             "손" to listOf("👍", "👎", "👏", "🙏", "🤝", "💪", "🫶", "👋", "✌️", "👌", "🤞", "🫡"),
@@ -852,7 +853,7 @@ class KeyboardService : InputMethodService() {
             "음식" to listOf("🍚", "🍜", "🍗", "🍕", "🍔", "🍰", "☕", "🍺", "🍓", "🍎", "🥑", "🍙"),
             "기호" to listOf("✅", "❌", "⚠️", "✨", "🔥", "🎉", "💯", "⭐", "🌈", "📌", "📍", "💬")
         )
-        if (selectedEmojiCategory !in categories) selectedEmojiCategory = "최근"
+        if (selectedEmojiCategory !in categories) selectedEmojiCategory = "요청"
         categories.keys.forEach { category ->
             addQuickContentButton(container, category, selected = category == selectedEmojiCategory) {
                 selectedEmojiCategory = category
