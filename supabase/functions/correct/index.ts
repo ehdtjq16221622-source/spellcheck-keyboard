@@ -6,6 +6,7 @@ import { resolveCreditWallet, WalletAccessError } from '../_shared/wallet_auth.t
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Expose-Headers': 'X-Kingboard-Diagnostic-ID',
 }
 
 const genericAiErrorMessage = 'AI 응답이 잠시 지연되고 있어요. 조금 후 다시 시도해주세요.'
@@ -19,6 +20,10 @@ const previewLimitPerWindow = 5
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
+
+  const diagnosticId = crypto.randomUUID()
+  let failureStage = 'request_parse'
+  let causeStage: string | undefined
 
   try {
     const {
@@ -41,14 +46,15 @@ Deno.serve(async (req: Request) => {
       !deviceId && !requestId && source === legacyPreviewSource
     const isPreviewRequest = preview === true || isLegacyPreview
     if (isPreviewRequest) {
+      failureStage = 'preview_validation'
       if (!formalMode || normalizedLevel !== '커스텀' || source.length === 0 || source.length > 1000 ||
           typeof customPrompt !== 'string' || customPrompt.trim().length === 0 || customPrompt.trim().length > 200) {
         throw new WalletAccessError('Invalid preview request.', 400)
       }
+      failureStage = 'preview_rate_limit'
       if (!allowPreviewRequest(req)) {
-        return new Response(JSON.stringify({ error: 'PREVIEW_RATE_LIMITED' }), {
-          status: 429, headers: { ...cors, 'Content-Type': 'application/json' },
-        })
+        logDiagnostic('warn', diagnosticId, failureStage, 'PREVIEW_RATE_LIMITED')
+        return diagnosticError(diagnosticId, failureStage, 429, { error: 'PREVIEW_RATE_LIMITED' })
       }
     }
 
@@ -57,22 +63,29 @@ Deno.serve(async (req: Request) => {
     const creditKind = formalMode ? 'formal' : 'correct'
     const creditCost = formalMode ? 30 : 10
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+    failureStage = 'wallet_resolution'
     const wallet = isPreviewRequest ? null : await resolveCreditWallet(req, supabase, deviceId)
+    failureStage = 'request_id_validation'
     if (wallet?.authenticated && !serverManagedCredit) {
       throw new WalletAccessError('A request ID is required for wallet credit use.', 400)
     }
 
     // Old app versions send no requestId and keep their original delayed-sync
     // path. New versions are debited before the AI provider is called.
+    failureStage = 'credit_precharge'
     const credits = !isPreviewRequest && serverManagedCredit && wallet
       ? await consumeAIUsage(supabase, wallet.walletId, requestId, creditKind)
       : null
-    if (credits && !credits.accepted) return noCredits(credits)
+    if (credits && !credits.accepted) {
+      logDiagnostic('warn', diagnosticId, failureStage, 'NO_CREDITS')
+      return noCredits(credits, diagnosticId, failureStage)
+    }
 
     const shouldRemovePunct = removePunct ?? (includePunct === undefined ? false : !includePunct)
     const shouldIncludeFormalPunct = formalIncludePunct ?? !shouldRemovePunct
     let result: string
     try {
+      failureStage = 'ai_provider'
       if (!formalMode) {
         result = await correctSpellingLowCost(source, shouldRemovePunct, includeDialect)
       } else {
@@ -92,9 +105,11 @@ Deno.serve(async (req: Request) => {
     } catch (error) {
       if (credits && !credits.alreadyProcessed) {
         try {
+          failureStage = 'credit_refund'
           if (wallet) await refundAIUsage(supabase, wallet.walletId, requestId)
         } catch (refundError) {
-          console.error('[correct] AI credit refund failed', refundError)
+          causeStage = 'ai_provider'
+          logDiagnostic('error', diagnosticId, failureStage, 'AI_CREDIT_REFUND_FAILED')
         }
       }
       throw error
@@ -103,23 +118,55 @@ Deno.serve(async (req: Request) => {
     return new Response(
       JSON.stringify({
         result,
+        diagnostic_id: diagnosticId,
         ...(credits ? creditSnapshot(credits) : {}),
       }),
-      { headers: { ...cors, 'Content-Type': 'application/json' } }
+      { headers: diagnosticHeaders(diagnosticId) }
     )
   } catch (e) {
-    console.error('[correct]', e)
+    const code = e instanceof WalletAccessError ? 'WALLET_ACCESS_ERROR' : 'AI_REQUEST_FAILED'
+    logDiagnostic('error', diagnosticId, failureStage, code, causeStage)
     if (e instanceof WalletAccessError) {
-      return new Response(JSON.stringify({ error: e.message }), {
-        status: e.status, headers: { ...cors, 'Content-Type': 'application/json' },
-      })
+      return diagnosticError(diagnosticId, failureStage, e.status, { error: e.message }, causeStage)
     }
-    return new Response(
-      JSON.stringify({ error: genericAiErrorMessage }),
-      { status: 500, headers: { ...cors, 'Content-Type': 'application/json' } }
-    )
+    return diagnosticError(diagnosticId, failureStage, 500, { error: genericAiErrorMessage }, causeStage)
   }
 })
+
+function diagnosticHeaders(diagnosticId: string) {
+  return {
+    ...cors,
+    'Content-Type': 'application/json',
+    'X-Kingboard-Diagnostic-ID': diagnosticId,
+  }
+}
+
+function diagnosticError(
+  diagnosticId: string,
+  failureStage: string,
+  status: number,
+  body: Record<string, unknown>,
+  causeStage?: string,
+) {
+  return new Response(JSON.stringify({
+    ...body,
+    diagnostic_id: diagnosticId,
+    failure_stage: failureStage,
+    ...(causeStage ? { cause_stage: causeStage } : {}),
+  }), { status, headers: diagnosticHeaders(diagnosticId) })
+}
+
+function logDiagnostic(
+  level: 'warn' | 'error',
+  diagnosticId: string,
+  failureStage: string,
+  code: string,
+  causeStage?: string,
+) {
+  const details = { diagnostic_id: diagnosticId, failure_stage: failureStage, code, ...(causeStage ? { cause_stage: causeStage } : {}) }
+  if (level === 'error') console.error('[correct]', details)
+  else console.warn('[correct]', details)
+}
 
 function allowPreviewRequest(req: Request): boolean {
   const forwarded = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
@@ -151,11 +198,8 @@ function creditSnapshot(credits: { freeCredits: number; paidCredits: number; rem
   }
 }
 
-function noCredits(credits: { freeCredits: number; paidCredits: number; remaining: number }) {
-  return new Response(
-    JSON.stringify({ error: 'NO_CREDITS', ...creditSnapshot(credits) }),
-    { status: 429, headers: { ...cors, 'Content-Type': 'application/json' } }
-  )
+function noCredits(credits: { freeCredits: number; paidCredits: number; remaining: number }, diagnosticId: string, failureStage: string) {
+  return diagnosticError(diagnosticId, failureStage, 429, { error: 'NO_CREDITS', ...creditSnapshot(credits) })
 }
 
 function normalizeFormalLevelKey(formalLevel: unknown): string {

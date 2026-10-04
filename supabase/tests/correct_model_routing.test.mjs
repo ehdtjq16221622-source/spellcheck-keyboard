@@ -14,7 +14,7 @@ const runnable = stripTypeScriptTypes(source
   .replace(/^import \{ resolveCreditWallet, WalletAccessError \} from .*;?$/m,
     'const resolveCreditWallet = globalThis.__resolveCreditWallet; class WalletAccessError extends Error {}'));
 
-async function createHandler() {
+async function createHandler({ consumeResult = { accepted: true, alreadyProcessed: false } } = {}) {
   let handler;
   const calls = [];
   const consumeCalls = [];
@@ -27,7 +27,7 @@ async function createHandler() {
   globalThis.__createClient = () => ({});
   globalThis.__consumeAIUsage = async (...args) => {
     consumeCalls.push(args);
-    return { accepted: true, alreadyProcessed: false };
+    return consumeResult;
   };
   globalThis.__refundAIUsage = async () => {};
   globalThis.__resolveCreditWallet = async (_request, _client, walletId) => ({ walletId, authenticated: false });
@@ -41,6 +41,12 @@ async function createHandler() {
   };
   await import(`data:text/javascript,${encodeURIComponent(runnable)}#${crypto.randomUUID()}`);
   return { handler, calls, consumeCalls };
+}
+
+function assertDiagnostic(response, body, stage) {
+  assert.match(body.diagnostic_id, /^[0-9a-f-]{36}$/i);
+  assert.equal(body.failure_stage, stage);
+  assert.equal(response.headers.get('X-Kingboard-Diagnostic-ID'), body.diagnostic_id);
 }
 
 test('smart tone keeps Gemini and receives the source ending instruction', async () => {
@@ -99,4 +105,24 @@ test('custom preview does not require a wallet or consume credits', async () => 
   assert.equal(result.result, 'luna result');
   assert.equal(calls.length, 1);
   assert.equal(consumeCalls.length, 0);
+});
+
+test('insufficient-credit responses include a safe diagnostic ID and failure stage', async () => {
+  const { handler } = await createHandler({
+    consumeResult: { accepted: false, freeCredits: 0, paidCredits: 0, remaining: 0 },
+  });
+  const response = await handler(new Request('http://localhost/correct', {
+    method: 'POST',
+    body: JSON.stringify({
+      text: '맞춤법을 고쳐줘',
+      deviceId: 'test-device',
+      requestId: 'test-request-id',
+    }),
+  }));
+  const result = await response.json();
+
+  assert.equal(response.status, 429);
+  assert.equal(result.error, 'NO_CREDITS');
+  assert.equal(result.credits_remaining, 0);
+  assertDiagnostic(response, result, 'credit_precharge');
 });
