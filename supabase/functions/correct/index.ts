@@ -87,7 +87,7 @@ Deno.serve(async (req: Request) => {
     try {
       failureStage = 'ai_provider'
       if (!formalMode) {
-        result = await correctSpellingLowCost(source, shouldRemovePunct, includeDialect)
+        result = await correctSpellingLowCost(source, shouldRemovePunct, includeDialect, diagnosticId)
       } else {
         const system = buildSystemPrompt(
           true,
@@ -367,7 +367,8 @@ function applyProofingEditsSafely(rawResult: string, source: string): string {
 async function correctSpellingLowCost(
   source: string,
   removePunct: boolean,
-  includeDialect: boolean
+  includeDialect: boolean,
+  diagnosticId: string
 ): Promise<string> {
   const primaryRaw = await callProofingGemini(
     source,
@@ -380,7 +381,7 @@ async function correctSpellingLowCost(
 
   if (!hasSuspiciousDeletion(source, primary)) return primary
 
-  console.warn('[correct] suspicious deletion detected; requesting edit-list fallback')
+  logDiagnostic('warn', diagnosticId, 'proofing_safety_fallback', 'SUSPICIOUS_DELETION_FALLBACK')
   try {
     const fallbackRaw = await callProofingGemini(
       source,

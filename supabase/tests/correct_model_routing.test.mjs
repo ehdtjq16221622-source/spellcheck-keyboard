@@ -87,6 +87,32 @@ test('custom tone uses Luna low with a bounded stateless Responses request', asy
   assert.match(calls[0].body.instructions, /친구에게 부드럽게 말해줘/);
 });
 
+test('proofing safety fallback warning carries the response diagnostic ID', async () => {
+  const { handler } = await createHandler();
+  let warning;
+  const originalWarn = console.warn;
+  console.warn = (...args) => { warning = args; };
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    candidates: [{ content: { parts: [{ text: '좋습니다.' }] } }],
+  }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+
+  try {
+    const response = await handler(new Request('http://localhost/correct', {
+      method: 'POST',
+      body: JSON.stringify({ text: '오늘은 날씨가 정말 좋고 산책을 가고 싶습니다.' }),
+    }));
+    const body = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(warning?.[0], '[correct]');
+    assert.equal(warning?.[1]?.diagnostic_id, body.diagnostic_id);
+    assert.equal(warning?.[1]?.failure_stage, 'proofing_safety_fallback');
+    assert.equal(warning?.[1]?.code, 'SUSPICIOUS_DELETION_FALLBACK');
+  } finally {
+    console.warn = originalWarn;
+  }
+});
+
 test('custom preview does not require a wallet or consume credits', async () => {
   const { handler, calls, consumeCalls } = await createHandler();
   const response = await handler(new Request('http://localhost/correct', {
