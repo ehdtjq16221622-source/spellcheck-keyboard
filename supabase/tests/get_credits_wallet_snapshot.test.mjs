@@ -88,21 +88,34 @@ test('authenticated clients report only the requested wallet that this request c
   assert.equal(local.credits_remaining, 500);
 });
 
-test('untouched old clients retain the live v13 combined display without writes', async () => {
+test('legacy requests display only the balance in the wallet they can spend', async () => {
   const rows = [
     { ...linkedRows[0], free_credits: 490, subscription_credits: 4000 },
     { ...linkedRows[1], free_credits: 0, paid_credits: 60, subscription_credits: 790 },
   ];
-  for (const deviceId of ['apple', 'local']) {
-    const result = await responseFor({ rows, deviceId, authenticated: false });
-    assert.equal(result.status, 200);
-    assert.equal(result.credits_remaining, 4850);
-  }
+  const source = await responseFor({ rows, deviceId: 'apple', authenticated: false });
+  const canonical = await responseFor({ rows, deviceId: 'local', authenticated: false });
+  assert.equal(source.status, 200);
+  assert.equal(source.credits_remaining, 4490);
+  assert.equal(canonical.status, 200);
+  assert.equal(canonical.credits_remaining, 850);
 });
 
-test('legacy display does not create a missing Apple row or grant another 500', async () => {
+test('legacy source does not display a linked wallet 500 that it cannot spend', async () => {
+  const rows = [
+    { ...linkedRows[0], free_credits: 0 },
+    { ...linkedRows[1], free_credits: 500 },
+  ];
+  const source = await responseFor({ rows, deviceId: 'apple', authenticated: false });
+  const canonical = await responseFor({ rows, deviceId: 'local', authenticated: false });
+  assert.equal(source.credits_remaining, 0);
+  assert.equal(canonical.credits_remaining, 500);
+});
+
+test('legacy balance lookup reads an existing wallet without requiring its missing Apple row', async () => {
   const result = await responseFor({ rows: [linkedRows[1]], deviceId: 'local', authenticated: false });
-  assert.equal(result.status, 409);
+  assert.equal(result.status, 200);
+  assert.equal(result.credits_remaining, 500);
 });
 
 test('an allowlisted Apple ID receives only its spendable wallet balance', async () => {
@@ -148,7 +161,7 @@ test('a missing legacy wallet cannot claim the install bonus through balance loo
   assert.equal(result.status, 409);
   assert.match(result.error, /최신 버전/);
   assert.equal(result.error_code, 'wallet_row_missing');
-  assert.equal(result.failure_stage, 'legacy_snapshot');
+  assert.equal(result.failure_stage, 'credit_snapshot');
   assert.match(result.diagnostic_id, /^[0-9a-f-]{36}$/);
   assert.equal(result.diagnosticHeader, result.diagnostic_id);
   const failureLog = JSON.parse(result.logs.find((entry) => entry.level === 'error').message);
