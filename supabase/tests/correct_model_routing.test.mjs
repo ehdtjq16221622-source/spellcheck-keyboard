@@ -147,20 +147,62 @@ test('insufficient-credit responses include a safe diagnostic ID and failure sta
   const { handler } = await createHandler({
     consumeResult: { accepted: false, freeCredits: 0, paidCredits: 0, remaining: 0 },
   });
-  const response = await handler(new Request('http://localhost/correct', {
-    method: 'POST',
-    body: JSON.stringify({
-      text: '맞춤법을 고쳐줘',
-      deviceId: 'test-device',
-      requestId: 'test-request-id',
-    }),
-  }));
+  let warning;
+  const originalWarn = console.warn;
+  console.warn = (...args) => { warning = args; };
+  let response;
+  try {
+    response = await handler(new Request('http://localhost/correct', {
+      method: 'POST',
+      body: JSON.stringify({
+        text: '맞춤법을 고쳐줘',
+        deviceId: 'test-device',
+        requestId: 'test-request-id',
+      }),
+    }));
+  } finally {
+    console.warn = originalWarn;
+  }
   const result = await response.json();
 
   assert.equal(response.status, 429);
   assert.equal(result.error, 'NO_CREDITS');
   assert.equal(result.credits_remaining, 0);
   assertDiagnostic(response, result, 'credit_precharge');
+  assert.equal(warning?.[0], '[correct]');
+  assert.equal(warning?.[1]?.diagnostic_id, result.diagnostic_id);
+  assert.equal(warning?.[1]?.requested_wallet_fingerprint,
+    await diagnosticFingerprint('test-device'));
+  assert.equal(warning?.[1]?.canonical_wallet_fingerprint,
+    await diagnosticFingerprint('test-device'));
+  assert.equal(warning?.[1]?.request_id_fingerprint,
+    await diagnosticFingerprint('test-request-id'));
+  assert.equal(warning?.[1]?.server_managed_credit, true);
+  assert.equal(JSON.stringify(warning?.[1]).includes('test-device'), false);
+  assert.equal(JSON.stringify(warning?.[1]).includes('test-request-id'), false);
+});
+
+test('accepted server credit usage logs safe wallet and request fingerprints', async () => {
+  const { handler } = await createHandler();
+  let info;
+  const originalInfo = console.info;
+  console.info = (...args) => { info = args; };
+  try {
+    const response = await handler(new Request('http://localhost/correct', {
+      method: 'POST',
+      body: JSON.stringify({ text: '맞춤법을 고쳐줘', deviceId: 'test-device', requestId: 'test-request-id' }),
+    }));
+    assert.equal(response.status, 200);
+  } finally {
+    console.info = originalInfo;
+  }
+  assert.equal(info?.[0], '[correct]');
+  assert.equal(info?.[1]?.code, 'CREDIT_USAGE_ACCEPTED');
+  assert.equal(info?.[1]?.requested_wallet_fingerprint, await diagnosticFingerprint('test-device'));
+  assert.equal(info?.[1]?.canonical_wallet_fingerprint, await diagnosticFingerprint('test-device'));
+  assert.equal(info?.[1]?.request_id_fingerprint, await diagnosticFingerprint('test-request-id'));
+  assert.equal(JSON.stringify(info?.[1]).includes('test-device'), false);
+  assert.equal(JSON.stringify(info?.[1]).includes('test-request-id'), false);
 });
 
 test('pending wallet activation is diagnosed before AI usage can be charged', async () => {
@@ -178,3 +220,8 @@ test('pending wallet activation is diagnosed before AI usage can be charged', as
   assertDiagnostic(response, result, 'wallet_resolution');
   assert.equal(consumeCalls.length, 0);
 });
+
+async function diagnosticFingerprint(value) {
+  const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(bytes), (byte) => byte.toString(16).padStart(2, '0')).join('');
+}

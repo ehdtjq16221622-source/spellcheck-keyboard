@@ -18,12 +18,23 @@ const previewBuckets = new Map<string, { startedAt: number; count: number }>()
 const previewWindowMs = 60_000
 const previewLimitPerWindow = 5
 
+async function diagnosticFingerprint(value: unknown): Promise<string | undefined> {
+  if (typeof value !== 'string' || value.length === 0 || value.length > 512) return undefined
+  try {
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))
+    return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
+  } catch {
+    return undefined
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
 
   const diagnosticId = crypto.randomUUID()
   let failureStage = 'request_parse'
   let causeStage: string | undefined
+  let walletTrace: Record<string, unknown> = {}
 
   try {
     const {
@@ -39,6 +50,13 @@ Deno.serve(async (req: Request) => {
       requestId,
       preview,
     } = await req.json()
+
+    walletTrace = {
+      requested_wallet_fingerprint: await diagnosticFingerprint(deviceId),
+      request_id_fingerprint: await diagnosticFingerprint(requestId),
+      server_managed_credit: typeof deviceId === 'string' && deviceId.length > 0 &&
+        typeof requestId === 'string' && requestId.length > 0,
+    }
 
     const source = typeof text === 'string' ? text : ''
     const normalizedLevel = normalizeFormalLevelKey(formalLevel)
@@ -65,6 +83,11 @@ Deno.serve(async (req: Request) => {
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
     failureStage = 'wallet_resolution'
     const wallet = isPreviewRequest ? null : await resolveCreditWallet(req, supabase, deviceId)
+    walletTrace = {
+      ...walletTrace,
+      canonical_wallet_fingerprint: wallet ? await diagnosticFingerprint(wallet.walletId) : undefined,
+      authenticated_wallet: wallet?.authenticated ?? false,
+    }
     failureStage = 'request_id_validation'
     if (wallet?.authenticated && !serverManagedCredit) {
       throw new WalletAccessError('A request ID is required for wallet credit use.', 400)
@@ -77,8 +100,13 @@ Deno.serve(async (req: Request) => {
       ? await consumeAIUsage(supabase, wallet.walletId, requestId, creditKind)
       : null
     if (credits && !credits.accepted) {
-      logDiagnostic('warn', diagnosticId, failureStage, 'NO_CREDITS')
+      logDiagnostic('warn', diagnosticId, failureStage, 'NO_CREDITS', undefined, walletTrace)
       return noCredits(credits, diagnosticId, failureStage)
+    }
+    if (credits?.accepted) {
+      logDiagnostic('info', diagnosticId, failureStage,
+        credits.alreadyProcessed ? 'CREDIT_USAGE_ALREADY_PROCESSED' : 'CREDIT_USAGE_ACCEPTED',
+        undefined, walletTrace)
     }
 
     const shouldRemovePunct = removePunct ?? (includePunct === undefined ? false : !includePunct)
@@ -109,7 +137,7 @@ Deno.serve(async (req: Request) => {
           if (wallet) await refundAIUsage(supabase, wallet.walletId, requestId)
         } catch (refundError) {
           causeStage = 'ai_provider'
-          logDiagnostic('error', diagnosticId, failureStage, 'AI_CREDIT_REFUND_FAILED')
+          logDiagnostic('error', diagnosticId, failureStage, 'AI_CREDIT_REFUND_FAILED', undefined, walletTrace)
         }
       }
       throw error
@@ -125,7 +153,7 @@ Deno.serve(async (req: Request) => {
     )
   } catch (e) {
     const code = e instanceof WalletAccessError ? e.code ?? 'WALLET_ACCESS_ERROR' : 'AI_REQUEST_FAILED'
-    logDiagnostic('error', diagnosticId, failureStage, code, causeStage)
+    logDiagnostic('error', diagnosticId, failureStage, code, causeStage, walletTrace)
     if (e instanceof WalletAccessError) {
       return diagnosticError(diagnosticId, failureStage, e.status, {
         error: e.message,
@@ -160,15 +188,23 @@ function diagnosticError(
 }
 
 function logDiagnostic(
-  level: 'warn' | 'error',
+  level: 'info' | 'warn' | 'error',
   diagnosticId: string,
   failureStage: string,
   code: string,
   causeStage?: string,
+  walletTrace: Record<string, unknown> = {},
 ) {
-  const details = { diagnostic_id: diagnosticId, failure_stage: failureStage, code, ...(causeStage ? { cause_stage: causeStage } : {}) }
+  const details = {
+    diagnostic_id: diagnosticId,
+    failure_stage: failureStage,
+    code,
+    ...(causeStage ? { cause_stage: causeStage } : {}),
+    ...walletTrace,
+  }
   if (level === 'error') console.error('[correct]', details)
-  else console.warn('[correct]', details)
+  else if (level === 'warn') console.warn('[correct]', details)
+  else console.info('[correct]', details)
 }
 
 function allowPreviewRequest(req: Request): boolean {
