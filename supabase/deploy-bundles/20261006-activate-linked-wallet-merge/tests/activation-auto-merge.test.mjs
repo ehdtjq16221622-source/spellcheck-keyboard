@@ -21,6 +21,7 @@ async function activateSession({ autoMerge = true, mergeError = null, alias = nu
   aliasAfterConflict = null } = {}) {
   let handler
   const calls = []
+  const auditEvents = []
   let aliasReads = 0
   globalThis.Deno = {
     env: { get: (key) => ({
@@ -70,13 +71,21 @@ async function activateSession({ autoMerge = true, mergeError = null, alias = nu
     },
   })
 
-  await import(`data:text/javascript,${encodeURIComponent(runnable)}#${crypto.randomUUID()}`)
-  const response = await handler(new Request('https://example.invalid/wallet_link_v2', {
-    method: 'POST',
-    body: JSON.stringify({ action: 'activate_session', identityToken: 'verified-token',
-      sessionToken: 'c'.repeat(64) }),
-  }))
-  return { status: response.status, body: await response.json(), calls }
+  const originalInfo = console.info
+  console.info = (message) => {
+    try { auditEvents.push(JSON.parse(message)) } catch {}
+  }
+  try {
+    await import(`data:text/javascript,${encodeURIComponent(runnable)}#${crypto.randomUUID()}`)
+    const response = await handler(new Request('https://example.invalid/wallet_link_v2', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'activate_session', identityToken: 'verified-token',
+        sessionToken: 'c'.repeat(64) }),
+    }))
+    return { status: response.status, body: await response.json(), calls, auditEvents }
+  } finally {
+    console.info = originalInfo
+  }
 }
 
 test('activation merges the Apple-subject wallet through the existing idempotent RPC', async () => {
@@ -116,6 +125,10 @@ test('review-required merge outcomes stay explicit and do not bypass the DB revi
   assert.equal(result.status, 200)
   assert.equal(result.body.linkedMerge.decision, 'review_required')
   assert.equal(result.calls.at(-1).name, 'merge_linked_apple_subject_wallets_once')
+  const completed = result.auditEvents.find((event) => event.event === 'rpc_completed' &&
+    event.stage === 'rpc_merge_linked_apple_subject_wallets_once')
+  assert.equal(completed.errorCode, 'subscription_requires_review')
+  assert.equal('message' in completed, false)
 })
 
 test('an already-merged retry is recognized from the exact authenticated alias', async () => {

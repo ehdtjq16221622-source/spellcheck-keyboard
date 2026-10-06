@@ -26,6 +26,39 @@ function isHexSecret(value: unknown): value is string {
   return typeof value === 'string' && /^[0-9a-f]{64}$/.test(value)
 }
 
+function safeRpcErrorCode(error: { code?: string; message?: string } | null): string | undefined {
+  if (!error) return undefined
+  if (error.code !== 'P0001') return 'database_rejected'
+  const knownReasons: Record<string, string> = {
+    'Active Apple wallet session required': 'apple_session_required',
+    'Apple wallet session must be activated': 'apple_session_not_activated',
+    'Apple wallet does not exist': 'apple_wallet_missing',
+    'Apple wallet is not linked': 'apple_wallet_not_linked',
+    'Apple wallet missing': 'apple_wallet_record_missing',
+    'Canonical wallet disappeared': 'canonical_wallet_missing',
+    'Second wallet does not exist': 'source_wallet_missing',
+    'Apple subject already uses its only canonical wallet': 'no_linked_source',
+    'Apple subject was already merged with another request ID': 'merge_idempotency_conflict',
+    'Legacy wallet was already merged with another request': 'merge_idempotency_conflict',
+    'Legacy wallet belongs to another Apple account': 'wallet_ownership_mismatch',
+    'Wallet ownership changed during merge': 'wallet_ownership_mismatch',
+    'Negative balance requires review': 'balance_requires_review',
+    'Wallet balance requires review': 'balance_requires_review',
+    'Paid balance would overflow': 'balance_overflow',
+    'Legacy subscription requires Apple verification': 'subscription_verification_required',
+    'Legacy subscription ledger does not match Apple verification': 'subscription_ledger_mismatch',
+    'Legacy subscription mapping does not match Apple verification': 'subscription_mapping_mismatch',
+    'Apple subscription ledger requires review': 'subscription_ledger_mismatch',
+    'Apple wallet has a different subscription purchase': 'subscription_purchase_mismatch',
+    'Second wallet subscription requires transaction review': 'subscription_requires_review',
+    'Second wallet purchase mapping requires transaction review': 'purchase_mapping_requires_review',
+    'Second wallet refund credits require transaction review': 'refund_credits_require_review',
+    'Recent AI usage must settle before wallet merge': 'recent_usage_pending',
+    'Another legacy wallet was already merged into this Apple account': 'source_already_merged',
+  }
+  return knownReasons[error.message ?? ''] ?? 'wallet_merge_review_required'
+}
+
 function serviceRoleKeyKind(value: string | undefined): string {
   if (!value) return 'missing'
   if (value.startsWith('sb_secret_')) return 'modern_secret_key'
@@ -181,6 +214,7 @@ Deno.serve(async (req: Request) => {
       audit('rpc_completed', { stage: rpcStage, inputWalletFingerprints,
         outcome: result.error ? 'rejected' : 'completed',
         sqlstate: /^[A-Z0-9]{5}$/.test(result.error?.code ?? '') ? result.error.code : undefined,
+        errorCode: safeRpcErrorCode(result.error),
         applied: typeof result.data === 'boolean' ? result.data : undefined })
       return result
     }
