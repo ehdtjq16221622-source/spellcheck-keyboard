@@ -12,9 +12,9 @@ const runnable = stripTypeScriptTypes(source
   .replace(/^import \{ consumeAIUsage, refundAIUsage \} from .*;?$/m,
     'const consumeAIUsage = globalThis.__consumeAIUsage; const refundAIUsage = globalThis.__refundAIUsage;')
   .replace(/^import \{ resolveCreditWallet, WalletAccessError \} from .*;?$/m,
-    'const resolveCreditWallet = globalThis.__resolveCreditWallet; class WalletAccessError extends Error {}'));
+    'const resolveCreditWallet = globalThis.__resolveCreditWallet; const WalletAccessError = globalThis.__MockWalletAccessError;'));
 
-async function createHandler({ consumeResult = { accepted: true, alreadyProcessed: false } } = {}) {
+async function createHandler({ consumeResult = { accepted: true, alreadyProcessed: false }, resolveError } = {}) {
   let handler;
   const calls = [];
   const consumeCalls = [];
@@ -30,7 +30,17 @@ async function createHandler({ consumeResult = { accepted: true, alreadyProcesse
     return consumeResult;
   };
   globalThis.__refundAIUsage = async () => {};
-  globalThis.__resolveCreditWallet = async (_request, _client, walletId) => ({ walletId, authenticated: false });
+  globalThis.__MockWalletAccessError = class extends Error {
+    constructor(message, status, code) {
+      super(message);
+      this.status = status;
+      this.code = code;
+    }
+  };
+  globalThis.__resolveCreditWallet = async (_request, _client, walletId) => {
+    if (resolveError) throw new globalThis.__MockWalletAccessError(resolveError.message, resolveError.status, resolveError.code);
+    return { walletId, authenticated: false };
+  };
   globalThis.fetch = async (url, init) => {
     const request = { url: String(url), body: JSON.parse(init.body) };
     calls.push(request);
@@ -151,4 +161,20 @@ test('insufficient-credit responses include a safe diagnostic ID and failure sta
   assert.equal(result.error, 'NO_CREDITS');
   assert.equal(result.credits_remaining, 0);
   assertDiagnostic(response, result, 'credit_precharge');
+});
+
+test('pending wallet activation is diagnosed before AI usage can be charged', async () => {
+  const { handler, consumeCalls } = await createHandler({
+    resolveError: { message: 'Wallet session expired.', status: 401, code: 'wallet_activation_pending' },
+  });
+  const response = await handler(new Request('http://localhost/correct', {
+    method: 'POST',
+    body: JSON.stringify({ text: '맞춤법을 고쳐줘', deviceId: 'v2:synthetic-wallet', requestId: 'request-1' }),
+  }));
+  const result = await response.json();
+
+  assert.equal(response.status, 401);
+  assert.equal(result.error_code, 'wallet_activation_pending');
+  assertDiagnostic(response, result, 'wallet_resolution');
+  assert.equal(consumeCalls.length, 0);
 });

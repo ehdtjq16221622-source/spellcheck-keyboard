@@ -17,6 +17,7 @@ async function walletFingerprint(walletId: string): Promise<string> {
 
 function errorCode(error: unknown): string {
   if (!(error instanceof WalletAccessError)) return "internal_error";
+  if (error.code) return error.code;
   if (error.message.includes("기기 지갑을 찾을 수 없어요")) return "wallet_row_missing";
   if (error.message.includes("최신 버전으로 업데이트")) return "client_update_required";
   if (error.status === 401) return "wallet_session_rejected";

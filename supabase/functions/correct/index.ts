@@ -124,10 +124,13 @@ Deno.serve(async (req: Request) => {
       { headers: diagnosticHeaders(diagnosticId) }
     )
   } catch (e) {
-    const code = e instanceof WalletAccessError ? 'WALLET_ACCESS_ERROR' : 'AI_REQUEST_FAILED'
+    const code = e instanceof WalletAccessError ? e.code ?? 'WALLET_ACCESS_ERROR' : 'AI_REQUEST_FAILED'
     logDiagnostic('error', diagnosticId, failureStage, code, causeStage)
     if (e instanceof WalletAccessError) {
-      return diagnosticError(diagnosticId, failureStage, e.status, { error: e.message }, causeStage)
+      return diagnosticError(diagnosticId, failureStage, e.status, {
+        error: e.message,
+        ...(e.code ? { error_code: e.code } : {}),
+      }, causeStage)
     }
     return diagnosticError(diagnosticId, failureStage, 500, { error: genericAiErrorMessage }, causeStage)
   }

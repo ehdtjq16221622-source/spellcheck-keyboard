@@ -9,10 +9,10 @@ const runnable = stripTypeScriptTypes(source.replace(
   'const createClient = globalThis.__mockCreateClient;',
 ).replace(
   /^import \{ resolveCreditWallet, WalletAccessError \} from .*;$/m,
-  'const resolveCreditWallet = globalThis.__mockResolveWallet; class WalletAccessError extends Error { constructor(message, status) { super(message); this.status = status; } }',
+  'const resolveCreditWallet = globalThis.__mockResolveWallet; const WalletAccessError = globalThis.__MockWalletAccessError;',
 ));
 
-async function responseFor({ rows, deviceId, testIds = '', authenticated = true }) {
+async function responseFor({ rows, deviceId, testIds = '', authenticated = true, resolveError }) {
   let handler;
   globalThis.Deno = {
     env: { get: (key) => key === 'CREDIT_EXACT_WALLET_TEST_IDS' ? testIds : '' },
@@ -39,6 +39,18 @@ async function responseFor({ rows, deviceId, testIds = '', authenticated = true 
   globalThis.__mockResolveWallet = async (_request, _client, requestedId) => ({
     walletId: requestedId, authenticated,
   });
+  globalThis.__MockWalletAccessError = class extends Error {
+    constructor(message, status, code) {
+      super(message);
+      this.status = status;
+      this.code = code;
+    }
+  };
+  if (resolveError) {
+    globalThis.__mockResolveWallet = async () => {
+      throw new globalThis.__MockWalletAccessError(resolveError.message, resolveError.status, resolveError.code);
+    };
+  }
   await import(`data:text/javascript,${encodeURIComponent(runnable)}#${crypto.randomUUID()}`);
   assert.equal(typeof handler, 'function');
   const logs = [];
@@ -176,4 +188,19 @@ test('successful balance lookup returns the same diagnostic id in body and heade
   assert.equal(result.status, 200);
   assert.match(result.diagnostic_id, /^[0-9a-f-]{36}$/);
   assert.equal(result.diagnosticHeader, result.diagnostic_id);
+});
+
+test('pending wallet activation is a safe, distinct balance lookup error', async () => {
+  const result = await responseFor({
+    rows: [],
+    deviceId: 'v2:synthetic-wallet',
+    resolveError: { message: 'Wallet session expired.', status: 401, code: 'wallet_activation_pending' },
+  });
+  assert.equal(result.status, 401);
+  assert.equal(result.error_code, 'wallet_activation_pending');
+  assert.equal(result.failure_stage, 'wallet_resolution');
+  assert.equal(result.credits_remaining, undefined);
+  const failureLog = JSON.parse(result.logs.find((entry) => entry.level === 'error').message);
+  assert.equal(failureLog.error_code, 'wallet_activation_pending');
+  assert.equal(JSON.stringify(failureLog).includes('synthetic-wallet'), false);
 });

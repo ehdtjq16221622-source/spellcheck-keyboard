@@ -2,10 +2,12 @@ import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 export class WalletAccessError extends Error {
   readonly status: number
+  readonly code?: string
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, code?: string) {
     super(message)
     this.status = status
+    this.code = code
   }
 }
 
@@ -87,16 +89,20 @@ export async function resolveCreditWallet(
         .eq('wallet_id', requestedId)
         .maybeSingle()
       if (credentialError) throw credentialError
-      if (credential?.secret_hash === await walletTokenHash(token) &&
-          credential.state === 'active') {
-        const { data: guest, error: guestError } = await supabase
-          .from('device_credits')
-          .select('apple_user_id')
-          .eq('device_id', requestedId)
-          .maybeSingle()
-        if (guestError) throw guestError
-        if (guest && guest.apple_user_id === null) {
-          return { walletId: requestedId, authenticated: true }
+      if (credential?.secret_hash === await walletTokenHash(token)) {
+        if (credential.state === 'pending') {
+          throw new WalletAccessError('Wallet session expired.', 401, 'wallet_activation_pending')
+        }
+        if (credential.state === 'active') {
+          const { data: guest, error: guestError } = await supabase
+            .from('device_credits')
+            .select('apple_user_id')
+            .eq('device_id', requestedId)
+            .maybeSingle()
+          if (guestError) throw guestError
+          if (guest && guest.apple_user_id === null) {
+            return { walletId: requestedId, authenticated: true }
+          }
         }
       }
     }
