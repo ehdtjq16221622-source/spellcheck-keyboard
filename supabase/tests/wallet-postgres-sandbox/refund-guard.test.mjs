@@ -4,7 +4,7 @@ import { PGlite } from '@electric-sql/pglite';
 import { readFile } from 'node:fs/promises';
 
 const migration = await readFile(
-  new URL('../../migrations/20261006141124_preserve_refund_credits_during_linked_wallet_merge.sql', import.meta.url),
+  new URL('../../migrations/20261006142311_preserve_refund_credits_during_linked_wallet_merge.sql', import.meta.url),
   'utf8',
 );
 
