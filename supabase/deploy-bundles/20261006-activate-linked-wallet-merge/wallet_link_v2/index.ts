@@ -732,6 +732,58 @@ Deno.serve(async (req: Request) => {
           body.idempotencyKey.length < 1 || body.idempotencyKey.length > 128) {
         return respond({ error: 'Invalid legacy merge proof.' }, 400)
       }
+      // Session activation may already have merged the Apple-subject wallet.
+      // Recognize that exact alias before retrying through the legacy RPC.
+      if (body.sourceWalletId === identity.sub) {
+        const tokenHash = await walletTokenHash(body.sessionToken)
+        const { data: session, error: sessionError } = await supabase
+          .from('credit_wallet_sessions')
+          .select('wallet_id, apple_sub, expires_at, revoked_at')
+          .eq('token_hash', tokenHash)
+          .maybeSingle()
+        if (sessionError) throw sessionError
+        if (!session || session.apple_sub !== identity.sub || session.revoked_at ||
+            Date.parse(session.expires_at) <= Date.now()) {
+          return respond({ error: 'Active Apple wallet session required.' }, 401)
+        }
+        const { data: activatedWallet, error: activationError } = await supabase
+          .from('credit_protected_wallets')
+          .select('wallet_id')
+          .eq('wallet_id', session.wallet_id)
+          .maybeSingle()
+        if (activationError) throw activationError
+        if (!activatedWallet) {
+          return respond({ error: 'Apple wallet session must be activated.' }, 409)
+        }
+        const { data: priorAlias, error: aliasError } = await supabase
+          .from('credit_wallet_aliases')
+          .select('canonical_wallet_id, apple_sub')
+          .eq('source_wallet_id', body.sourceWalletId)
+          .maybeSingle()
+        if (aliasError) throw aliasError
+        if (priorAlias) {
+          if (priorAlias.apple_sub !== identity.sub ||
+              priorAlias.canonical_wallet_id !== session.wallet_id) {
+            return respond({ error: 'Wallet transfer requires review.' }, 409)
+          }
+          const { data: canonicalWallet, error: walletError } = await supabase
+            .from('device_credits')
+            .select('free_credits, paid_credits, subscription_credits, apple_user_id')
+            .eq('device_id', session.wallet_id)
+            .maybeSingle()
+          if (walletError) throw walletError
+          if (!canonicalWallet || canonicalWallet.apple_user_id !== identity.sub) {
+            return respond({ error: 'Wallet transfer requires review.' }, 409)
+          }
+          return respond({
+            decision: 'already_linked',
+            canonicalWalletId: session.wallet_id,
+            freeCredits: canonicalWallet.free_credits,
+            paidCredits: canonicalWallet.paid_credits,
+            subscriptionCredits: canonicalWallet.subscription_credits,
+          })
+        }
+      }
       // Legacy IDs are public identifiers, not possession proofs.
       if (Deno.env.get('WALLET_LEGACY_MERGE_ENABLED') !== 'true') {
         return respond({ error: 'Wallet transfer requires review.' }, 409)

@@ -88,6 +88,67 @@ async function activateSession({ autoMerge = true, mergeError = null, alias = nu
   }
 }
 
+async function mergeLegacyAfterActivation({ alias, sessionAppleSub = 'apple-sub',
+  sessionWalletId = 'v2:canonical', canonicalAppleSub = 'apple-sub' } = {}) {
+  let handler
+  const calls = []
+  const rows = {
+    credit_wallet_sessions: {
+      wallet_id: sessionWalletId,
+      apple_sub: sessionAppleSub,
+      expires_at: new Date(Date.now() + 60_000).toISOString(),
+      revoked_at: null,
+    },
+    credit_protected_wallets: { wallet_id: sessionWalletId },
+    credit_wallet_aliases: alias,
+    device_credits: {
+      apple_user_id: canonicalAppleSub,
+      free_credits: 500,
+      paid_credits: 25,
+      subscription_credits: 0,
+    },
+  }
+  globalThis.Deno = {
+    env: { get: (key) => ({
+      WALLET_SESSIONS_ENABLED: 'true',
+      WALLET_GUEST_V2_ENABLED: 'true',
+      WALLET_LINK_V2_ENABLED: 'true',
+      WALLET_LINK_V2_ALL_USERS_ENABLED: 'true',
+      WALLET_AUTO_MERGE_ALL_USERS_ENABLED: 'true',
+      WALLET_LEGACY_MERGE_ENABLED: 'true',
+      SUPABASE_URL: 'https://example.invalid',
+      SUPABASE_SERVICE_ROLE_KEY: 'test-only',
+    })[key] },
+    serve: (fn) => { handler = fn },
+  }
+  globalThis.__verifyAppleIdentityToken = async () => ({ sub: 'apple-sub' })
+  globalThis.__walletTokenHash = async () => 'b'.repeat(64)
+  globalThis.__createClient = () => ({
+    from: (table) => {
+      const query = {
+        select: () => query,
+        eq: () => query,
+        maybeSingle: async () => ({ data: rows[table] ?? null, error: null }),
+      }
+      return query
+    },
+    rpc: async (name, args) => {
+      calls.push({ name, args })
+      return { data: [{ decision: 'merged', canonical_wallet_id: sessionWalletId,
+        free_credits_remaining: 500, paid_credits_remaining: 25,
+        subscription_credits_remaining: 0 }], error: null }
+    },
+  })
+  await import(`data:text/javascript,${encodeURIComponent(runnable)}#${crypto.randomUUID()}`)
+  const response = await handler(new Request('https://example.invalid/wallet_link_v2', {
+    method: 'POST',
+    body: JSON.stringify({ action: 'merge_legacy', identityToken: 'verified-token',
+      sessionToken: 'c'.repeat(64), sourceWalletId: 'apple-sub',
+      idempotencyKey: 'legacy-merge:apple-sub:apple-sub' }),
+  }))
+  return { status: response.status, body: await response.json(), calls }
+}
+
 test('activation merges the Apple-subject wallet through the existing idempotent RPC', async () => {
   const result = await activateSession()
   assert.equal(result.status, 200)
@@ -156,4 +217,35 @@ test('a concurrent successful merge is recognized after the idempotency conflict
   })
   assert.equal(result.status, 200)
   assert.equal(result.body.linkedMerge.decision, 'already_merged')
+})
+
+test('legacy retry after activation merge returns the current wallet without a second RPC', async () => {
+  const result = await mergeLegacyAfterActivation({
+    alias: { apple_sub: 'apple-sub', canonical_wallet_id: 'v2:canonical' },
+  })
+  assert.equal(result.status, 200)
+  assert.equal(result.body.decision, 'already_linked')
+  assert.equal(result.body.canonicalWalletId, 'v2:canonical')
+  assert.equal(result.body.freeCredits, 500)
+  assert.equal(result.body.paidCredits, 25)
+  assert.deepEqual(result.calls, [])
+})
+
+test('legacy retry refuses an alias owned by a different Apple session wallet', async () => {
+  const result = await mergeLegacyAfterActivation({
+    alias: { apple_sub: 'apple-sub', canonical_wallet_id: 'v2:other' },
+  })
+  assert.equal(result.status, 409)
+  assert.equal(result.body.error, 'Wallet transfer requires review.')
+  assert.deepEqual(result.calls, [])
+})
+
+test('legacy retry refuses an alias whose canonical wallet belongs to another Apple subject', async () => {
+  const result = await mergeLegacyAfterActivation({
+    alias: { apple_sub: 'apple-sub', canonical_wallet_id: 'v2:canonical' },
+    canonicalAppleSub: 'different-sub',
+  })
+  assert.equal(result.status, 409)
+  assert.equal(result.body.error, 'Wallet transfer requires review.')
+  assert.deepEqual(result.calls, [])
 })

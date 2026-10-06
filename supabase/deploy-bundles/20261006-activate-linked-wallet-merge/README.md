@@ -2,6 +2,8 @@
 
 Based on the production `wallet_link_v2` v40 bundle. The API now invokes the existing `merge_linked_apple_subject_wallets_once` RPC after Apple identity verification and successful session activation, but only while the existing all-user merge rollout flag is enabled.
 
+If the app retries the same Apple-subject wallet through `merge_legacy` after activation, the API verifies the live activated session and exact alias, then returns the current canonical balance without invoking a second merge RPC. Conflicting aliases remain review-required.
+
 The RPC still proves the session's Apple subject and canonical wallet, locks and reconciles the two wallet rows atomically, applies the existing free-credit and paid-credit rules, and rejects subscription mappings or ownership conflicts for review. No arbitrary device wallet IDs are accepted. Exact no-source results are reported as `no_linked_source`; an existing matching alias is idempotently reported as `already_merged`; review cases remain explicitly `review_required`. The request key is a deterministic hash-derived value, not the raw Apple subject.
 
 No schema, RLS, feature flag, secret, bonus amount, debit rule, or subscription rule is changed. No production balances are changed during deployment; future authenticated `activate_session` calls may perform the pre-existing approved atomic merge. This is a balance-affecting server path and is authorized only within the user's existing wallet-link resolution request.
