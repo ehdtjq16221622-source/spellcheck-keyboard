@@ -245,6 +245,11 @@ Deno.serve(async (req: Request) => {
         p_request_id: requestId,
         p_token_hash: tokenHash,
       })
+      if (error?.code === 'P0001' &&
+          error.message === 'Recent AI usage must settle before wallet merge') {
+        audit('linked_merge_deferred', { reason: 'recent_usage_pending', retryAfterSeconds: 300 })
+        return { decision: 'retry_later', retryAfterSeconds: 300 }
+      }
       if (error?.code === 'P0001' && [
         'Apple subject already uses its only canonical wallet',
         'Second wallet does not exist',
@@ -717,6 +722,10 @@ Deno.serve(async (req: Request) => {
         tokenHash,
         body.idempotencyKey,
       )
+      if (result.decision === 'retry_later') {
+        return respond({ error: 'Wallet merge is temporarily deferred.',
+          code: 'WALLET_MERGE_RETRY_LATER', retry_after_seconds: result.retryAfterSeconds }, 409)
+      }
       if (result.decision === 'review_required') {
         return respond({ error: 'Wallet transfer requires review.' }, 409)
       }

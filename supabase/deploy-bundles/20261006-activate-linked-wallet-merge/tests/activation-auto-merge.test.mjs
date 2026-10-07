@@ -17,7 +17,7 @@ const runnable = stripTypeScriptTypes(source
   .replace(/^import \{[\s\S]*?\} from .*subscription_audit\.ts'$/m,
     'const logSubscriptionAudit = globalThis.__logSubscriptionAudit; const subscriptionTransactionFingerprint = globalThis.__subscriptionTransactionFingerprint; const subscriptionWalletFingerprint = globalThis.__subscriptionWalletFingerprint;'))
 
-async function activateSession({ autoMerge = true, mergeError = null, alias = null,
+async function activateSession({ action = 'activate_session', autoMerge = true, mergeError = null, alias = null,
   aliasAfterConflict = null } = {}) {
   let handler
   const calls = []
@@ -80,7 +80,8 @@ async function activateSession({ autoMerge = true, mergeError = null, alias = nu
     const response = await handler(new Request('https://example.invalid/wallet_link_v2', {
       method: 'POST',
       body: JSON.stringify({ action: 'activate_session', identityToken: 'verified-token',
-        sessionToken: 'c'.repeat(64) }),
+        sessionToken: 'c'.repeat(64), idempotencyKey: 'manual-merge-request',
+        ...(action === 'activate_session' ? {} : { action }) }),
     }))
     return { status: response.status, body: await response.json(), calls, auditEvents }
   } finally {
@@ -190,6 +191,30 @@ test('review-required merge outcomes stay explicit and do not bypass the DB revi
     event.stage === 'rpc_merge_linked_apple_subject_wallets_once')
   assert.equal(completed.errorCode, 'subscription_requires_review')
   assert.equal('message' in completed, false)
+})
+
+test('activation reports a recent-use merge as pending instead of claiming it merged', async () => {
+  const result = await activateSession({ mergeError: {
+    code: 'P0001', message: 'Recent AI usage must settle before wallet merge',
+  } })
+  assert.equal(result.status, 200)
+  assert.equal(result.body.state, 'active')
+  assert.deepEqual(result.body.linkedMerge, { decision: 'retry_later', retryAfterSeconds: 300 })
+  assert.ok(result.auditEvents.some((event) => event.event === 'linked_merge_deferred' &&
+    event.reason === 'recent_usage_pending'))
+})
+
+test('explicit linked-merge retries return a safe retry-later response with diagnostics', async () => {
+  const result = await activateSession({ action: 'merge_linked', mergeError: {
+    code: 'P0001', message: 'Recent AI usage must settle before wallet merge',
+  } })
+  assert.equal(result.status, 409)
+  assert.equal(result.body.code, 'WALLET_MERGE_RETRY_LATER')
+  assert.equal(result.body.retry_after_seconds, 300)
+  assert.equal(result.body.failure_stage, 'rpc_merge_linked_apple_subject_wallets_once')
+  assert.equal(result.body.diagnostic_id, result.auditEvents[0].auditId)
+  assert.equal(result.calls.length, 1)
+  assert.equal(result.calls[0].name, 'merge_linked_apple_subject_wallets_once')
 })
 
 test('an already-merged retry is recognized from the exact authenticated alias', async () => {
