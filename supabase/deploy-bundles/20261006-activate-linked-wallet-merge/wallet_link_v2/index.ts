@@ -54,6 +54,8 @@ function safeRpcErrorCode(error: { code?: string; message?: string } | null): st
     'Second wallet purchase mapping requires transaction review': 'purchase_mapping_requires_review',
     'Second wallet refund credits require transaction review': 'refund_credits_require_review',
     'Recent AI usage must settle before wallet merge': 'recent_usage_pending',
+    'Free credit provenance requires review': 'free_credit_provenance_review',
+    'Free balance would overflow': 'free_credit_overflow',
     'Another legacy wallet was already merged into this Apple account': 'source_already_merged',
   }
   return knownReasons[error.message ?? ''] ?? 'wallet_merge_review_required'
@@ -644,6 +646,33 @@ Deno.serve(async (req: Request) => {
       return respond({ decision: result.decision, canonicalWalletId: result.canonical_wallet_id })
     }
 
+    // Resume only the wallet belonging to this live session, never a client-supplied pair.
+    if (body.action === 'resume_linked') {
+      if (!walletAutoMergeAllUsersEnabled) return respond({ error: 'Wallet merge unavailable.' }, 404)
+      if (!isHexSecret(body.sessionToken)) return respond({ error: 'Invalid wallet session.' }, 401)
+      const tokenHash = await walletTokenHash(body.sessionToken)
+      const { data: session, error } = await supabase.from('credit_wallet_sessions')
+        .select('apple_sub, wallet_id, expires_at, revoked_at')
+        .eq('token_hash', tokenHash).maybeSingle()
+      if (error) throw error
+      if (!session || session.revoked_at || Date.parse(session.expires_at) <= Date.now()) {
+        return respond({ error: 'Active Apple wallet session required.' }, 401)
+      }
+      const { data: owner, error: ownerError } = await supabase.from('device_credits')
+        .select('apple_user_id').eq('device_id', session.wallet_id).maybeSingle()
+      if (ownerError) throw ownerError
+      if (owner?.apple_user_id !== session.apple_sub) {
+        return respond({ error: 'Wallet session no longer matches the account.' }, 403)
+      }
+      const { data: activated, error: activationError } = await supabase.from('credit_protected_wallets')
+        .select('wallet_id').eq('wallet_id', session.wallet_id).maybeSingle()
+      if (activationError) throw activationError
+      if (!activated) return respond({ error: 'Apple wallet session must be activated.' }, 409)
+      const linkedMerge = await mergeLinkedAppleSubject(session.apple_sub, session.wallet_id,
+        tokenHash, `linked-merge:auto-v1:${await sha256(session.apple_sub)}`)
+      return respond({ walletId: session.wallet_id, linkedMerge })
+    }
+
     if (typeof body?.identityToken !== 'string' || body.identityToken.length > 16_384) {
       return respond({ error: 'Invalid Apple identity.' }, 401)
     }
@@ -862,6 +891,10 @@ Deno.serve(async (req: Request) => {
         p_verified_subscription_token: verifiedSubscriptionToken,
         p_verified_product_id: verifiedProductId,
       })
+      if (error?.code === 'P0001' && error.message === 'Recent AI usage must settle before wallet merge') {
+        return respond({ error: 'Wallet merge is temporarily deferred.',
+          code: 'WALLET_MERGE_RETRY_LATER', retry_after_seconds: 300 }, 409)
+      }
       if (error?.code === 'P0001') return respond({ error: 'Wallet transfer requires review.' }, 409)
       if (error) throw error
       const result = data?.[0]

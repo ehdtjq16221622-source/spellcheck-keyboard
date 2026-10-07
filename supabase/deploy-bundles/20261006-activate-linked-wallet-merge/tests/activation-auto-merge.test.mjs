@@ -18,7 +18,7 @@ const runnable = stripTypeScriptTypes(source
     'const logSubscriptionAudit = globalThis.__logSubscriptionAudit; const subscriptionTransactionFingerprint = globalThis.__subscriptionTransactionFingerprint; const subscriptionWalletFingerprint = globalThis.__subscriptionWalletFingerprint;'))
 
 async function activateSession({ action = 'activate_session', autoMerge = true, mergeError = null, alias = null,
-  aliasAfterConflict = null } = {}) {
+  aliasAfterConflict = null, expired = false, wrongOwner = false, activated = true } = {}) {
   let handler
   const calls = []
   const auditEvents = []
@@ -52,8 +52,10 @@ async function activateSession({ action = 'activate_session', autoMerge = true, 
         maybeSingle: async () => {
           if (table === 'credit_wallet_sessions') {
             return { data: { apple_sub: 'apple-sub', wallet_id: 'v2:canonical',
-              expires_at: new Date(Date.now() + 60_000).toISOString(), revoked_at: null }, error: null }
+              expires_at: new Date(Date.now() + (expired ? -60_000 : 60_000)).toISOString(), revoked_at: null }, error: null }
           }
+          if (table === 'device_credits') return { data: { apple_user_id: wrongOwner ? 'other' : 'apple-sub' }, error: null }
+          if (table === 'credit_protected_wallets') return { data: activated ? { wallet_id:'v2:canonical' } : null, error:null }
           aliasReads += 1
           return { data: aliasReads === 1 ? alias : aliasAfterConflict, error: null }
         },
@@ -79,7 +81,8 @@ async function activateSession({ action = 'activate_session', autoMerge = true, 
     await import(`data:text/javascript,${encodeURIComponent(runnable)}#${crypto.randomUUID()}`)
     const response = await handler(new Request('https://example.invalid/wallet_link_v2', {
       method: 'POST',
-      body: JSON.stringify({ action: 'activate_session', identityToken: 'verified-token',
+      body: JSON.stringify({ action: 'activate_session',
+        ...(action === 'resume_linked' ? {} : { identityToken: 'verified-token' }),
         sessionToken: 'c'.repeat(64), idempotencyKey: 'manual-merge-request',
         ...(action === 'activate_session' ? {} : { action }) }),
     }))
@@ -88,6 +91,28 @@ async function activateSession({ action = 'activate_session', autoMerge = true, 
     console.info = originalInfo
   }
 }
+
+test('session-only resume uses the same guarded RPC and deterministic request key', async () => {
+  const resumed = await activateSession({ action:'resume_linked' });
+  const activated = await activateSession();
+  assert.equal(resumed.status,200);
+  assert.equal(resumed.body.linkedMerge.decision,'merged');
+  assert.equal(resumed.calls.length,1);
+  assert.deepEqual(resumed.calls[0],activated.calls[1]);
+});
+for (const options of [{expired:true},{wrongOwner:true},{activated:false},{autoMerge:false}]) {
+  test('resume rejects unauthorized or disabled state: '+JSON.stringify(options),async()=>{
+    const result=await activateSession({action:'resume_linked',...options});
+    assert.ok(result.status>=400);
+    assert.equal(result.calls.length,0);
+  });
+}
+test('resume keeps recent-use deferral explicit',async()=>{
+  const result=await activateSession({action:'resume_linked',
+    mergeError:{code:'P0001',message:'Recent AI usage must settle before wallet merge'}});
+  assert.equal(result.body.linkedMerge.decision,'retry_later');
+  assert.equal(result.body.linkedMerge.retryAfterSeconds,300);
+});
 
 async function mergeLegacyAfterActivation({ alias, sessionAppleSub = 'apple-sub',
   sessionWalletId = 'v2:canonical', canonicalAppleSub = 'apple-sub' } = {}) {
