@@ -38,3 +38,36 @@ If problems arise, stop new automatic merges using the approved operational proc
 stricter DB guard: reverting to the earlier heuristic can discard earned balances. A code rollback cannot
 reverse completed merges. Keep pre-deployment function definitions for investigation and forward repair;
 any manual credit repair requires separate evidence and approval.
+
+## Deployment verification (2026-10-07 KST)
+
+- Server implementation commit: 9c1693d, pushed to codex/wallet-server-link-flow.
+- iOS implementation commit: 12fd9f2, pushed to codex/wallet-v2-canary.
+- Production DB migration: 20261007051446_preserve_wallet_merge_balances.
+  Local source file was generated at 20261007045625; the MCP apply operation assigned
+  the production version above. Do not apply the same source again as a new migration.
+- wallet_link_v2 version 45 is ACTIVE. All seven deployed source files match the reviewed bundle.
+- Both merge RPCs call the shared guard. anon/authenticated execution is denied;
+  service_role execution is allowed.
+- Read-only availability returned enabled=true. A resume request with no session returned 401.
+- 57 focused server/SQL checks and 6 iOS source-contract checks passed.
+- iOS has not been compiled or distributed. Its branch also lacks main's release-version bump;
+  release integration and Xcode validation remain required. No claim of App Store completion.
+
+## Historical balance audit
+
+Five legacy merge records and zero linked merge records were present at inspection.
+All five aliases matched their canonical wallet. Paid balances were conserved in all five
+merge snapshots; the inspected advertisement and event grants used paid_delta, not free_delta.
+The synthetic free-credit reward reproduction demonstrates a rule weakness, not proof that
+those actual advertisement/event grants were lost.
+
+Three records had zero source free balance. Two excluded source free balances of 870 and 500.
+For the 870 case, the retained free ledger net was -130 with an unexplained opening balance;
+for the 500 case, there was no preceding source transaction history. Destination histories
+were also absent before these merges. These amounts are NOT confirmed compensation amounts:
+duplicate initial credits cannot be distinguished from legitimate balance using these records alone.
+No positive ledger entries on the old wallets after these five merges were found.
+
+Per the user's clarified instruction, no direct balance repair, grant, or mass merge was performed.
+The paused monitor remains paused.
