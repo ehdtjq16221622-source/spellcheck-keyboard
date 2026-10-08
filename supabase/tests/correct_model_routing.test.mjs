@@ -71,6 +71,7 @@ test('smart tone keeps Gemini and receives the source ending instruction', async
   assert.equal(calls.length, 1);
   assert.match(calls[0].url, /gemini-3\.1-flash-lite/);
   assert.match(calls[0].body.system_instruction.parts[0].text, /문장 종결형과 높임 단계를 원문에 맞춰 유지하라/);
+  assert.doesNotMatch(calls[0].body.system_instruction.parts[0].text, /예외 규칙:|"얼만큼"/);
 });
 
 test('custom tone uses Luna low with a bounded stateless Responses request', async () => {
@@ -95,6 +96,7 @@ test('custom tone uses Luna low with a bounded stateless Responses request', asy
   assert.equal(calls[0].body.store, false);
   assert.equal(calls[0].body.input, '오늘 안으로 보내줘.');
   assert.match(calls[0].body.instructions, /친구에게 부드럽게 말해줘/);
+  assert.doesNotMatch(calls[0].body.instructions, /예외 규칙:|"얼만큼"/);
 });
 
 test('proofing safety fallback warning carries the response diagnostic ID', async () => {
