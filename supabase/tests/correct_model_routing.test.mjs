@@ -99,6 +99,36 @@ test('custom tone uses Luna low with a bounded stateless Responses request', asy
   assert.doesNotMatch(calls[0].body.instructions, /예외 규칙:|"얼만큼"/);
 });
 
+test('tone modes explicitly prohibit adding period, comma, or apostrophe', async () => {
+  for (const formalLevel of ['smart', 'custom']) {
+    const { handler, calls } = await createHandler();
+    await handler(new Request('http://localhost/correct', {
+      method: 'POST',
+      body: JSON.stringify({
+        text: '오늘 얘기 좀 하자',
+        formalMode: true,
+        formalLevel,
+        customPrompt: '부드럽게 말해줘',
+        removePunct: true,
+      }),
+    }));
+    const instructions = formalLevel === 'custom'
+      ? calls[0].body.instructions
+      : calls[0].body.system_instruction.parts[0].text;
+    assert.match(instructions, /마침표 \., 쉼표 ,, 작은따옴표 '/);
+    assert.match(instructions, /원문에 없는 구두점.*추가하지 마세요/);
+  }
+});
+
+test('proofing prohibits adding period, comma, or apostrophe when punctuation is disabled', async () => {
+  const { handler, calls } = await createHandler();
+  await handler(new Request('http://localhost/correct', {
+    method: 'POST',
+    body: JSON.stringify({ text: '오늘 얘기 좀 하자', formalMode: false, removePunct: true }),
+  }));
+  assert.match(calls[0].body.system_instruction.parts[0].text, /마침표 \., 쉼표 ,, 작은따옴표 '/);
+});
+
 test('proofing safety fallback warning carries the response diagnostic ID', async () => {
   const { handler } = await createHandler();
   let warning;

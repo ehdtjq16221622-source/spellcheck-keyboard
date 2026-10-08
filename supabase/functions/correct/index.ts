@@ -280,6 +280,7 @@ function buildSystemPrompt(
 ): string {
   // 말투 교정 모드: 기본 프롬프트 없이 말투 프롬프트만 단독 사용
   if (formalMode) {
+    const noNewPunctuationInstruction = " 원문에 없는 구두점(마침표 ., 쉼표 ,, 작은따옴표 ')은 추가하지 마세요. 원문에 있는 구두점은 그대로 유지하세요."
     const languagePrefix =
       '입력 문장이 작성된 언어를 그대로 유지하세요. 입력이 한국어가 아닌 다른 언어(영어, 일본어, 중국어 등)라면 ' +
       '반드시 같은 언어로 결과를 작성하고, 아래 말투 지시사항을 그 언어에서 통용되는 격식·공손 표현 방식으로 자연스럽게 ' +
@@ -290,7 +291,7 @@ function buildSystemPrompt(
       const trimmed = typeof customPrompt === 'string' ? customPrompt.trim() : ''
       let system = languagePrefix + (trimmed || '자연스럽고 읽기 좋은 존댓말 문장으로 다듬으세요. 결과 문장만 출력하세요.')
       if (removePunct || !formalIncludePunct) {
-        system += ' 원문에 있는 구두점은 그대로 유지하고, 마침표·쉼표·물음표 등 새 구두점을 추가하지 마세요.'
+        system += noNewPunctuationInstruction
       } else {
         system += ' 문맥상 필요한 구두점은 자연스럽게 보완하세요.'
       }
@@ -321,7 +322,7 @@ function buildSystemPrompt(
     }
     let system = languagePrefix + (modePrompt[formalLevel] ?? '자연스럽고 읽기 좋은 존댓말 문장으로 다듬으세요. 결과 문장만 출력하세요.')
     if (removePunct || !formalIncludePunct) {
-      system += ' 원문에 있는 구두점은 그대로 유지하고, 마침표·쉼표·물음표 등 새 구두점을 추가하지 마세요.'
+      system += noNewPunctuationInstruction
     } else {
       system += ' 문맥상 필요한 구두점은 자연스럽게 보완하세요.'
     }
@@ -343,7 +344,7 @@ function buildSystemPrompt(
     '숫자, 영어, URL, 이모지, 감정 표현은 바꾸거나 삭제하지 마라.\n' +
     '반드시 지정된 JSON 형식만 출력하라.'
   if (removePunct) {
-    system += ' 마침표, 쉼표, 물음표 같은 구두점을 새로 추가하지 마세요. 원문에 있는 구두점은 그대로 유지하세요.'
+    system += " 원문에 없는 구두점(마침표 ., 쉼표 ,, 작은따옴표 ')은 추가하지 마세요. 원문에 있는 구두점은 그대로 유지하세요."
   } else {
     system += ' 원문에 있는 구두점은 유지하고, 문맥상 필요한 구두점은 자연스럽게 보완하세요.'
   }
@@ -410,7 +411,7 @@ function buildLowCostProofingPrompt(removePunct: boolean, includeDialect: boolea
     '한 문장에 오류가 여러 개 있으면 처음부터 끝까지 다시 확인하여 모두 교정하라.\n' +
     '교정된 문장만 출력하고 설명, 따옴표, 머리말을 붙이지 마라.'
   if (removePunct) {
-    prompt += '\n원문의 구두점은 그대로 유지하고 새 구두점을 추가하지 마라.'
+    prompt += "\n원문에 없는 구두점(마침표 ., 쉼표 ,, 작은따옴표 ')은 추가하지 마라. 원문에 있는 구두점은 그대로 유지하라."
   } else {
     prompt += '\n원문의 구두점은 유지하고, 문맥상 필요한 구두점은 자연스럽게 보완하라.'
   }
