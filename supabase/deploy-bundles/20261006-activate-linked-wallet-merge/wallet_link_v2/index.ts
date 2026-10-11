@@ -370,12 +370,16 @@ Deno.serve(async (req: Request) => {
       const secretHash = await sha256(body.walletSecret)
       let initialBonus = 0
       let bonusStatus = 'complete'
+      let bonusReason: string | null = null
       const deviceCheckRequired = body.action === 'register' && !markedCanary &&
         Deno.env.get('WALLET_DEVICECHECK_BONUS_ENABLED') === 'true'
       const deviceCheckBonus = deviceCheckRequired && typeof body.deviceToken === 'string'
       if (body.action === 'register' && !markedCanary) {
         if (deviceCheckRequired) {
-          if (!deviceCheckBonus) bonusStatus = 'verification_pending'
+          if (!deviceCheckBonus) {
+            bonusStatus = 'verification_pending'
+            bonusReason = 'no_device_token'
+          }
         } else {
           initialBonus = deviceCheckUnavailable ? 0 : 500
         }
@@ -394,13 +398,18 @@ Deno.serve(async (req: Request) => {
         stage = 'rpc_acquire_guest_bonus_devicecheck_lock'
         const { data: locked, error: lockError } = await auditedRpc('acquire_guest_bonus_devicecheck_lock', { p_owner: lockOwner })
         if (lockError) throw lockError
-        if (!locked) return respond({ error: 'Device verification is busy.' }, 503)
+        if (!locked) {
+          bonusStatus = 'verification_pending'
+          bonusReason = 'lock_busy'
+          audit('devicecheck_lock_busy', { outcome: bonusStatus })
+        } else {
         try {
           let deviceAlreadyMarked = false
           try {
             deviceAlreadyMarked = await isBonusCanaryDevice(body.deviceToken)
           } catch (error) {
             deviceCheckUnavailable = true
+            bonusReason = 'devicecheck_unavailable'
             audit('devicecheck_unavailable', { outcome: 'verification_pending' })
           }
           if (!deviceCheckUnavailable) {
@@ -418,6 +427,7 @@ Deno.serve(async (req: Request) => {
                   await enrollBonusCanaryDevice(body.deviceToken)
                 } catch (error) {
                   deviceCheckUnavailable = true
+                  bonusReason = 'devicecheck_unavailable'
                   audit('devicecheck_enrollment_unconfirmed', { outcome: 'verification_pending' })
                 }
                 if (!deviceCheckUnavailable) {
@@ -438,6 +448,9 @@ Deno.serve(async (req: Request) => {
               if (claimError) throw claimError
               if (claim?.state === 'pending' && !claim.verification_confirmed_at) {
                 bonusStatus = 'needs_review'
+                bonusReason = 'claim_needs_review'
+              } else {
+                bonusReason = 'device_already_marked'
               }
             }
             if (!deviceCheckUnavailable && bonusStatus !== 'needs_review') {
@@ -463,6 +476,15 @@ Deno.serve(async (req: Request) => {
           stage = previousStage
         }
         if (deviceCheckUnavailable) bonusStatus = 'verification_pending'
+        }
+      }
+      if (deviceCheckRequired) {
+        stage = 'rpc_record_guest_bonus_outcome'
+        const { data: recordedStatus, error: recordError } = await auditedRpc('record_guest_bonus_outcome', {
+          p_wallet_id: walletId, p_secret_hash: secretHash, p_reason: bonusReason,
+        })
+        if (recordError) throw recordError
+        bonusStatus = recordedStatus
       }
       const { data: wallet, error: walletError } = await supabase.from('device_credits')
         .select('free_credits, paid_credits, apple_user_id')
