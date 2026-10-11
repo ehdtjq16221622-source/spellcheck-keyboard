@@ -516,7 +516,7 @@ async function callProofingGemini(
       generationConfig: {
         temperature: 0.3,
         maxOutputTokens: 1000,
-        thinkingConfig: { thinkingLevel: 'medium' },
+        thinkingConfig: { thinkingLevel: 'low' },
         ...(structuredEdits ? {
           responseMimeType: 'application/json',
           responseSchema: {
