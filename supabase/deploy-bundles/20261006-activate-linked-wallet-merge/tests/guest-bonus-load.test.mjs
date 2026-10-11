@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { stripTypeScriptTypes } from 'node:module'
 import { test } from 'node:test'
@@ -17,7 +18,7 @@ const runnable = stripTypeScriptTypes(source
   .replace(/^import \{[\s\S]*?\} from .*subscription_audit\.ts'$/m,
     'const logSubscriptionAudit = globalThis.__logSubscriptionAudit; const subscriptionTransactionFingerprint = globalThis.__subscriptionTransactionFingerprint; const subscriptionWalletFingerprint = globalThis.__subscriptionWalletFingerprint;'))
 
-test('50 concurrent registrations remain recoverable; retries grant once and skip restored wallets', async () => {
+test('P0a preserves busy 503 and records reasons; same-secret retries grant once', async () => {
   assert.equal(migration.match(/transaction_type in \('install_bonus', 'install_bonus_restore'\)/g)?.length, 3)
   let handler
   let lockOwner = null
@@ -130,25 +131,28 @@ test('50 concurrent registrations remain recoverable; retries grant once and ski
   try {
     await import(`data:text/javascript,${encodeURIComponent(runnable)}#${crypto.randomUUID()}`)
     const register = async (n, token = `device-${n}`) => {
+      const walletSecret = n.toString(16).padStart(64, '0')
       const response = await handler(new Request('https://example.invalid/wallet_link_v2', {
-        method: 'POST', body: JSON.stringify({ action: 'register', walletSecret: n.toString(16).padStart(64, '0'),
+        method: 'POST', body: JSON.stringify({ action: 'register', walletSecret,
           ...(token ? { deviceToken: token } : {}) }),
       }))
       return { status: response.status, body: await response.json() }
     }
+    const walletIdFor = n => bySecret.get(createHash('sha256')
+      .update(n.toString(16).padStart(64, '0')).digest('hex'))?.id
     const first = await Promise.all(Array.from({ length: 50 }, (_, n) => register(n + 1)))
     const first503 = first.filter(x => x.status === 503).length
     const orphaned = first.filter(x => x.status !== 201 || !x.body.walletId).length
-    const initialPending = first.filter(x => x.body.bonusStatus === 'verification_pending').length
-    assert.equal(first503, 0)
-    assert.equal(orphaned, 0)
-    assert.ok(first.some(x => x.body.bonusStatus === 'verification_pending'))
-    const restored = byId.get(first[1].body.walletId)
+    assert.equal(first503, 49)
+    assert.equal(orphaned, 49)
+    assert.ok(first.filter(x => x.status === 503).every(x => x.body.error === 'Device verification is busy.'))
+    assert.equal([...reasons.values()].filter(reason => reason === 'lock_busy').length, 49)
+    const restored = byId.get(walletIdFor(2))
     restored.balance = 500
     ledger.set(restored.id, ['install_bonus_restore'])
     let retryRounds = 0
     for (let attempt = 0; attempt < 50; attempt++) {
-      const pending = first.map((_, n) => n + 1).filter(n => !ledger.has(first[n - 1].body.walletId))
+      const pending = first.map((_, n) => n + 1).filter(n => !ledger.has(walletIdFor(n)))
       if (!pending.length) break
       await Promise.all(pending.map(n => register(n)))
       retryRounds += 1
@@ -189,10 +193,19 @@ test('50 concurrent registrations remain recoverable; retries grant once and ski
       assert.equal(retried.body.freeCredits, 500)
       assert.deepEqual(ledger.get(granted.body.walletId), ['install_bonus'])
     }
-    assert.equal(auditEvents.length, 2)
+    lockOwner = 'simulated-existing-lock'
+    for (const failure of ['error', 'throw']) {
+      recordFailure = failure
+      const busy = await register(failure === 'error' ? 56 : 57)
+      assert.equal(busy.status, 503)
+      assert.equal(busy.body.error, 'Device verification is busy.')
+      assert.equal(busy.body.walletId, undefined)
+    }
+    lockOwner = null
+    assert.equal(auditEvents.length, 4)
     assert.ok(auditEvents.every(event => !JSON.stringify(event).includes('private database detail')))
     console.log(JSON.stringify({ simulatedConcurrentRegistrations: 50, emptyWalletResponses: orphaned,
-      busy503: first503, duplicateGrants, initialPending, retryRounds,
+      busy503: first503, duplicateGrants, retryRounds,
       pendingAfterRetries: stillPending }))
   } finally {
     console.info = originalInfo

@@ -489,6 +489,10 @@ Deno.serve(async (req: Request) => {
         } catch {
           audit('bonus_outcome_record_failed', { reason: 'request_failed' })
         }
+        if (bonusReason === 'lock_busy') {
+          stage = 'rpc_acquire_guest_bonus_devicecheck_lock'
+          return respond({ error: 'Device verification is busy.' }, 503)
+        }
       }
       const { data: wallet, error: walletError } = await supabase.from('device_credits')
         .select('free_credits, paid_credits, apple_user_id')
