@@ -480,11 +480,15 @@ Deno.serve(async (req: Request) => {
       }
       if (deviceCheckRequired) {
         stage = 'rpc_record_guest_bonus_outcome'
-        const { data: recordedStatus, error: recordError } = await auditedRpc('record_guest_bonus_outcome', {
-          p_wallet_id: walletId, p_secret_hash: secretHash, p_reason: bonusReason,
-        })
-        if (recordError) throw recordError
-        bonusStatus = recordedStatus
+        try {
+          const { data: recordedStatus, error: recordError } = await auditedRpc('record_guest_bonus_outcome', {
+            p_wallet_id: walletId, p_secret_hash: secretHash, p_reason: bonusReason,
+          })
+          if (recordError) audit('bonus_outcome_record_failed', { reason: safeRpcErrorCode(recordError) })
+          else bonusStatus = recordedStatus
+        } catch {
+          audit('bonus_outcome_record_failed', { reason: 'request_failed' })
+        }
       }
       const { data: wallet, error: walletError } = await supabase.from('device_credits')
         .select('free_credits, paid_credits, apple_user_id')

@@ -26,6 +26,8 @@ test('50 concurrent registrations remain recoverable; retries grant once and ski
   const marked = new Set()
   const ledger = new Map()
   const reasons = new Map()
+  const auditEvents = []
+  let recordFailure = null
   globalThis.Deno = {
     env: { get: key => ({
       WALLET_SESSIONS_ENABLED: 'true', WALLET_GUEST_V2_ENABLED: 'true',
@@ -89,6 +91,12 @@ test('50 concurrent registrations remain recoverable; retries grant once and ski
         return { data: true, error: null }
       }
       if (name === 'record_guest_bonus_outcome') {
+        if (recordFailure) {
+          const failure = recordFailure
+          recordFailure = null
+          if (failure === 'throw') throw Error('private database detail')
+          return { data: null, error: { code: 'P0001', message: 'private database detail' } }
+        }
         const reason = ledger.has(wallet.id) ? null : args.p_reason
         reasons.set(wallet.id, reason)
         return { data: ledger.has(wallet.id) || reason === 'device_already_marked'
@@ -115,7 +123,10 @@ test('50 concurrent registrations remain recoverable; retries grant once and ski
     },
   })
   const originalInfo = console.info
-  console.info = () => {}
+  console.info = message => {
+    const event = JSON.parse(message)
+    if (event.event === 'bonus_outcome_record_failed') auditEvents.push(event)
+  }
   try {
     await import(`data:text/javascript,${encodeURIComponent(runnable)}#${crypto.randomUUID()}`)
     const register = async (n, token = `device-${n}`) => {
@@ -164,6 +175,22 @@ test('50 concurrent registrations remain recoverable; retries grant once and ski
     const unavailable = await register(53, 'device-unavailable')
     assert.equal(unavailable.body.bonusStatus, 'verification_pending')
     assert.equal(reasons.get(unavailable.body.walletId), 'devicecheck_unavailable')
+    for (const failure of ['error', 'throw']) {
+      const n = failure === 'error' ? 54 : 55
+      recordFailure = failure
+      const granted = await register(n)
+      assert.equal(granted.status, 201)
+      assert.equal(granted.body.freeCredits, 500)
+      assert.equal(granted.body.bonusStatus, 'complete')
+      assert.deepEqual(ledger.get(granted.body.walletId), ['install_bonus'])
+      const retried = await register(n)
+      assert.equal(retried.status, 201)
+      assert.equal(retried.body.walletId, granted.body.walletId)
+      assert.equal(retried.body.freeCredits, 500)
+      assert.deepEqual(ledger.get(granted.body.walletId), ['install_bonus'])
+    }
+    assert.equal(auditEvents.length, 2)
+    assert.ok(auditEvents.every(event => !JSON.stringify(event).includes('private database detail')))
     console.log(JSON.stringify({ simulatedConcurrentRegistrations: 50, emptyWalletResponses: orphaned,
       busy503: first503, duplicateGrants, initialPending, retryRounds,
       pendingAfterRetries: stillPending }))
