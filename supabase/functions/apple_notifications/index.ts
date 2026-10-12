@@ -205,8 +205,12 @@ Deno.serve(async (req: Request) => {
       )
       if (!delivered) throw new Error('telegram_delivery_failed')
 
-      // Per-event subscriber summary disabled (2026-10-12): too noisy during
-      // purchase spikes. Daily digest still reports subscriber totals.
+      // Per-event subscriber summary stays off for SUBSCRIBED/DID_RENEW (too
+      // noisy during purchase spikes). Cancellations and refunds are rare, so
+      // they still get the "현재 구독자 · 유지/해지" follow-up.
+      const wantsSummary = (notificationType === 'DID_CHANGE_RENEWAL_STATUS' &&
+          subtype === 'AUTO_RENEW_DISABLED') || notificationType === 'REFUND'
+      if (wantsSummary) await sendSubscriptionStatus(supabase, `${notificationUUID}:status`)
     }
 
     console.log('[apple_notifications] processed', {
