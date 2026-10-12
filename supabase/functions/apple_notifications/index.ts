@@ -169,11 +169,26 @@ Deno.serve(async (req: Request) => {
           subtype === 'AUTO_RENEW_DISABLED'
         ? '\n현재 구독은 만료일까지 이용 가능합니다.'
         : ''
+      // Apple re-sends failed notifications for up to ~3 days with the original
+      // signedDate, so flag late arrivals and show when it actually happened.
+      const eventMs = typeof notif.signedDate === 'number' ? notif.signedDate as number : null
+      const purchaseMs = typeof tx.purchaseDate === 'number' ? tx.purchaseDate as number : null
+      const delayedMinutes = eventMs != null ? Math.max(0, Math.round((Date.now() - eventMs) / 60_000)) : null
+      const isDelayed = delayedMinutes != null && delayedMinutes >= 10
+      const isPurchase = notificationType === 'SUBSCRIBED' || notificationType === 'DID_RENEW'
+      const whenMs = isPurchase ? (purchaseMs ?? eventMs) : eventMs
+      const whenLine = whenMs != null
+        ? `\n${isPurchase ? '결제 시각' : '발생 시각'}: ${formatKst(whenMs)}` +
+          (isDelayed ? ` (${formatAgo(Date.now() - whenMs)} 전)` : '')
+        : ''
+      const delayedNote = isDelayed
+        ? '\n<i>애플이 늦게 다시 보낸 알림이에요. 구독자 수에는 이미 반영돼 있을 수 있어요.</i>'
+        : ''
       const delivered = await sendTelegram(
-        `${label}${subtype ? ` (${subtype})` : ''}\n` +
+        `${label}${subtype ? ` (${subtype})` : ''}${isDelayed ? '  🔁 지연 도착' : ''}\n` +
           `상품: ${productId ?? '-'}\n` +
           `환경: ${environment || '-'}\n` +
-          `연결 계정: ${deviceId ? '확인됨' : '미확인'}${cancellationNote}`,
+          `연결 계정: ${deviceId ? '확인됨' : '미확인'}${whenLine}${cancellationNote}${delayedNote}`,
         {
           supabase,
           alertType: 'apple_notification',
@@ -184,10 +199,14 @@ Deno.serve(async (req: Request) => {
             productId,
             environment,
             deviceLinked: Boolean(deviceId),
+            delayedMinutes,
           },
         },
       )
       if (!delivered) throw new Error('telegram_delivery_failed')
+
+      // Per-event subscriber summary disabled (2026-10-12): too noisy during
+      // purchase spikes. Daily digest still reports subscriber totals.
     }
 
     console.log('[apple_notifications] processed', {
@@ -215,3 +234,63 @@ Deno.serve(async (req: Request) => {
     }), { status: 500, headers: { 'Content-Type': 'application/json' } })
   }
 })
+
+// Sends "현재 구독자 N명 · 유지/해지" after a subscription alert. Best-effort:
+// never throws, and is idempotent per notification so Apple retries don't
+// produce duplicate status messages.
+// deno-lint-ignore no-explicit-any
+async function sendSubscriptionStatus(supabase: any, idempotencyKey: string): Promise<void> {
+  let text: string
+  try {
+    const r = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/subscriber_status`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
+      signal: AbortSignal.timeout(90_000),
+    })
+    if (!r.ok) {
+      await r.body?.cancel()
+      throw new Error(`subscriber_status_http_${r.status}`)
+    }
+    const j = await r.json()
+    const active = j.active_subscribers_now
+    if (typeof active !== 'number') throw new Error('subscriber_status_bad_response')
+    const off = typeof j.auto_renew_off_now === 'number' ? j.auto_renew_off_now : 0
+    const on = typeof j.auto_renew_on_now === 'number' ? j.auto_renew_on_now : active - off
+    const rate = active > 0 ? Math.round((off / active) * 100) : 0
+    text =
+      `👥 현재 구독자 <b>${active}</b>명\n` +
+      `　✅ 자동갱신 유지 <b>${on}</b>명 · 🔕 해지 <b>${off}</b>명 <i>(해지율 ${rate}%)</i>`
+    if (typeof j.failed_lookups === 'number' && j.failed_lookups > 0) {
+      text += `\n<i>⚠️ 애플 조회 ${j.failed_lookups}건 실패 — 실제보다 적게 집계됐을 수 있어요</i>`
+    }
+  } catch (e) {
+    console.error('[apple_notifications] subscriber status lookup failed', {
+      errorCode: safeErrorCode(e),
+    })
+    text = '👥 구독 현황 조회 실패 <i>· 텔레그램에서 /구독 으로 확인</i>'
+  }
+  try {
+    await sendTelegram(text, {
+      supabase,
+      alertType: 'apple_notification_status',
+      idempotencyKey,
+    })
+  } catch {
+    console.error('[apple_notifications] subscriber status delivery failed')
+  }
+}
+
+// "10/4 03:56" in KST.
+function formatKst(ms: number): string {
+  const k = new Date(ms + 9 * 60 * 60 * 1000)
+  return `${k.getUTCMonth() + 1}/${k.getUTCDate()} ${String(k.getUTCHours()).padStart(2, '0')}:${String(k.getUTCMinutes()).padStart(2, '0')}`
+}
+
+// "37시간" / "45분" / "2일".
+function formatAgo(diffMs: number): string {
+  const minutes = Math.max(0, Math.round(diffMs / 60_000))
+  if (minutes < 60) return `${minutes}분`
+  const hours = Math.round(minutes / 60)
+  if (hours < 48) return `${hours}시간`
+  return `${Math.round(hours / 24)}일`
+}
