@@ -57,7 +57,7 @@ Deno.serve(async (req: Request) => {
     if (isPreviewRequest) {
       failureStage = 'preview_validation'
       if (!formalMode || normalizedLevel !== '커스텀' || source.length === 0 || source.length > 1000 ||
-          typeof customPrompt !== 'string' || customPrompt.trim().length === 0 || Array.from(customPrompt.trim()).length > 400) {
+          typeof customPrompt !== 'string' || customPrompt.trim().length === 0 || customPrompt.trim().length > 200) {
         throw new WalletAccessError('Invalid preview request.', 400)
       }
       failureStage = 'preview_rate_limit'
