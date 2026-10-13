@@ -1,0 +1,4 @@
+project_id = "kingboard-tone-response-complete"
+
+[functions.correct]
+verify_jwt = false

@@ -1,0 +1,8 @@
+{
+  "baselineVersion": 162,
+  "baselineStatus": "ACTIVE",
+  "verifyJwt": false,
+  "projectRef": "ltjhlaprtjgmmijfnmri",
+  "deployApproved": false,
+  "scope": "Complete Gemini tone responses; no credit/auth/prompt/model changes"
+}
