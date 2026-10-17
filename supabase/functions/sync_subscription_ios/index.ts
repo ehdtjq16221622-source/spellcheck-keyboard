@@ -3,20 +3,20 @@ import {
   getCredits,
   setMonthlySubscriptionCredits,
   subscriptionCreditsForProduct,
-} from './_shared/credits.ts'
-import { verifyAppleSubscription } from './_shared/apple_receipt.ts'
+} from '../_shared/credits.ts'
+import { verifyAppleSubscription } from '../_shared/apple_receipt.ts'
 import {
   verifyAppleSubscriptionRecordWithReason,
   verifyAppleTransactionJws,
-} from './_shared/apple_subscription_status.ts'
-import { resolveCreditWallet, WalletAccessError } from './_shared/wallet_auth.ts'
+} from '../_shared/apple_subscription_status.ts'
+import { resolveCreditWallet, WalletAccessError } from '../_shared/wallet_auth.ts'
 import {
   logSubscriptionAudit as writeSubscriptionAudit,
   safeSubscriptionFailureCode,
   subscriptionFailureHttpStatus,
   subscriptionWalletFingerprint,
-} from './_shared/subscription_audit.ts'
-import { deferDiagnostic, reportFailure, summarizeFailure } from './_shared/subscription_alerts.ts'
+} from '../_shared/subscription_audit.ts'
+import { deferDiagnostic, reportFailure, summarizeFailure } from '../_shared/subscription_alerts.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -39,9 +39,11 @@ function subscriptionFailureResponse(
   failureStage: string,
   status: number,
   corsHeaders: Record<string, string>,
+  code?: string,
 ): Response {
   return new Response(JSON.stringify({
     error,
+    ...(code ? { code } : {}),
     audit_id: diagnosticId,
     diagnostic_id: diagnosticId,
     failure_stage: failureStage,
@@ -68,6 +70,7 @@ Deno.serve(async (req: Request) => {
   let auditStage = 'parse_request'
   let auditProduct: 'basic' | 'premium' | 'pro' | 'other' = 'other'
   let auditSource: 'storekit_jws' | 'app_receipt' | 'unknown' = 'unknown'
+  let auditOrigin: 'purchase' | 'restore' | 'launch_refresh' | 'entitlement' | 'unknown' = 'unknown'
   let auditIsCanary = false
   let auditWalletFingerprint: string | undefined
   let auditRequestedWalletId: string | undefined
@@ -82,6 +85,8 @@ Deno.serve(async (req: Request) => {
       try { auditClientDiag = JSON.parse(text) } catch { auditClientDiag = text }
     }
     auditSyncOrigin = typeof syncOrigin === 'string' ? syncOrigin.slice(0, 30) : undefined
+    auditOrigin = ['purchase', 'restore', 'launch_refresh', 'entitlement'].includes(syncOrigin)
+      ? syncOrigin : 'unknown'
     auditProduct = productId === 'com.kingboard.app.monthly_basic' ? 'basic'
       : productId === 'com.kingboard.app.monthly_premium' ? 'premium'
       : productId === 'com.kingboard.app.monthly_pro' ? 'pro' : 'other'
@@ -130,7 +135,7 @@ Deno.serve(async (req: Request) => {
     auditIsCanary = isCanary
     logSubscriptionAudit('info', auditId, 'request_accepted', {
       stage: 'request_accepted', product: auditProduct, source: auditSource, canary: isCanary,
-      walletFingerprint: auditWalletFingerprint,
+      walletFingerprint: auditWalletFingerprint, origin: auditOrigin,
     })
     if (useAtomicSync && ![
       'com.kingboard.app.monthly_basic',
@@ -281,6 +286,12 @@ Deno.serve(async (req: Request) => {
         )
       }
       appleCurrentProductVerified = appleCheck.verified
+      logSubscriptionAudit(appleCheck.verified ? 'info' : 'warn', auditId,
+        'plan_change_verification_completed', {
+          stage: auditStage, product: auditProduct, source: auditSource,
+          canary: isCanary, origin: auditOrigin, verified: appleCheck.verified,
+          appleStatusReason: appleCheck.reason,
+        })
       if (!appleCurrentProductVerified) {
         logSubscriptionAudit('warn', auditId, 'rejected', {
           stage: 'plan_change_verification', product: auditProduct, source: auditSource,
@@ -452,7 +463,7 @@ Deno.serve(async (req: Request) => {
     const failureCode = safeSubscriptionFailureCode(auditStage, e)
     logSubscriptionAudit('error', auditId, 'sync_failed', {
       stage: auditStage, product: auditProduct, source: auditSource,
-      canary: auditIsCanary, failureCode,
+      canary: auditIsCanary, origin: auditOrigin, failureCode,
       walletFingerprint: auditWalletFingerprint,
     })
     const conflictStatus = subscriptionFailureHttpStatus(e)
@@ -467,6 +478,7 @@ Deno.serve(async (req: Request) => {
       auditStage,
       e instanceof WalletAccessError ? e.status : conflictStatus ?? 500,
       cors,
+      failureCode,
     )
   } finally {
     if (events.some(e => ['rejected', 'verification_rejected', 'sync_failed'].includes(String(e.event)))) {
@@ -501,5 +513,3 @@ Deno.serve(async (req: Request) => {
     }
   }
 })
-
-

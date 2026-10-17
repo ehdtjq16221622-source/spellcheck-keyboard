@@ -191,5 +191,11 @@
         }
       ]
     }
+  },
+  "reviewOnlyChanges": {
+    "sync_subscription_ios/index.ts": {
+      "sha256": "04b7e960883b9bb4408653c37f5403f777649f8faa81071b0061f712a073d211",
+      "reason": "Review-only subscription integration; pending TestFlight Sandbox verification."
+    }
   }
 }

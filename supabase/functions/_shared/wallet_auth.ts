@@ -5,6 +5,9 @@ export class WalletAccessError extends Error {
 
   constructor(message: string, status: number) {
     super(message)
+    // Without a name the error is labeled plain "Error", so wallet rejections were
+    // grouped under the stage name in subscription alerts instead of wallet_access_rejected.
+    this.name = 'WalletAccessError'
     this.status = status
   }
 }
@@ -12,6 +15,23 @@ export class WalletAccessError extends Error {
 export async function walletTokenHash(token: string): Promise<string> {
   const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token))
   return Array.from(new Uint8Array(bytes), (byte) => byte.toString(16).padStart(2, '0')).join('')
+}
+
+async function logSessionRejection(req: Request, walletId: string, reason: string, appleSub?: string): Promise<void> {
+  try {
+    console.warn(JSON.stringify({
+      event: 'wallet_session_rejected',
+      reason,
+      path: new URL(req.url).pathname,
+      wallet_id_type: walletId.startsWith('v2:') ? 'v2' : 'legacy',
+      token_present: true,
+      diagnostic_id: crypto.randomUUID(),
+      wallet_fingerprint: await walletTokenHash(walletId),
+      apple_fingerprint: appleSub ? await walletTokenHash(appleSub) : undefined,
+    }))
+  } catch {
+    // Logging must never change the authorization result.
+  }
 }
 
 // Legacy apps may request the Apple subject instead of the canonical wallet ID.
@@ -80,6 +100,7 @@ export async function resolveCreditWallet(
       .eq('token_hash', await walletTokenHash(token))
       .maybeSingle()
     if (error) throw error
+    let missingSessionReason = requestedId.startsWith('v2:') ? 'guest_proof_failed' : 'not_found'
     if (!session && requestedId.startsWith('v2:')) {
       const { data: credential, error: credentialError } = await supabase
         .from('wallet_v2_credentials')
@@ -87,8 +108,9 @@ export async function resolveCreditWallet(
         .eq('wallet_id', requestedId)
         .maybeSingle()
       if (credentialError) throw credentialError
-      if (credential?.secret_hash === await walletTokenHash(token) &&
-          credential.state === 'active') {
+      const validGuestProof = credential?.secret_hash === await walletTokenHash(token)
+      if (validGuestProof && credential.state === 'pending') missingSessionReason = 'activation_pending'
+      if (validGuestProof && credential.state === 'active') {
         const { data: guest, error: guestError } = await supabase
           .from('device_credits')
           .select('apple_user_id')
@@ -101,6 +123,9 @@ export async function resolveCreditWallet(
       }
     }
     if (!session || session.revoked_at || Date.parse(session.expires_at) <= Date.now()) {
+      await logSessionRejection(req, requestedId,
+        !session ? missingSessionReason
+          : session.revoked_at ? 'revoked' : 'expired', session?.apple_sub)
       throw new WalletAccessError('Wallet session expired.', 401)
     }
     const { data: owner, error: ownerError } = await supabase

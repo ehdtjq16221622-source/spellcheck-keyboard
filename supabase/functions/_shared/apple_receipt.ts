@@ -46,10 +46,11 @@ function toMillis(value?: string): number | null {
 
 function latestMatchingTransaction(
   transactions: LatestReceiptInfo[],
-  productId: string
+  productId: string,
+  strict: boolean
 ): LatestReceiptInfo | null {
   const matching = transactions.filter((transaction) => transaction.product_id === productId)
-  const pool = matching.length > 0 ? matching : transactions
+  const pool = strict ? matching : matching.length > 0 ? matching : transactions
   if (pool.length === 0) return null
 
   return [...pool].sort((a, b) => {
@@ -88,7 +89,8 @@ async function verifyReceipt(
 export async function verifyAppleSubscription(
   receiptData: string,
   productId: string,
-  expectedBundleId?: string
+  expectedBundleId?: string,
+  strict = true
 ): Promise<VerifiedAppleSubscription> {
   const sharedSecret = Deno.env.get('APPLE_SHARED_SECRET') ?? undefined
 
@@ -117,13 +119,14 @@ export async function verifyAppleSubscription(
   }
 
   const bundleId = json.receipt?.bundle_id
-  if (expectedBundleId && bundleId && expectedBundleId !== bundleId) {
+  if (expectedBundleId && (strict || bundleId) && expectedBundleId !== bundleId) {
     throw new Error('Receipt belongs to a different app bundle.')
   }
 
   const latest = latestMatchingTransaction(
     toLatestReceiptArray(json.latest_receipt_info),
-    productId
+    productId,
+    strict
   )
   if (!latest) {
     return {
@@ -140,7 +143,7 @@ export async function verifyAppleSubscription(
 
   const expiryTimeMillis = toMillis(latest.expires_date_ms)
   const cancellationTimeMillis = toMillis(latest.cancellation_date_ms)
-  const isActive = expiryTimeMillis != null && expiryTimeMillis > Date.now()
+  const isActive = (!strict || cancellationTimeMillis == null) && expiryTimeMillis != null && expiryTimeMillis > Date.now()
   const state =
     cancellationTimeMillis != null
       ? 'SUBSCRIPTION_STATE_CANCELED'
@@ -159,3 +162,5 @@ export async function verifyAppleSubscription(
     environment: json.environment ?? null,
   }
 }
+
+

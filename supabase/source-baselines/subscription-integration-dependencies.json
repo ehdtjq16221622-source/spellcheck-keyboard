@@ -1,0 +1,438 @@
+[
+  {
+    "slug": "correct",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [
+      "correct/_shared/credits.ts",
+      "correct/_shared/wallet_auth.ts",
+      "correct/index.ts",
+      "correct/proofing_edits.ts"
+    ],
+    "missing": [
+      "correct/index.ts"
+    ]
+  },
+  {
+    "slug": "translate",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [
+      "translate/_shared/credits.ts",
+      "translate/_shared/wallet_auth.ts",
+      "translate/index.ts"
+    ],
+    "missing": [
+      "translate/index.ts"
+    ]
+  },
+  {
+    "slug": "reward_ad",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [
+      "_shared/credits.ts",
+      "reward_ad/index.ts"
+    ],
+    "missing": [
+      "reward_ad/index.ts"
+    ]
+  },
+  {
+    "slug": "sync_subscription",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [
+      "_shared/credits.ts",
+      "_shared/google_play.ts",
+      "sync_subscription/index.ts"
+    ],
+    "missing": [
+      "sync_subscription/index.ts"
+    ]
+  },
+  {
+    "slug": "redeem_coupon",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [],
+    "missing": [
+      "redeem_coupon/index.ts"
+    ]
+  },
+  {
+    "slug": "sync_subscription_ios",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [
+      "sync_subscription_ios/_shared/apple_receipt.ts",
+      "sync_subscription_ios/_shared/apple_subscription_portable.ts",
+      "sync_subscription_ios/_shared/apple_subscription_status.ts",
+      "sync_subscription_ios/_shared/credits.ts",
+      "sync_subscription_ios/_shared/subscription_alerts.ts",
+      "sync_subscription_ios/_shared/subscription_audit.ts",
+      "sync_subscription_ios/_shared/wallet_auth.ts",
+      "sync_subscription_ios/index.ts"
+    ],
+    "missing": [
+      "sync_subscription_ios/index.ts"
+    ]
+  },
+  {
+    "slug": "daily_checkin",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [
+      "_shared/credits.ts",
+      "daily_checkin/index.ts"
+    ],
+    "missing": [
+      "daily_checkin/index.ts"
+    ]
+  },
+  {
+    "slug": "admob_ssv_callback",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [
+      "admob_ssv_callback/index.ts"
+    ],
+    "missing": [
+      "admob_ssv_callback/index.ts"
+    ]
+  },
+  {
+    "slug": "get_credits",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [
+      "get_credits/_shared/wallet_auth.ts",
+      "get_credits/index.ts"
+    ],
+    "missing": [
+      "get_credits/index.ts"
+    ]
+  },
+  {
+    "slug": "link_apple_user",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [
+      "link_apple_user/_shared/apple_auth.ts",
+      "link_apple_user/_shared/wallet_auth.ts",
+      "link_apple_user/index.ts"
+    ],
+    "missing": [
+      "link_apple_user/index.ts"
+    ]
+  },
+  {
+    "slug": "grant_manual_credits",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [
+      "grant_manual_credits/index.ts"
+    ],
+    "missing": [
+      "grant_manual_credits/index.ts"
+    ]
+  },
+  {
+    "slug": "sync_credit_usage",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [],
+    "missing": [
+      "sync_credit_usage/index.ts"
+    ]
+  },
+  {
+    "slug": "get_active_notice",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [
+      "get_active_notice/index.ts"
+    ],
+    "missing": [
+      "get_active_notice/index.ts"
+    ]
+  },
+  {
+    "slug": "daily_digest",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [],
+    "missing": [
+      "daily_digest/index.ts"
+    ]
+  },
+  {
+    "slug": "admin_stats",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [
+      "admin_stats/index.ts"
+    ],
+    "missing": [
+      "admin_stats/index.ts"
+    ]
+  },
+  {
+    "slug": "apple_notifications",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [
+      "apple_notifications/_shared/apple_notification_verifier.ts",
+      "apple_notifications/_shared/apple_subscription_portable.ts",
+      "apple_notifications/_shared/credits.ts",
+      "apple_notifications/_shared/telegram.ts",
+      "apple_notifications/index.ts"
+    ],
+    "missing": [
+      "apple_notifications/index.ts"
+    ]
+  },
+  {
+    "slug": "trigger_test_notification",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [
+      "trigger_test_notification/index.ts"
+    ],
+    "missing": [
+      "trigger_test_notification/index.ts"
+    ]
+  },
+  {
+    "slug": "subscriber_status",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [
+      "subscriber_status/index.ts"
+    ],
+    "missing": [
+      "subscriber_status/index.ts"
+    ]
+  },
+  {
+    "slug": "referral",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [],
+    "missing": [
+      "referral/index.ts"
+    ]
+  },
+  {
+    "slug": "telegram_bot",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [
+      "_shared/telegram.ts",
+      "telegram_bot/index.ts"
+    ],
+    "missing": [
+      "telegram_bot/index.ts"
+    ]
+  },
+  {
+    "slug": "wallet_merge_preview",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [
+      "_shared/apple_auth.ts",
+      "wallet_merge_preview/index.ts"
+    ],
+    "missing": [
+      "wallet_merge_preview/index.ts"
+    ]
+  },
+  {
+    "slug": "link_apple_user_canary",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [
+      "_shared/apple_auth.ts",
+      "link_apple_user_canary/index.ts"
+    ],
+    "missing": [
+      "link_apple_user_canary/index.ts"
+    ]
+  },
+  {
+    "slug": "wallet_link_v2",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [
+      "wallet_link_v2/_shared/apple_auth.ts",
+      "wallet_link_v2/_shared/apple_subscription_portable.ts",
+      "wallet_link_v2/_shared/apple_subscription_status.ts",
+      "wallet_link_v2/_shared/devicecheck.ts",
+      "wallet_link_v2/_shared/subscription_audit.ts",
+      "wallet_link_v2/_shared/wallet_auth.ts",
+      "wallet_link_v2/index.ts"
+    ],
+    "missing": [
+      "wallet_link_v2/index.ts"
+    ]
+  },
+  {
+    "slug": "model_benchmark_canary",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [],
+    "missing": [
+      "model_benchmark_canary/index.ts"
+    ]
+  },
+  {
+    "slug": "spelling_benchmark_canary",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [],
+    "missing": [
+      "spelling_benchmark_canary/index.ts"
+    ]
+  },
+  {
+    "slug": "tone_reasoning_benchmark_canary",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [],
+    "missing": [
+      "tone_reasoning_benchmark_canary/index.ts"
+    ]
+  },
+  {
+    "slug": "tone_prompt_benchmark_canary",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [],
+    "missing": [
+      "tone_prompt_benchmark_canary/index.ts"
+    ]
+  },
+  {
+    "slug": "spelling_reasoning_benchmark_canary",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [],
+    "missing": [
+      "spelling_reasoning_benchmark_canary/index.ts"
+    ]
+  },
+  {
+    "slug": "spelling_100_benchmark_canary",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [],
+    "missing": [
+      "spelling_100_benchmark_canary/index.ts"
+    ]
+  },
+  {
+    "slug": "luna_accuracy_benchmark_canary",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [],
+    "missing": [
+      "luna_accuracy_benchmark_canary/index.ts"
+    ]
+  },
+  {
+    "slug": "luna_pure_proofing_benchmark",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [],
+    "missing": [
+      "luna_pure_proofing_benchmark/index.ts"
+    ]
+  },
+  {
+    "slug": "correct_model_compare_benchmark",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [],
+    "missing": [
+      "correct_model_compare_benchmark/index.ts"
+    ]
+  },
+  {
+    "slug": "correct_model_compare_benchmark_v2",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [],
+    "missing": [
+      "correct_model_compare_benchmark_v2/index.ts"
+    ]
+  },
+  {
+    "slug": "language_study_generate",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [
+      "_shared/wallet_auth.ts",
+      "language_study_generate/index.ts"
+    ],
+    "missing": [
+      "language_study_generate/index.ts"
+    ]
+  },
+  {
+    "slug": "subscription_monitor",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [],
+    "missing": [
+      "subscription_monitor/index.ts"
+    ]
+  },
+  {
+    "slug": "service_monitor",
+    "sourceExists": false,
+    "changed": [],
+    "newDependencies": [],
+    "droppedDependencies": [
+      "_shared/telegram.ts",
+      "service_monitor/index.ts"
+    ],
+    "missing": [
+      "service_monitor/index.ts"
+    ]
+  }
+]

@@ -20,7 +20,13 @@ for (const [slug, entry] of Object.entries(baseline.functions)) {
       const actual = normalize(readFileSync(actualPath, 'utf8'));
       const expected = file.source === `${slug}/index.ts`
         ? snapshot.replace(/(['"])\.\.\/_shared\//g, '$1./_shared/') : snapshot;
-      assert.equal(actual, expected, file.source);
+      const intentional = baseline.reviewOnlyChanges?.[file.source];
+      if (intentional) {
+        assert.ok(intentional.reason);
+        assert.equal(createHash('sha256').update(actual).digest('hex'), intentional.sha256);
+      } else {
+        assert.equal(actual, expected, file.source);
+      }
       for (const match of actual.matchAll(/from\s+['"](\.{1,2}\/[^'"]+)['"]|import\s+['"](\.{1,2}\/[^'"]+)['"]/g)) {
         assert.ok(existsSync(path.resolve(path.dirname(actualPath), match[1] ?? match[2])), file.source);
       }

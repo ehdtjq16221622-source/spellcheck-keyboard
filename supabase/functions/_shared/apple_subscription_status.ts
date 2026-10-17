@@ -1,19 +1,16 @@
 import { Environment, SignedDataVerifier } from 'npm:@apple/app-store-server-library@3.1.0'
+import { Buffer } from 'node:buffer'
 import { importPKCS8, SignJWT } from 'https://esm.sh/jose@5.6.3'
+import { verifyAppleSignedTransactionPortable } from './apple_subscription_portable.ts'
 import { installX509ToStringCompatibility } from './apple_x509_compat.ts'
 
 const APPLE_APP_ID = 6762074672
 
-function decodeBase64Certificate(value: string): Uint8Array {
-  const binary = atob(value)
-  const bytes = new Uint8Array(binary.length)
-  for (let index = 0; index < binary.length; index += 1) {
-    bytes[index] = binary.charCodeAt(index)
-  }
-  return bytes
+function decodeBase64Certificate(value: string): Buffer {
+  return Buffer.from(value, 'base64')
 }
 
-const APPLE_ROOT_CERTIFICATES = [
+export const APPLE_ROOT_CERTIFICATES = [
   decodeBase64Certificate(
     'MIICQzCCAcmgAwIBAgIILcX8iNLFS5UwCgYIKoZIzj0EAwMwZzEbMBkGA1UEAwwSQXBwbGUgUm9vdCBDQSAtIEczMSYwJAYDVQQLDB1BcHBsZSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTETMBEGA1UECgwKQXBwbGUgSW5jLjELMAkGA1UEBhMCVVMwHhcNMTQwNDMwMTgxOTA2WhcNMzkwNDMwMTgxOTA2WjBnMRswGQYDVQQDDBJBcHBsZSBSb290IENBIC0gRzMxJjAkBgNVBAsMHUFwcGxlIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MRMwEQYDVQQKDApBcHBsZSBJbmMuMQswCQYDVQQGEwJVUzB2MBAGByqGSM49AgEGBSuBBAAiA2IABJjpLz1AcqTtkyJygRMc3RCV8cWjTnHcFBbZDuWmBSp3ZHtfTjjTuxxEtX/1H7YyYl3J6YRbTzBPEVoA/VhYDKX1DyxNB0cTddqXl5dvMVztK517IDvYuVTZXpmkOlEKMaNCMEAwHQYDVR0OBBYEFLuw3qFYM4iapIqZ3r6966/ayySrMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMAoGCCqGSM49BAMDA2gAMGUCMQCD6cHEFl4aXTQY2e3v9GwOAEZLuN+yRhHFD/3meoyhpmvOwgPUnPWTxnS4at+qIxUCMG1mihDK1A3UT82NQz60imOlM27jbdoXt2QfyFMm+YhidDkLF1vLUagM6BgD56KyKA==',
   ),
@@ -31,6 +28,35 @@ type AppleStatusResponse = {
     status?: number
     signedTransactionInfo?: string
   }> }>
+}
+
+function appleVerificationFailureCode(error: unknown): string {
+  const status = error && typeof error === 'object' && 'status' in error
+    ? (error as { status?: unknown }).status
+    : undefined
+  if (status === 1) {
+    const cause = error && typeof error === 'object' && 'cause' in error
+      ? (error as { cause?: unknown }).cause
+      : undefined
+    if (cause instanceof Error &&
+        (cause instanceof ReferenceError || cause instanceof TypeError ||
+         cause.message.startsWith('Not implemented: crypto.X509Certificate.'))) {
+      return 'signed_transaction_runtime_verification_failure'
+    }
+    if (cause instanceof Error) return 'signed_transaction_signature_verification_failure'
+    return 'signed_transaction_certificate_chain_verification_failure'
+  }
+  const knownStatuses: Record<number, string> = {
+    2: 'retryable_verification_failure',
+    3: 'invalid_app_identifier',
+    4: 'invalid_environment',
+    5: 'invalid_chain_length',
+    6: 'invalid_certificate',
+    7: 'failure',
+  }
+  return typeof status === 'number'
+    ? `signed_transaction_${knownStatuses[status] ?? 'verification_error'}`
+    : 'signed_transaction_invalid'
 }
 
 export async function verifyAppleTransactionJws(
@@ -74,6 +100,26 @@ export async function verifyAppleTransactionJws(
         environment: string
       }
     } catch (error) {
+      try {
+        const transaction = await verifyAppleSignedTransactionPortable(
+          signedTransaction, expectedBundleId, environment, APPLE_ROOT_CERTIFICATES,
+        )
+        if (transaction.bundleId !== expectedBundleId ||
+            (expectedProductId && transaction.productId !== expectedProductId) ||
+            !transaction.originalTransactionId || transaction.environment !== environment) {
+          throw new Error('Apple transaction identifiers or environment do not match.')
+        }
+        return transaction as unknown as {
+          bundleId: string
+          productId: string
+          transactionId: string
+          originalTransactionId: string
+          expiresDate?: number
+          environment: string
+        }
+      } catch {
+        // Not signed for this environment, or not verifiable: try the next environment.
+      }
       if (environment === Environment.SANDBOX) throw error
     }
   }
@@ -144,7 +190,158 @@ export async function verifyAppleSubscriptionRecord(
   expectedBundleId: string,
   requireActive = false,
 ): Promise<boolean> {
-  if (!/^[0-9]+$/.test(originalTransactionId)) return false
+  const result = await verifyAppleSubscriptionRecordDetailed(
+    originalTransactionId,
+    productId,
+    expectedBundleId,
+    requireActive,
+  )
+  return result.verified
+}
+
+export async function verifyAppleSubscriptionRecordDetailed(
+  originalTransactionId: string,
+  productId: string,
+  expectedBundleId: string,
+  requireActive = false,
+  tryBothEnvironments = false,
+  allowHistoricalSignedDateVerification = false,
+  reportVerificationError?: (phase: 'strict' | 'signed_date', error: unknown) => void,
+  inspectSignedTransaction?: (jws: string, environment: Environment) => Promise<void>,
+): Promise<{
+  verified: boolean
+  reason?: string
+  environment?: 'Production' | 'Sandbox'
+  verificationMode?: 'portable_signed_date'
+}> {
+  if (!/^[0-9]+$/.test(originalTransactionId)) {
+    return { verified: false, reason: 'invalid_transaction_id' }
+  }
+  const encodedKey = Deno.env.get('APPLE_IAP_KEY_B64')
+  const keyId = Deno.env.get('APPLE_IAP_KEY_ID')
+  const issuerId = Deno.env.get('APPLE_IAP_ISSUER_ID')
+  if (!encodedKey || !keyId || !issuerId) throw new Error('Apple server API credentials are unavailable')
+
+  const key = await importPKCS8(atob(encodedKey), 'ES256')
+  const now = Math.floor(Date.now() / 1000)
+  const jwt = await new SignJWT({ bid: expectedBundleId })
+    .setProtectedHeader({ alg: 'ES256', kid: keyId, typ: 'JWT' })
+    .setIssuer(issuerId)
+    .setIssuedAt(now)
+    .setExpirationTime(now + 600)
+    .setAudience('appstoreconnect-v1')
+    .sign(key)
+
+  const bases = [
+    'https://api.storekit.apple.com',
+    'https://api.storekit-sandbox.apple.com',
+  ]
+  for (const [index, base] of bases.entries()) {
+    const response = await fetch(`${base}/inApps/v1/subscriptions/${originalTransactionId}`, {
+      headers: { Authorization: `Bearer ${jwt}` },
+    })
+    if (response.status === 404 && base.includes('api.storekit.apple.com')) {
+      const error = await response.json().catch(() => null) as { errorCode?: number } | null
+      if (error?.errorCode === 4040010) continue
+    }
+    if (!response.ok) throw new Error(`Apple subscription status request failed: ${response.status}`)
+    const body = await response.json() as AppleStatusResponse
+    if (body.bundleId !== expectedBundleId) {
+      return { verified: false, reason: 'bundle_id_mismatch' }
+    }
+    if (!Array.isArray(body.data)) {
+      if (tryBothEnvironments && index === 0) continue
+      return { verified: false, reason: 'subscription_data_missing' }
+    }
+    const environment = base.includes('sandbox') ? Environment.SANDBOX : Environment.PRODUCTION
+    let failureReason = 'subscription_not_found'
+    const verifier = new SignedDataVerifier(
+      APPLE_ROOT_CERTIFICATES,
+      true,
+      environment,
+      expectedBundleId,
+      environment === Environment.PRODUCTION ? APPLE_APP_ID : undefined,
+    )
+    let foundTransaction = false
+    for (const group of body.data) {
+      for (const item of group.lastTransactions ?? []) {
+        if (item.originalTransactionId !== originalTransactionId) continue
+        foundTransaction = true
+        if (requireActive ? item.status !== 1 : ![1, 2, 3, 4].includes(item.status ?? 0)) {
+          failureReason = 'subscription_status_not_eligible'
+          continue
+        }
+        if (!item.signedTransactionInfo) {
+          failureReason = 'signed_transaction_missing'
+          continue
+        }
+        await inspectSignedTransaction?.(item.signedTransactionInfo, environment)
+        let transaction
+        let verificationMode: 'portable_signed_date' | undefined
+        try {
+          transaction = await verifier.verifyAndDecodeTransaction(item.signedTransactionInfo)
+        } catch (error) {
+          reportVerificationError?.('strict', error)
+          failureReason = appleVerificationFailureCode(error)
+          if (!allowHistoricalSignedDateVerification || requireActive ||
+              !(error && typeof error === 'object' && 'status' in error &&
+                (error as { status?: unknown }).status === 1)) continue
+          try {
+            transaction = await verifyAppleSignedTransactionPortable(
+              item.signedTransactionInfo,
+              expectedBundleId,
+              environment,
+              APPLE_ROOT_CERTIFICATES,
+            )
+            verificationMode = 'portable_signed_date'
+          } catch (portableError) {
+            reportVerificationError?.('signed_date', portableError)
+            const code = portableError instanceof Error && /^[a-z_]+$/.test(portableError.message)
+              ? portableError.message : 'verification_failed'
+            failureReason = `portable_${code}`
+            continue
+          }
+        }
+        const expiry = transaction.expiresDate
+        if (transaction.bundleId !== expectedBundleId ||
+            transaction.originalTransactionId !== originalTransactionId ||
+            transaction.productId !== productId) {
+          failureReason = 'signed_transaction_mismatch'
+          continue
+        }
+        if (typeof expiry !== 'number' || expiry <= 0 ||
+            (requireActive && expiry <= Date.now())) {
+          failureReason = 'subscription_expired'
+          continue
+        }
+        if (transaction.revocationDate != null) {
+          failureReason = 'subscription_revoked'
+          continue
+        }
+        return {
+          verified: true,
+          environment: base.includes('sandbox') ? 'Sandbox' : 'Production',
+          ...(verificationMode ? { verificationMode } : {}),
+        }
+      }
+    }
+    if (tryBothEnvironments && index === 0 && !foundTransaction) continue
+    return { verified: false, reason: failureReason,
+      environment: base.includes('sandbox') ? 'Sandbox' : 'Production' }
+  }
+  return { verified: false, reason: 'subscription_not_found' }
+}
+
+export type AppleRecordCheck = { verified: boolean; reason: string }
+
+/** Same check as verifyAppleSubscriptionRecord, but reports a fixed-vocabulary reason when not confirmed. */
+export async function verifyAppleSubscriptionRecordWithReason(
+  originalTransactionId: string,
+  productId: string,
+  expectedBundleId: string,
+  requireActive = false,
+): Promise<AppleRecordCheck> {
+  if (!/^[0-9]+$/.test(originalTransactionId)) return { verified: false, reason: 'invalid_transaction_id' }
   const encodedKey = Deno.env.get('APPLE_IAP_KEY_B64')
   const keyId = Deno.env.get('APPLE_IAP_KEY_ID')
   const issuerId = Deno.env.get('APPLE_IAP_ISSUER_ID')
@@ -173,7 +370,8 @@ export async function verifyAppleSubscriptionRecord(
     }
     if (!response.ok) throw new Error(`Apple subscription status request failed: ${response.status}`)
     const body = await response.json() as AppleStatusResponse
-    if (body.bundleId !== expectedBundleId || !Array.isArray(body.data)) return false
+    if (body.bundleId !== expectedBundleId) return { verified: false, reason: 'bundle_id_mismatch' }
+    if (!Array.isArray(body.data)) return { verified: false, reason: 'subscription_data_missing' }
     const environment = base.includes('sandbox') ? Environment.SANDBOX : Environment.PRODUCTION
     const verifier = new SignedDataVerifier(
       APPLE_ROOT_CERTIFICATES,
@@ -182,27 +380,54 @@ export async function verifyAppleSubscriptionRecord(
       expectedBundleId,
       environment === Environment.PRODUCTION ? APPLE_APP_ID : undefined,
     )
+    const statusCode = (error: unknown) => {
+      const value = (error as { status?: unknown } | null)?.status
+      return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value < 20 ? String(value) : 'x'
+    }
+    let reason = 'subscription_not_found'
     for (const group of body.data) {
       for (const item of group.lastTransactions ?? []) {
-        if (item.originalTransactionId !== originalTransactionId ||
-            (requireActive ? item.status !== 1 : ![1, 2, 3, 4].includes(item.status ?? 0)) ||
-            !item.signedTransactionInfo) continue
-        let transaction
-        try {
-          transaction = await verifier.verifyAndDecodeTransaction(item.signedTransactionInfo)
-        } catch {
+        if (item.originalTransactionId !== originalTransactionId) continue
+        if (requireActive ? item.status !== 1 : ![1, 2, 3, 4].includes(item.status ?? 0)) {
+          reason = 'subscription_status_not_eligible'
           continue
         }
+        if (!item.signedTransactionInfo) { reason = 'signed_transaction_missing'; continue }
+        let transaction
+        let strictStatus = 'x'
+        try {
+          transaction = await verifier.verifyAndDecodeTransaction(item.signedTransactionInfo)
+        } catch (strictError) {
+          strictStatus = statusCode(strictError)
+          // The library's certificate handling fails in the Edge runtime. Check the pinned Apple root,
+          // the certificate chain at the signed date and the JWS signature with the portable verifier.
+          try {
+            transaction = await verifyAppleSignedTransactionPortable(
+              item.signedTransactionInfo, expectedBundleId, environment, APPLE_ROOT_CERTIFICATES,
+            )
+          } catch (portableError) {
+            const code = portableError instanceof Error && /^[a-z_]{1,48}$/.test(portableError.message)
+              ? portableError.message : 'failed'
+            reason = `signed_transaction_unverified_s${strictStatus}_p_${code}`
+            continue
+          }
+        }
         const expiry = transaction.expiresDate
-        if (transaction.bundleId === expectedBundleId &&
-            transaction.originalTransactionId === originalTransactionId &&
-            transaction.productId === productId &&
-            typeof expiry === 'number' && expiry > 0 &&
-            (!requireActive || expiry > Date.now()) &&
-            transaction.revocationDate == null) return true
+        if (transaction.bundleId !== expectedBundleId ||
+            transaction.originalTransactionId !== originalTransactionId ||
+            transaction.productId !== productId) {
+          reason = 'signed_transaction_mismatch'
+          continue
+        }
+        if (typeof expiry !== 'number' || expiry <= 0 || (requireActive && expiry <= Date.now())) {
+          reason = 'subscription_expired'
+          continue
+        }
+        if (transaction.revocationDate != null) { reason = 'subscription_revoked'; continue }
+        return { verified: true, reason: 'confirmed' }
       }
     }
-    return false
+    return { verified: false, reason }
   }
-  return false
+  return { verified: false, reason: 'subscription_not_found' }
 }
