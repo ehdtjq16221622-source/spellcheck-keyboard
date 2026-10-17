@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { resolveCreditWallet, WalletAccessError } from '../_shared/wallet_auth.ts'
+import { resolveCreditWallet, WalletAccessError } from './_shared/wallet_auth.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -175,3 +175,4 @@ function json(body: unknown, status = 200, diagnosticId = '') {
     },
   })
 }
+

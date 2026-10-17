@@ -1,4 +1,4 @@
-import { sendTelegram } from "../_shared/telegram.ts";
+import { sendTelegram } from "./_shared/telegram.ts";
 
 const COMMANDS = [
   { command: "summary", description: "오늘 전체 요약" },
@@ -108,6 +108,11 @@ Deno.serve(async (req: Request) => {
       // deno-lint-ignore no-explicit-any
       const runtime = (globalThis as any).EdgeRuntime;
       if (runtime?.waitUntil) runtime.waitUntil(task);
+      // Make sure the digest request is dispatched before replying. The digest
+      // keeps running and posts the summary itself (the pg_net cron also stops
+      // waiting after a few seconds), while a reply within seconds stops
+      // Telegram from resending the same command.
+      await Promise.race([task, new Promise((resolve) => setTimeout(resolve, 4000))]);
     }
     return new Response("ok");
   } catch (_) {

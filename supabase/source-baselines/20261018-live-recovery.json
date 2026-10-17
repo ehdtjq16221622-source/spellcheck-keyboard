@@ -190,6 +190,124 @@
           "sha256": "300a5315f509b49e653b68201e2bf7806527b2b3a1aa11a8153a54ad087b0f35"
         }
       ]
+    },
+    "daily_checkin": {
+      "files": [
+        {
+          "source": "daily_checkin/index.ts",
+          "snapshot": "daily_checkin/daily_checkin/index.ts",
+          "sha256": "e43e8bee17f840b67a7d759592ea2b901fcb10ec07cac8bddbbcc3c985a08bc6"
+        },
+        {
+          "source": "daily_checkin/_shared/wallet_auth.ts",
+          "snapshot": "daily_checkin/_shared/wallet_auth.ts",
+          "sha256": "3b570464fd3bcc3d08c9e8d1fb684862394f8955ceb341835b4f9c51a36ffcaa"
+        }
+      ]
+    },
+    "daily_digest": {
+      "files": [
+        {
+          "source": "daily_digest/index.ts",
+          "snapshot": "daily_digest/daily_digest/index.ts",
+          "sha256": "2e27a7df76fb50f1042f5a55bb2f3aac0792ad1375e8edea55f81891b313feaf"
+        },
+        {
+          "source": "daily_digest/_shared/telegram.ts",
+          "snapshot": "daily_digest/_shared/telegram.ts",
+          "sha256": "18357c5d834edc3aa6d4cd561af6c589c546d4b748c19b037e0261b706ae71a1"
+        }
+      ]
+    },
+    "language_study_generate": {
+      "files": [
+        {
+          "source": "language_study_generate/index.ts",
+          "snapshot": "language_study_generate/language_study_generate/index.ts",
+          "sha256": "7421aa957ec6c6b97c2bfa353212a1182921c95a7343eebf203a59aa260debed"
+        },
+        {
+          "source": "language_study_generate/_shared/wallet_auth.ts",
+          "snapshot": "language_study_generate/_shared/wallet_auth.ts",
+          "sha256": "3b570464fd3bcc3d08c9e8d1fb684862394f8955ceb341835b4f9c51a36ffcaa"
+        }
+      ]
+    },
+    "redeem_coupon": {
+      "files": [
+        {
+          "source": "redeem_coupon/index.ts",
+          "snapshot": "redeem_coupon/redeem_coupon/index.ts",
+          "sha256": "6e405015ece52dd47b11b038030207f684b6a50a503ed4f32cdc6ef19aff5ad3"
+        },
+        {
+          "source": "redeem_coupon/_shared/wallet_auth.ts",
+          "snapshot": "redeem_coupon/_shared/wallet_auth.ts",
+          "sha256": "3b570464fd3bcc3d08c9e8d1fb684862394f8955ceb341835b4f9c51a36ffcaa"
+        }
+      ]
+    },
+    "sync_credit_usage": {
+      "files": [
+        {
+          "source": "sync_credit_usage/index.ts",
+          "snapshot": "sync_credit_usage/sync_credit_usage/index.ts",
+          "sha256": "9ebe2c091607b32c0205b2efccc964581f369547ce0632d664c22db1cbce5b84"
+        },
+        {
+          "source": "sync_credit_usage/_shared/credits.ts",
+          "snapshot": "sync_credit_usage/_shared/credits.ts",
+          "sha256": "b45ea99450b2cc6b1b3393bc090fa89114e414e3d79aa504bd1c89711b0edb22"
+        },
+        {
+          "source": "sync_credit_usage/_shared/wallet_auth.ts",
+          "snapshot": "sync_credit_usage/_shared/wallet_auth.ts",
+          "sha256": "3b570464fd3bcc3d08c9e8d1fb684862394f8955ceb341835b4f9c51a36ffcaa"
+        }
+      ]
+    },
+    "sync_subscription": {
+      "files": [
+        {
+          "source": "sync_subscription/index.ts",
+          "snapshot": "sync_subscription/sync_subscription/index.ts",
+          "sha256": "f0d81260ed953170a93c1b810d87e0919d2e31cab1eb220d657a8c66815d5858"
+        },
+        {
+          "source": "sync_subscription/_shared/credits.ts",
+          "snapshot": "sync_subscription/_shared/credits.ts",
+          "sha256": "b45ea99450b2cc6b1b3393bc090fa89114e414e3d79aa504bd1c89711b0edb22"
+        },
+        {
+          "source": "sync_subscription/_shared/google_play.ts",
+          "snapshot": "sync_subscription/_shared/google_play.ts",
+          "sha256": "51ed0c5f90703fbff1454d5dacb7559688f2ab97a9086d5a65a35d90b0a93326"
+        },
+        {
+          "source": "sync_subscription/_shared/wallet_auth.ts",
+          "snapshot": "sync_subscription/_shared/wallet_auth.ts",
+          "sha256": "3b570464fd3bcc3d08c9e8d1fb684862394f8955ceb341835b4f9c51a36ffcaa"
+        },
+        {
+          "source": "sync_subscription/_shared/subscription_audit.ts",
+          "snapshot": "sync_subscription/_shared/subscription_audit.ts",
+          "sha256": "e7be06fcc05bd5e0c47c74431d7ccdc48ac56084bccd4a494de78b2d61d3399a"
+        }
+      ]
+    },
+    "telegram_bot": {
+      "files": [
+        {
+          "source": "telegram_bot/index.ts",
+          "snapshot": "telegram_bot/telegram_bot/index.ts",
+          "sha256": "2df502be4d41d48805e5eb2a91df927b824f48917f6c2c2fa71072ba81ec8aba"
+        },
+        {
+          "source": "telegram_bot/_shared/telegram.ts",
+          "snapshot": "telegram_bot/_shared/telegram.ts",
+          "sha256": "d9233b16b3e803138a50cba6f96308eb9c4e9f9ef6407df1477936dde8c8b206"
+        }
+      ]
     }
   }
 }
