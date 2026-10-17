@@ -8,12 +8,14 @@ const runnable = stripTypeScriptTypes(source
   .replace(/^import \{ createClient \} from .*$/m, 'const createClient = globalThis.__createClient;')
   .replace(/^import \{ verifyAppleIdentityToken \} from .*$/m,
     'const verifyAppleIdentityToken = globalThis.__verifyAppleIdentityToken;')
-  .replace(/^import \{ verifyAppleSubscriptionRecord \} from .*$/m,
-    'const verifyAppleSubscriptionRecord = globalThis.__verifyAppleSubscriptionRecord;')
+  .replace(/^import \{[\s\S]*?\} from '\.\.?\/\_shared\/apple_subscription_status\.ts'$/m,
+    'const { verifyAppleSubscriptionRecord, verifyAppleSubscriptionRecordDetailed } = globalThis.__appleSubscriptionStatus;')
   .replace(/^import \{ walletTokenHash \} from .*$/m,
     'const walletTokenHash = globalThis.__walletTokenHash;')
   .replace(/^import \{ enrollBonusCanaryDevice, isBonusCanaryDevice \} from .*$/m,
-    'const enrollBonusCanaryDevice = globalThis.__enrollBonusCanaryDevice; const isBonusCanaryDevice = globalThis.__isBonusCanaryDevice;'));
+    'const enrollBonusCanaryDevice = globalThis.__enrollBonusCanaryDevice; const isBonusCanaryDevice = globalThis.__isBonusCanaryDevice;')
+  .replace(/^import \{[\s\S]*?\} from '\.\.?\/\_shared\/subscription_audit\.ts'$/m,
+    'const { logSubscriptionAudit, subscriptionTransactionFingerprint, subscriptionWalletFingerprint } = globalThis.__subscriptionAudit;'));
 
 const secret = 'a'.repeat(64);
 const walletId = 'v2:11111111-1111-1111-1111-111111111111';
@@ -47,13 +49,27 @@ async function run(purchaseActive, action = 'merge_subscribed_guest', options = 
     calls.push({ purchaseArgs: args });
     return purchaseActive;
   };
-  globalThis.__verifyAppleSubscriptionRecord = async (...args) => {
-    calls.push({ historicalPurchaseArgs: args });
-    return options.historicalPurchaseValid ?? purchaseActive;
+  globalThis.__appleSubscriptionStatus = {
+    verifyAppleSubscriptionRecord: async (...args) => {
+      calls.push({ historicalPurchaseArgs: args });
+      return options.historicalPurchaseValid ?? purchaseActive;
+    },
+    verifyAppleSubscriptionRecordDetailed: async (...args) => {
+      calls.push({ detailedPurchaseArgs: args });
+      return options.historicalPurchaseValid ?? purchaseActive
+        ? { verified: true, environment: 'Sandbox' }
+        : { verified: false, reason: options.historicalFailureReason ?? 'subscription_not_found',
+          environment: 'Production' };
+    },
   };
   globalThis.__walletTokenHash = async () => 'b'.repeat(64);
   globalThis.__enrollBonusCanaryDevice = async () => {};
   globalThis.__isBonusCanaryDevice = async () => false;
+  globalThis.__subscriptionAudit = {
+    logSubscriptionAudit: (...args) => calls.push({ audit: args }),
+    subscriptionTransactionFingerprint: async () => 'transaction-fingerprint',
+    subscriptionWalletFingerprint: async () => 'wallet-fingerprint',
+  };
   globalThis.__createClient = () => ({
     from: (table) => {
       const query = {
@@ -116,10 +132,11 @@ test('subscription merge requires Apple to confirm the stored purchase', async (
   assert.equal(mismatch.status, 409);
   assert.equal(mismatch.body.error, 'Subscription transfer requires review.');
   assert.equal(mismatch.calls.some((call) => call.name), false);
+  assert.ok(mismatch.calls.some((call) => call.audit?.[3]?.failureCode === 'apple_status_subscription_not_found'));
   const matching = await run(true);
   assert.equal(matching.status, 200);
-  assert.deepEqual(matching.calls[0].historicalPurchaseArgs,
-    ['purchase-1', 'monthly', 'com.kingboard.app', false]);
+  assert.deepEqual(matching.calls.find((call) => call.detailedPurchaseArgs)?.detailedPurchaseArgs,
+    ['purchase-1', 'monthly', 'com.kingboard.app', false, true, true]);
   assert.deepEqual(matching.calls.filter((call) => call.name).map((call) => call.name),
     ['merge_verified_v2_subscribed_guest_preserving_once']);
 });
@@ -141,7 +158,7 @@ test('legacy merge verifies subscription source and calls the preserving atomic 
   const allowed = await run(true, 'merge_legacy');
   assert.equal(allowed.status, 200);
   assert.deepEqual(allowed.calls.find((call) => call.historicalPurchaseArgs)?.historicalPurchaseArgs,
-    ['purchase-1', 'monthly', 'com.kingboard.app']);
+    ['purchase-1', 'monthly', 'com.kingboard.app', false]);
   const rpcCall = allowed.calls.find((call) => call.name === 'merge_verified_legacy_wallet_v2_once');
   assert.deepEqual(rpcCall.args, {
     p_source_wallet_id: 'legacy-device', p_apple_sub: 'apple-sub',
@@ -166,7 +183,7 @@ test('legacy merge accepts a verified expired subscription when unspent credits 
   });
   assert.equal(result.status, 200);
   assert.deepEqual(result.calls.find((call) => call.historicalPurchaseArgs)?.historicalPurchaseArgs,
-    ['purchase-1', 'monthly', 'com.kingboard.app']);
+    ['purchase-1', 'monthly', 'com.kingboard.app', false]);
   const rpc = result.calls.find((call) => call.name === 'merge_verified_legacy_wallet_v2_once');
   assert.equal(rpc.args.p_verified_subscription_token, 'purchase-1');
   assert.equal(rpc.args.p_verified_product_id, 'monthly');
@@ -178,8 +195,8 @@ test('signed-in session can resume a deferred merge without another Apple sign-i
   });
   assert.equal(result.status, 200);
   assert.equal(result.body.canonicalWalletId, 'apple-wallet');
-  assert.deepEqual(result.calls.find((call) => call.historicalPurchaseArgs)?.historicalPurchaseArgs,
-    ['purchase-1', 'monthly', 'com.kingboard.app', false]);
+  assert.deepEqual(result.calls.find((call) => call.detailedPurchaseArgs)?.detailedPurchaseArgs,
+    ['purchase-1', 'monthly', 'com.kingboard.app', false, true, true]);
   assert.ok(result.calls.some((call) => call.name === 'merge_verified_v2_subscribed_guest_preserving_once'));
 });
 
@@ -223,7 +240,7 @@ test('legacy merge verifies a zero-balance purchase mapping before transferring 
   const result = await run(true, 'merge_legacy', { subscriptionCredits: 0 });
   assert.equal(result.status, 200);
   assert.deepEqual(result.calls.find((call) => call.historicalPurchaseArgs)?.historicalPurchaseArgs,
-    ['purchase-1', 'monthly', 'com.kingboard.app']);
+    ['purchase-1', 'monthly', 'com.kingboard.app', false]);
   assert.equal(result.calls.find((call) => call.name === 'merge_verified_legacy_wallet_v2_once')
     .args.p_verified_subscription_token, 'purchase-1');
 });

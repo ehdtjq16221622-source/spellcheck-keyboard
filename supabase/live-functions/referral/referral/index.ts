@@ -1,7 +1,7 @@
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const MAX_INVITES = 10;
-const INVITER_REWARD = 200;
+const MAX_INVITES = 5;
+const INVITER_REWARD = 100;
 const INVITEE_REWARD = 100;
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const cors = {
@@ -80,7 +80,7 @@ function readableError(error: unknown) {
   if (raw.includes("LOGIN_REQUIRED")) return ["Apple 로그인 후 이용할 수 있어요.", 401] as const;
   if (raw.includes("INVALID_CODE")) return ["초대 코드를 다시 확인해주세요.", 400] as const;
   if (raw.includes("SELF_REFERRAL")) return ["내 초대 코드는 등록할 수 없어요.", 400] as const;
-  if (raw.includes("INVITE_LIMIT_REACHED")) return ["이 초대 코드는 보상 가능한 10명을 모두 채웠어요.", 409] as const;
+  if (raw.includes("INVITE_LIMIT_REACHED")) return ["이 초대 코드는 보상 가능한 5명을 모두 채웠어요.", 409] as const;
   if (raw.includes("AI_USAGE_NOT_FOUND")) return ["첫 AI 기능 사용을 확인한 뒤 보상이 지급돼요.", 409] as const;
   console.error("[referral]", error);
   return ["초대 정보를 처리하지 못했어요. 잠시 후 다시 시도해주세요.", 500] as const;

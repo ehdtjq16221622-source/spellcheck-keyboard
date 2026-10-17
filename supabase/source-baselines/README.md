@@ -1,6 +1,6 @@
 # Recorded live recovery
 
-The 2026-10-18 recovery preserves seven high-risk live bundles in their own function directories.
+The 2026-10-18 recovery preserves fourteen live bundles (50 files) in their own function directories.
 Only entrypoint imports from `../_shared/` become `./_shared/`; dependency contents are unchanged.
 This prevents the five live wallet-auth variants from overwriting each other during source recovery.
 

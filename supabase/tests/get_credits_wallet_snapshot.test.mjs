@@ -88,7 +88,7 @@ test('authenticated clients report only the requested wallet that this request c
   assert.equal(local.credits_remaining, 500);
 });
 
-test('untouched old clients retain the live v13 combined display without writes', async () => {
+test('live v27 returns each old client its spendable balance without aggregation', async () => {
   const rows = [
     { ...linkedRows[0], free_credits: 490, subscription_credits: 4000 },
     { ...linkedRows[1], free_credits: 0, paid_credits: 60, subscription_credits: 790 },
@@ -96,13 +96,14 @@ test('untouched old clients retain the live v13 combined display without writes'
   for (const deviceId of ['apple', 'local']) {
     const result = await responseFor({ rows, deviceId, authenticated: false });
     assert.equal(result.status, 200);
-    assert.equal(result.credits_remaining, 4850);
+    assert.equal(result.credits_remaining, deviceId === 'apple' ? 4490 : 850);
   }
 });
 
-test('legacy display does not create a missing Apple row or grant another 500', async () => {
+test('live balance lookup reads the existing device row without creating an Apple row', async () => {
   const result = await responseFor({ rows: [linkedRows[1]], deviceId: 'local', authenticated: false });
-  assert.equal(result.status, 409);
+  assert.equal(result.status, 200);
+  assert.equal(result.credits_remaining, 500);
 });
 
 test('an allowlisted Apple ID receives only its spendable wallet balance', async () => {
@@ -148,7 +149,7 @@ test('a missing legacy wallet cannot claim the install bonus through balance loo
   assert.equal(result.status, 409);
   assert.match(result.error, /최신 버전/);
   assert.equal(result.error_code, 'wallet_row_missing');
-  assert.equal(result.failure_stage, 'legacy_snapshot');
+  assert.equal(result.failure_stage, 'credit_snapshot');
   assert.match(result.diagnostic_id, /^[0-9a-f-]{36}$/);
   assert.equal(result.diagnosticHeader, result.diagnostic_id);
   const failureLog = JSON.parse(result.logs.find((entry) => entry.level === 'error').message);
@@ -163,4 +164,12 @@ test('successful balance lookup returns the same diagnostic id in body and heade
   assert.equal(result.status, 200);
   assert.match(result.diagnostic_id, /^[0-9a-f-]{36}$/);
   assert.equal(result.diagnosticHeader, result.diagnostic_id);
+  const completed = JSON.parse(result.logs.find((entry) => entry.level === 'info').message);
+  const expectedFingerprint = Array.from(
+    new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode('local'))),
+    (byte) => byte.toString(16).padStart(2, '0'),
+  ).join('');
+  assert.equal(completed.requested_wallet_fingerprint, expectedFingerprint);
+  assert.equal(completed.canonical_wallet_fingerprint, expectedFingerprint);
+  assert.equal(JSON.stringify(completed).includes('local'), false);
 });
