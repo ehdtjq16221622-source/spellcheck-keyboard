@@ -1,6 +1,9 @@
 # Historical mixed working sources
 
-These seven `.ts.txt` files preserve the working files from before the live-source recovery.
+These fourteen `.ts.txt` files preserve the working files from before the live-source recovery.
+The `tests/` folder preserves the original assertions before live-contract cleanup.
+The latest seven source copies are reference-only: diagnostics and shared-path differences
+must be reviewed individually before any future feature is promoted.
 They intentionally contain old paths and missing live guards. DO NOT deploy or copy them over
 the recovered functions. Review their differences against live; only the selected pending features
 were re-applied in the separate commits above `311b02f`.

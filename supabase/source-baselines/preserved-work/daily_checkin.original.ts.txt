@@ -1,0 +1,89 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { resolveCreditWallet, WalletAccessError } from '../_shared/wallet_auth.ts'
+
+const cors = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Expose-Headers': 'X-Kingboard-Diagnostic-ID',
+}
+
+Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
+
+  const diagnosticId = crypto.randomUUID()
+  let failureStage = 'request_parse'
+
+  try {
+    const { deviceId, statusOnly } = await req.json()
+    failureStage = 'request_validation'
+    if (!deviceId || typeof deviceId !== 'string') {
+      logDiagnostic(diagnosticId, failureStage, 'INVALID_DEVICE_ID')
+      return diagnosticError(diagnosticId, failureStage, 400, { error: '기기 정보를 확인할 수 없습니다.' })
+    }
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    )
+    failureStage = 'wallet_resolution'
+    const wallet = await resolveCreditWallet(req, supabase, deviceId)
+    const walletId = wallet.walletId
+
+    failureStage = 'wallet_balance_lookup'
+    const { data, error } = await supabase
+      .from('device_credits')
+      .select('device_id, free_credits, paid_credits, subscription_credits, last_reset_date')
+      .eq('device_id', walletId)
+      .maybeSingle()
+
+    if (error) throw error
+
+    // 기존 디바이스 — 현재 크레딧만 반환
+    if (data) {
+      return new Response(JSON.stringify({
+        already_checked_in: true,
+        diagnostic_id: diagnosticId,
+        awarded_credits: 0,
+        free_credits_remaining: data.free_credits,
+        paid_credits_remaining: data.paid_credits + data.subscription_credits,
+        credits_remaining: data.free_credits + data.paid_credits + data.subscription_credits,
+      }), { headers: diagnosticHeaders(diagnosticId) })
+    }
+
+    // This endpoint is a balance/status lookup for existing wallets only.
+    // A caller-supplied ID is not proof of a first install, so only the
+    // DeviceCheck-backed V2 registration flow may create a bonus wallet.
+    logDiagnostic(diagnosticId, failureStage, 'WALLET_REGISTRATION_REQUIRED', 'warn')
+    return diagnosticError(diagnosticId, failureStage, 409, {
+      error: '새 지갑은 앱을 최신 버전으로 업데이트한 뒤 등록해 주세요.',
+      code: 'WALLET_REGISTRATION_REQUIRED',
+    })
+
+  } catch (e) {
+    const code = e instanceof WalletAccessError ? 'WALLET_ACCESS_ERROR' : 'DAILY_CHECKIN_FAILED'
+    logDiagnostic(diagnosticId, failureStage, code)
+    const message = e instanceof WalletAccessError ? e.message : '요청을 처리하지 못했어요. 잠시 후 다시 시도해주세요.'
+    return diagnosticError(diagnosticId, failureStage, e instanceof WalletAccessError ? e.status : 500, { error: message })
+  }
+})
+
+function diagnosticHeaders(diagnosticId: string) {
+  return {
+    ...cors,
+    'Content-Type': 'application/json',
+    'X-Kingboard-Diagnostic-ID': diagnosticId,
+  }
+}
+
+function diagnosticError(diagnosticId: string, failureStage: string, status: number, body: Record<string, unknown>) {
+  return new Response(JSON.stringify({ ...body, diagnostic_id: diagnosticId, failure_stage: failureStage }), {
+    status,
+    headers: diagnosticHeaders(diagnosticId),
+  })
+}
+
+function logDiagnostic(diagnosticId: string, failureStage: string, code: string, level: 'warn' | 'error' = 'error') {
+  const details = { diagnostic_id: diagnosticId, failure_stage: failureStage, code }
+  if (level === 'warn') console.warn('[daily_checkin]', details)
+  else console.error('[daily_checkin]', details)
+}

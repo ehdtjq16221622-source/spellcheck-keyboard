@@ -1,0 +1,39 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { readFile } from 'node:fs/promises';
+
+const networking = await readFile(
+  new URL('../../.tmp-kingboard-ios-wallet-canary/ios/Runner/KingboardNetworking.swift', import.meta.url),
+  'utf8',
+);
+const auth = await readFile(
+  new URL('../../.tmp-kingboard-ios-wallet-canary/ios/Runner/AppleAuthManager.swift', import.meta.url),
+  'utf8',
+);
+const store = await readFile(
+  new URL('../../.tmp-kingboard-ios-wallet-canary/ios/Runner/KingboardStore.swift', import.meta.url),
+  'utf8',
+);
+
+test('missing registration or availability falls back while Apple linking still asks for update', () => {
+  assert.match(networking, /if status == 404 \{\s*if \["register", "availability"\]\.contains\(body\["action"\] as\? String \?\? ""\) \{\s*completion\(\.success\(\.unavailable\)\)\s*\} else \{\s*completion\(\.failure\(KingboardAPIError\.server\("앱을 최신 버전으로 업데이트한 뒤 다시 시도해주세요\."\)\)\)/);
+  assert.match(networking, /case \.success\(\.unavailable\):\s*if afterLogoutSessionToken == nil, existing == nil \{[\s\S]*?completion\(\.success\(nil\)\)/);
+  assert.match(auth, /if let linked = try await signInWithWalletSessionIfAvailable\([\s\S]*?\) \{\s*return linked\s*\}[\s\S]*?guard !previousDeviceId\.isEmpty, !previousDeviceId\.hasPrefix\("v2:"\) else \{[\s\S]*?throw KingboardAPIError\.server\([\s\S]*?\}\s*let response = try await withCheckedThrowingContinuation/);
+});
+
+test('a documented missing Apple wallet still uses the compatible new-account fallback', () => {
+  assert.match(networking, /status == 409,[\s\S]*?\(json\["code"\] as\? String\) == "APPLE_WALLET_NOT_FOUND"\s*\{[\s\S]*?completion\(\.success\(\.unavailable\)\)/);
+});
+
+test('pending guest retry keeps its secret and ends when the wallet changes', () => {
+  assert.match(networking, /credential\.walletId == KingboardStore\.shared\.deviceId[\s\S]*?secret = existing\.secret/);
+  assert.match(store, /guard case \.success\(let registration\) = result else \{\s*self\.scheduleGuestProvisionRetry\(\)/);
+  assert.match(store, /let retry = registration\.bonusStatus == "verification_pending"/);
+  assert.match(store, /func setCanonicalDeviceId[\s\S]*?defaults\.set\(false, forKey: Self\.guestBonusRetryPendingKey\)/);
+  assert.match(store, /func switchToGuestWallet[\s\S]*?defaults\.set\(false, forKey: Self\.guestBonusRetryPendingKey\)/);
+});
+
+test('DeviceCheck token generation failure still registers a zero-credit guest', () => {
+  assert.match(networking, /DCDevice\.current\.generateToken \{ token, error in\s*guard let token, error == nil else \{\s*submitRegistration\(body\)/);
+  assert.match(networking, /status == 503, body\["action"\] as\? String == "register",\s*\(json\["code"\] as\? String\) == "GUEST_NOT_READY"/);
+});
