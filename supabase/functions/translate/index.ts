@@ -1,10 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { consumeAIUsage, refundAIUsage } from './_shared/credits.ts'
 import { resolveCreditWallet, WalletAccessError } from './_shared/wallet_auth.ts'
-type TranslationModelResult = {
-  translation: string
-  pronunciationKo: string | null
-}
+import { parseTranslationModelResult, type TranslationModelResult } from './translation_result.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -160,19 +157,3 @@ async function callLunaTranslation(text: string, targetLang: string): Promise<Tr
   if (!content.trim()) throw new Error('빈 번역 응답')
   return parseTranslationModelResult(content, targetLang)
 }
-
-function parseTranslationModelResult(raw: string, targetLang: string): TranslationModelResult {
-  const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()
-  const parsed = JSON.parse(cleaned) as Record<string, unknown>
-  const translation = typeof parsed.translation === 'string' ? parsed.translation.trim() : ''
-  const pronunciation = typeof parsed.pronunciation_ko === 'string'
-    ? parsed.pronunciation_ko.trim()
-    : ''
-  if (!translation) throw new Error('빈 번역 응답')
-  return {
-    translation,
-    pronunciationKo: targetLang === 'ko' || !pronunciation ? null : pronunciation,
-  }
-}
-
-

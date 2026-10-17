@@ -196,6 +196,10 @@
     "get_credits/index.ts": {
       "sha256": "2ad69e30d360c03d2d834943b7e99d980b0df33a9ad8972ff5af75982e7ef5ba",
       "reason": "Pending legacy display aggregation; not approved for deployment."
+    },
+    "translate/index.ts": {
+      "sha256": "f7f07ace80cf7d40dc0da4e3da37d3a6dab4b5ca2e3146ca0df31d4c86988658",
+      "reason": "Pending parser extraction and plain-response fallback; live request-ID and pronunciation guards retained."
     }
   }
 }
