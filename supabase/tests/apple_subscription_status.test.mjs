@@ -7,6 +7,8 @@ const source = readFileSync(new URL('../functions/_shared/apple_subscription_sta
 const runnable = stripTypeScriptTypes(source
   .replace(/^import \{ Environment, SignedDataVerifier \} from .*$/m,
     'const { Environment, SignedDataVerifier } = globalThis.__appleServerLibrary;')
+  .replace(/^import \{ installX509ToStringCompatibility \} from .*$/m,
+    'const installX509ToStringCompatibility = () => {};')
   .replace(/^import \{ importPKCS8, SignJWT \} from .*$/m,
     'const { importPKCS8, SignJWT } = globalThis.__jose;'));
 
