@@ -11,7 +11,7 @@ const changedShared = new Set([
   '_shared/subscription_audit.ts', '_shared/subscription_alerts.ts',
 ]);
 
-test('subscription shared changes reach exactly the two documented deployable entrypoints', () => {
+test('subscription shared changes reach only the documented subscription entrypoint', () => {
   const affected = [];
   for (const row of rows) {
     const seen = new Set();
@@ -29,5 +29,6 @@ test('subscription shared changes reach exactly the two documented deployable en
     if ([...seen].some((file) => changedShared.has(file))) affected.push(row.slug);
   }
   assert.equal(rows.length, 36);
-  assert.deepEqual(affected.sort(), ['language_study_generate', 'sync_subscription_ios']);
+  for (const row of rows) assert.equal(row.sourceExists, existsSync(path.join(root, 'functions', row.slug, 'index.ts')), row.slug);
+  assert.deepEqual(affected.sort(), ['sync_subscription_ios']);
 });
