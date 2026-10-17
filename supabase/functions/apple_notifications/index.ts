@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { verifyAppleNotificationJws, verifyAppleRenewalInfoJws, verifyAppleTransactionJws } from '../_shared/apple_notification_verifier.ts'
-import { sendTelegram } from '../_shared/telegram.ts'
+import { verifyAppleNotificationJws, verifyAppleRenewalInfoJws, verifyAppleTransactionJws } from './_shared/apple_notification_verifier.ts'
+import { sendTelegram } from './_shared/telegram.ts'
+import { subscriptionCreditsForProduct } from './_shared/credits.ts'
 
 // App Store Server Notifications V2 receiver.
 // Apple POSTs { signedPayload: <JWS> } on subscription lifecycle events. We
@@ -8,13 +9,20 @@ import { sendTelegram } from '../_shared/telegram.ts'
 // device_subscriptions.purchase_token by sync_subscription_ios), update the
 // subscription state in real time, and ping Telegram on key events.
 //
-// v1 scope: state tracking + alerts only. Credit granting stays with the
-// existing app-driven sync_subscription_ios flow.
+// Credits: the app-driven sync_subscription_ios flow still owns the first purchase and any wallet
+// it has to resolve. On top of that, a Production renewal grants the new cycle's credits right
+// away and a refund takes back the refunded cycle's subscription credits. Both are idempotent
+// database functions that skip wallets they cannot safely resolve; failures are logged only.
 //
 const STATE_ACTIVE = 'SUBSCRIPTION_STATE_ACTIVE'
 const STATE_EXPIRED = 'SUBSCRIPTION_STATE_EXPIRED'
 const STATE_REFUNDED = 'SUBSCRIPTION_STATE_REFUNDED'
 const STATE_GRACE = 'SUBSCRIPTION_STATE_GRACE'
+const KNOWN_SUBSCRIPTION_PRODUCTS = new Set([
+  'com.kingboard.app.monthly_basic',
+  'com.kingboard.app.monthly_premium',
+  'com.kingboard.app.monthly_pro',
+])
 
 function safeErrorCode(error: unknown): string {
   let current = error
@@ -148,6 +156,44 @@ Deno.serve(async (req: Request) => {
           code: error.code ?? 'unknown',
         })
         throw new Error('subscription_state_update_failed')
+      }
+    }
+
+    // Credit follow-up. The state update above is what this webhook must get right, so a failure
+    // here is logged and left to the app-driven sync instead of failing (and re-delivering) it.
+    if (deviceId && environment === 'Production' && originalTransactionId) {
+      try {
+        if (notificationType === 'DID_RENEW' && productId && expiresMs &&
+            KNOWN_SUBSCRIPTION_PRODUCTS.has(productId)) {
+          const { data, error } = await supabase.rpc('grant_subscription_credits_on_renewal', {
+            p_original_txn: originalTransactionId,
+            p_product_id: productId,
+            p_expires_ms: expiresMs,
+            p_amount: subscriptionCreditsForProduct(productId),
+            p_notification_id: notificationUUID,
+          })
+          if (error) throw error
+          console.log(JSON.stringify({
+            category: 'subscription_credit_followup', type: 'renewal_grant',
+            result: (Array.isArray(data) ? data[0] : data)?.result ?? 'unknown', diagnosticId,
+          }))
+        } else if (notificationType === 'REFUND') {
+          const { data, error } = await supabase.rpc('revoke_subscription_credits_on_refund', {
+            p_original_txn: originalTransactionId,
+            p_refunded_expires_ms: expiresMs,
+            p_notification_id: notificationUUID,
+          })
+          if (error) throw error
+          console.log(JSON.stringify({
+            category: 'subscription_credit_followup', type: 'refund_revoke',
+            result: (Array.isArray(data) ? data[0] : data)?.result ?? 'unknown', diagnosticId,
+          }))
+        }
+      } catch (followupError) {
+        console.error(JSON.stringify({
+          category: 'subscription_credit_followup', result: 'failed',
+          code: safeErrorCode(followupError), diagnosticId,
+        }))
       }
     }
 

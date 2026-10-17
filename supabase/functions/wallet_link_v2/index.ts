@@ -1,13 +1,21 @@
 // Feature-flagged guest registration and canary-only Apple linking.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { verifyAppleIdentityToken } from '../_shared/apple_auth.ts'
-import { verifyAppleSubscriptionRecord } from '../_shared/apple_subscription_status.ts'
-import { walletTokenHash } from '../_shared/wallet_auth.ts'
-import { enrollBonusCanaryDevice, isBonusCanaryDevice } from '../_shared/devicecheck.ts'
+import { verifyAppleIdentityToken } from './_shared/apple_auth.ts'
+import {
+  verifyAppleSubscriptionRecord,
+  verifyAppleSubscriptionRecordDetailed,
+} from './_shared/apple_subscription_status.ts'
+import { walletTokenHash } from './_shared/wallet_auth.ts'
+import { enrollBonusCanaryDevice, isBonusCanaryDevice } from './_shared/devicecheck.ts'
+import {
+  logSubscriptionAudit,
+  subscriptionTransactionFingerprint,
+  subscriptionWalletFingerprint,
+} from './_shared/subscription_audit.ts'
 
 const BUNDLE_ID = 'com.kingboard.app'
 
-function respond(body: unknown, status = 200): Response {
+function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
@@ -18,12 +26,128 @@ function isHexSecret(value: unknown): value is string {
   return typeof value === 'string' && /^[0-9a-f]{64}$/.test(value)
 }
 
+function safeRpcErrorCode(error: { code?: string; message?: string } | null): string | undefined {
+  if (!error) return undefined
+  if (error.code !== 'P0001') return 'database_rejected'
+  const knownReasons: Record<string, string> = {
+    'Active Apple wallet session required': 'apple_session_required',
+    'Apple wallet session must be activated': 'apple_session_not_activated',
+    'Apple wallet does not exist': 'apple_wallet_missing',
+    'Apple wallet is not linked': 'apple_wallet_not_linked',
+    'Apple wallet missing': 'apple_wallet_record_missing',
+    'Canonical wallet disappeared': 'canonical_wallet_missing',
+    'Second wallet does not exist': 'source_wallet_missing',
+    'Apple subject already uses its only canonical wallet': 'no_linked_source',
+    'Apple subject was already merged with another request ID': 'merge_idempotency_conflict',
+    'Legacy wallet was already merged with another request': 'merge_idempotency_conflict',
+    'Legacy wallet belongs to another Apple account': 'wallet_ownership_mismatch',
+    'Wallet ownership changed during merge': 'wallet_ownership_mismatch',
+    'Negative balance requires review': 'balance_requires_review',
+    'Wallet balance requires review': 'balance_requires_review',
+    'Paid balance would overflow': 'balance_overflow',
+    'Legacy subscription requires Apple verification': 'subscription_verification_required',
+    'Legacy subscription ledger does not match Apple verification': 'subscription_ledger_mismatch',
+    'Legacy subscription mapping does not match Apple verification': 'subscription_mapping_mismatch',
+    'Apple subscription ledger requires review': 'subscription_ledger_mismatch',
+    'Apple wallet has a different subscription purchase': 'subscription_purchase_mismatch',
+    'Second wallet subscription requires transaction review': 'subscription_requires_review',
+    'Second wallet purchase mapping requires transaction review': 'purchase_mapping_requires_review',
+    'Second wallet refund credits require transaction review': 'refund_credits_require_review',
+    'Recent AI usage must settle before wallet merge': 'recent_usage_pending',
+    'Free credit provenance requires review': 'free_credit_provenance_review',
+    'Free balance would overflow': 'free_credit_overflow',
+    'Another legacy wallet was already merged into this Apple account': 'source_already_merged',
+  }
+  return knownReasons[error.message ?? ''] ?? 'wallet_merge_review_required'
+}
+
+function serviceRoleKeyKind(value: string | undefined): string {
+  if (!value) return 'missing'
+  if (value.startsWith('sb_secret_')) return 'modern_secret_key'
+  const payload = value.split('.')[1]
+  if (!payload) return 'not_jwt'
+  try {
+    const claims = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')))
+    return claims.role === 'service_role' ? 'service_role' : 'not_service_role'
+  } catch {
+    return 'unreadable_jwt'
+  }
+}
+
 async function sha256(value: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
+function auditProduct(productId: string): 'basic' | 'premium' | 'pro' | 'other' {
+  if (productId.endsWith('.monthly_basic')) return 'basic'
+  if (productId.endsWith('.monthly_premium')) return 'premium'
+  if (productId.endsWith('.monthly_pro')) return 'pro'
+  return 'other'
+}
+
+async function verifySubscribedGuestPurchase(
+  purchaseToken: string,
+  productId: string,
+  appleSub: string,
+  walletId: string,
+  canary: boolean,
+  rolloutEnabled = false,
+): Promise<boolean> {
+  if (!canary && !rolloutEnabled) {
+    return await verifyAppleSubscriptionRecord(purchaseToken, productId, BUNDLE_ID, false)
+  }
+
+  const result = await verifyAppleSubscriptionRecordDetailed(
+    purchaseToken, productId, BUNDLE_ID, false, true, true,
+  )
+  if (result.verified && result.verificationMode === 'portable_signed_date') {
+    logSubscriptionAudit('info', crypto.randomUUID(), 'wallet_transfer_purchase_verified_portably', {
+      stage: 'wallet_transfer_apple_status',
+      product: auditProduct(productId),
+      environment: result.environment,
+      canary,
+      walletFingerprint: await subscriptionWalletFingerprint(walletId),
+      transactionFingerprint: await subscriptionTransactionFingerprint(purchaseToken),
+    })
+  }
+  if (!result.verified) {
+    logSubscriptionAudit('warn', crypto.randomUUID(), 'wallet_transfer_purchase_unconfirmed', {
+      stage: 'wallet_transfer_apple_status',
+      product: auditProduct(productId),
+      environment: result.environment,
+      canary,
+      failureCode: `apple_status_${result.reason ?? 'unconfirmed'}`,
+      walletFingerprint: await subscriptionWalletFingerprint(walletId),
+      transactionFingerprint: await subscriptionTransactionFingerprint(purchaseToken),
+    })
+  }
+  return result.verified
+}
+
 Deno.serve(async (req: Request) => {
+  const auditId = crypto.randomUUID()
+  let requestAction = 'unknown'
+  let stage = 'parse_request'
+  const walletFingerprints = new Set<string>()
+  let operationFingerprint: string | undefined
+  function audit(event: string, extra: Record<string, unknown> = {}) {
+    console.info(JSON.stringify({ category: 'wallet_link_audit', event, auditId,
+      action: requestAction, stage, walletFingerprints: [...walletFingerprints],
+      operationFingerprint, ...extra }))
+  }
+  function respond(body: unknown, status = 200): Response {
+    audit('response', { status })
+    const isFailure = status >= 400 && body !== null && typeof body === 'object' && !Array.isArray(body)
+    const responseBody = isFailure
+      ? { ...(body as Record<string, unknown>), diagnostic_id: auditId, failure_stage: stage }
+      : body
+    const response = jsonResponse(responseBody, status)
+    response.headers.set('X-Wallet-Audit-ID', auditId)
+    response.headers.set('X-Kingboard-Diagnostic-ID', auditId)
+    response.headers.set('Access-Control-Expose-Headers', 'X-Wallet-Audit-ID, X-Kingboard-Diagnostic-ID')
+    return response
+  }
   if (req.method !== 'POST') return respond({ error: 'Not found.' }, 404)
   const canaryEnabled = Deno.env.get('WALLET_BONUS_CANARY_ENABLED') === 'true'
   if (!canaryEnabled && (Deno.env.get('WALLET_SESSIONS_ENABLED') !== 'true' ||
@@ -38,10 +162,132 @@ Deno.serve(async (req: Request) => {
   )
   try {
     const body = await req.json()
+    requestAction = typeof body.action === 'string' && /^[a-z_]{1,40}$/.test(body.action)
+      ? body.action : 'other'
+    // Claimed IDs aid correlation only; they never authorize wallet access.
+    const claimedWalletFingerprints: Record<string, string> = {}
+    for (const key of ['walletId', 'sourceWalletId', 'canonicalWalletId']) {
+      if (typeof body[key] === 'string' && body[key].length <= 256) {
+        claimedWalletFingerprints[key] = await sha256(body[key])
+      }
+    }
+    if (typeof body.idempotencyKey === 'string' && body.idempotencyKey.length <= 128) {
+      operationFingerprint = await sha256(body.idempotencyKey)
+    }
+    audit('request_received', { claimedWalletFingerprints })
+    if (body.action === 'availability') {
+      return respond({ enabled:
+        Deno.env.get('WALLET_SESSIONS_ENABLED') === 'true' &&
+        Deno.env.get('WALLET_GUEST_V2_ENABLED') === 'true' &&
+        Deno.env.get('WALLET_LINK_V2_ENABLED') === 'true' &&
+        Deno.env.get('WALLET_LINK_V2_ALL_USERS_ENABLED') === 'true' &&
+        Deno.env.get('WALLET_AUTO_MERGE_ALL_USERS_ENABLED') === 'true' &&
+        Deno.env.get('WALLET_LEGACY_MERGE_ENABLED') === 'true',
+      })
+    }
+    stage = 'create_service_client'
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+      serviceRoleKey!,
     )
+    async function auditedRpc(name: string, args: Record<string, unknown>) {
+      stage = `rpc_${name}`
+      const rpcStage = stage
+      const inputWalletFingerprints: Record<string, string> = {}
+      for (const key of ['p_wallet_id', 'p_guest_wallet_id', 'p_source_wallet_id',
+        'p_canonical_wallet_id', 'p_apple_sub']) {
+        if (typeof args[key] === 'string') inputWalletFingerprints[key] = await sha256(args[key] as string)
+      }
+      const operationKey = args.p_request_id ?? args.p_idempotency_key
+      if (typeof operationKey === 'string') operationFingerprint = await sha256(operationKey)
+      audit('rpc_started', { inputWalletFingerprints })
+      const result = await supabase.rpc(name, args)
+      const row = Array.isArray(result.data) ? result.data[0] : result.data
+      if (!result.error) {
+        for (const fingerprint of Object.values(inputWalletFingerprints)) walletFingerprints.add(fingerprint)
+        if (typeof row === 'string' && /^(register_guest_wallet_v2|issue_apple_wallet_session|activate_apple_wallet_session|rotate_apple_wallet_session)$/.test(name)) {
+          walletFingerprints.add(await sha256(row))
+        }
+        if (row && typeof row === 'object' && typeof row.canonical_wallet_id === 'string') {
+          walletFingerprints.add(await sha256(row.canonical_wallet_id))
+        }
+      }
+      audit('rpc_completed', { stage: rpcStage, inputWalletFingerprints,
+        outcome: result.error ? 'rejected' : 'completed',
+        sqlstate: /^[A-Z0-9]{5}$/.test(result.error?.code ?? '') ? result.error.code : undefined,
+        errorCode: safeRpcErrorCode(result.error),
+        applied: typeof result.data === 'boolean' ? result.data : undefined })
+      return result
+    }
+    async function mergeLinkedAppleSubject(
+      appleSub: string,
+      canonicalWalletId: string,
+      tokenHash: string,
+      requestId: string,
+    ) {
+      const { data: priorAlias, error: aliasError } = await supabase
+        .from('credit_wallet_aliases')
+        .select('canonical_wallet_id, apple_sub')
+        .eq('source_wallet_id', appleSub)
+        .maybeSingle()
+      if (aliasError) throw aliasError
+      if (priorAlias) {
+        if (priorAlias.apple_sub !== appleSub ||
+            priorAlias.canonical_wallet_id !== canonicalWalletId) {
+          audit('linked_merge_review_required', { reason: 'existing_alias_mismatch' })
+          return { decision: 'review_required' }
+        }
+        audit('linked_merge_already_merged')
+        return { decision: 'already_merged', canonicalWalletId }
+      }
+
+      const { data, error } = await auditedRpc('merge_linked_apple_subject_wallets_once', {
+        p_apple_sub: appleSub,
+        p_request_id: requestId,
+        p_token_hash: tokenHash,
+      })
+      if (error?.code === 'P0001' &&
+          error.message === 'Recent AI usage must settle before wallet merge') {
+        audit('linked_merge_deferred', { reason: 'recent_usage_pending', retryAfterSeconds: 300 })
+        return { decision: 'retry_later', retryAfterSeconds: 300 }
+      }
+      if (error?.code === 'P0001' && [
+        'Apple subject already uses its only canonical wallet',
+        'Second wallet does not exist',
+      ].includes(error.message)) {
+        audit('linked_merge_not_needed', { reason: 'no_linked_source' })
+        return { decision: 'no_linked_source' }
+      }
+      if (error?.code === 'P0001') {
+        const { data: racedAlias, error: racedAliasError } = await supabase
+          .from('credit_wallet_aliases')
+          .select('canonical_wallet_id, apple_sub')
+          .eq('source_wallet_id', appleSub)
+          .maybeSingle()
+        if (racedAliasError) throw racedAliasError
+        if (racedAlias?.apple_sub === appleSub &&
+            racedAlias.canonical_wallet_id === canonicalWalletId) {
+          audit('linked_merge_already_merged')
+          return { decision: 'already_merged', canonicalWalletId }
+        }
+        audit('linked_merge_review_required', { reason: 'database_review_gate' })
+        return { decision: 'review_required' }
+      }
+      if (error) throw error
+      const result = Array.isArray(data) ? data[0] : data
+      if (!result) throw new Error('Missing linked merge result')
+      if (result.canonical_wallet_id !== canonicalWalletId) {
+        audit('linked_merge_review_required', { reason: 'canonical_wallet_mismatch' })
+        return { decision: 'review_required' }
+      }
+      return {
+        decision: result.decision,
+        canonicalWalletId: result.canonical_wallet_id,
+        freeCredits: result.free_credits_remaining,
+        paidCredits: result.paid_credits_remaining,
+      }
+    }
 
     if (body.action === 'enroll_bonus_canary') {
       if (!canaryEnabled || typeof body.identityToken !== 'string' ||
@@ -69,7 +315,8 @@ Deno.serve(async (req: Request) => {
           !(await isBonusCanaryDevice(body.deviceToken))) {
         return respond({ error: 'Not found.' }, 404)
       }
-      const { data: walletId, error } = await supabase.rpc('register_guest_wallet_v2', {
+      stage = 'rpc_register_guest_wallet_v2_canary'
+      const { data: walletId, error } = await auditedRpc('register_guest_wallet_v2', {
         p_secret_hash: await sha256(body.walletSecret), p_initial_bonus: 0,
       })
       if (error) throw error
@@ -95,7 +342,7 @@ Deno.serve(async (req: Request) => {
           // DeviceCheck outages must not block a zero-credit wallet. The
           // bonus remains withheld until the same wallet can be verified.
           deviceCheckUnavailable = true
-          console.error('[wallet_link_v2] DeviceCheck unavailable; withholding bonus', error)
+          audit('devicecheck_unavailable', { outcome: 'verification_pending' })
         }
       }
       let testAccountLogout = false
@@ -118,30 +365,23 @@ Deno.serve(async (req: Request) => {
       }
       if (guestEnabled && body.action === 'register' &&
           Deno.env.get('WALLET_DEVICECHECK_BONUS_ENABLED') !== 'true') {
-        return respond({ error: 'Device verification is not ready.' }, 503)
+        return respond({ error: 'Device verification is not ready.', code: 'GUEST_NOT_READY' }, 503)
       }
       const secretHash = await sha256(body.walletSecret)
       let initialBonus = 0
-      let deviceAlreadyMarked = false
-      let deviceCheckBonus = body.action === 'register' && !markedCanary &&
+      let bonusStatus = 'complete'
+      const deviceCheckRequired = body.action === 'register' && !markedCanary &&
         Deno.env.get('WALLET_DEVICECHECK_BONUS_ENABLED') === 'true'
+      const deviceCheckBonus = deviceCheckRequired && typeof body.deviceToken === 'string'
       if (body.action === 'register' && !markedCanary) {
-        if (deviceCheckBonus) {
-          if (typeof body.deviceToken !== 'string') {
-            return respond({ error: 'Device verification required.' }, 409)
-          }
-          try {
-            deviceAlreadyMarked = await isBonusCanaryDevice(body.deviceToken)
-          } catch (error) {
-            deviceCheckBonus = false
-            deviceCheckUnavailable = true
-            console.error('[wallet_link_v2] DeviceCheck unavailable; withholding bonus', error)
-          }
+        if (deviceCheckRequired) {
+          if (!deviceCheckBonus) bonusStatus = 'verification_pending'
         } else {
           initialBonus = deviceCheckUnavailable ? 0 : 500
         }
       }
-      const { data: walletId, error } = await supabase.rpc('register_guest_wallet_v2', {
+      stage = 'rpc_register_guest_wallet_v2'
+      const { data: walletId, error } = await auditedRpc('register_guest_wallet_v2', {
         p_secret_hash: secretHash,
         p_initial_bonus: initialBonus,
       })
@@ -150,36 +390,117 @@ Deno.serve(async (req: Request) => {
         throw new Error('Missing registered wallet ID')
       }
       if (deviceCheckBonus) {
-        if (!deviceAlreadyMarked) {
-          const { data: reservation, error: reserveError } = await supabase
-            .rpc('reserve_guest_install_bonus', {
-              p_wallet_id: walletId, p_secret_hash: secretHash,
-            })
-          if (reserveError) throw reserveError
-          if (reservation !== 'pending' && reservation !== 'granted') {
-            throw new Error('Missing install bonus reservation')
+        const lockOwner = crypto.randomUUID()
+        stage = 'rpc_acquire_guest_bonus_devicecheck_lock'
+        const lockStartedAt = Date.now()
+        let locked = false
+        let lockAttempts = 0
+        do {
+          const { data, error: lockError } = await auditedRpc('acquire_guest_bonus_devicecheck_lock', { p_owner: lockOwner })
+          if (lockError) throw lockError
+          locked = data === true
+          lockAttempts++
+          if (locked || Date.now() - lockStartedAt >= 8000) break
+          const retryMs = Math.min(100 + Math.random() * 300, 8000 - (Date.now() - lockStartedAt))
+          await new Promise((resolve) => setTimeout(resolve, retryMs))
+        } while (true)
+        audit('devicecheck_lock_result', { acquired: locked, attempts: lockAttempts, waitMs: Date.now() - lockStartedAt })
+        if (!locked) return respond({ error: 'Device verification is busy.' }, 503)
+        try {
+          let deviceAlreadyMarked = false
+          try {
+            deviceAlreadyMarked = await isBonusCanaryDevice(body.deviceToken)
+          } catch (error) {
+            deviceCheckUnavailable = true
+            audit('devicecheck_unavailable', { outcome: 'verification_pending' })
           }
-          await enrollBonusCanaryDevice(body.deviceToken)
+          if (!deviceCheckUnavailable) {
+            if (!deviceAlreadyMarked) {
+              stage = 'rpc_reserve_guest_install_bonus'
+              const { data: reservation, error: reserveError } = await auditedRpc('reserve_guest_install_bonus', {
+                  p_wallet_id: walletId, p_secret_hash: secretHash,
+                })
+              if (reserveError) throw reserveError
+              if (reservation === 'account_bonus_exists') {
+                bonusStatus = 'needs_review'
+                audit('bonus_account_grant_exists', { outcome: bonusStatus })
+              } else if (reservation !== 'pending' && reservation !== 'granted') {
+                throw new Error('Missing install bonus reservation')
+              }
+              if (reservation === 'pending') {
+                try {
+                  await enrollBonusCanaryDevice(body.deviceToken)
+                } catch (error) {
+                  deviceCheckUnavailable = true
+                  audit('devicecheck_enrollment_unconfirmed', { outcome: 'verification_pending' })
+                }
+                if (!deviceCheckUnavailable) {
+                  stage = 'rpc_confirm_guest_install_bonus_devicecheck'
+                  const { data: confirmed, error: confirmError } = await auditedRpc('confirm_guest_install_bonus_devicecheck', {
+                      p_wallet_id: walletId, p_secret_hash: secretHash,
+                      p_lock_owner: lockOwner,
+                    })
+                  if (confirmError) throw confirmError
+                  if (!confirmed) throw new Error('Missing device verification claim')
+                }
+              }
+            } else {
+              const { data: claim, error: claimError } = await supabase
+                .from('guest_install_bonus_claims')
+                .select('state, verification_confirmed_at')
+                .eq('wallet_id', walletId).maybeSingle()
+              if (claimError) throw claimError
+              if (claim?.state === 'pending' && !claim.verification_confirmed_at) {
+                bonusStatus = 'needs_review'
+              }
+            }
+            if (!deviceCheckUnavailable && bonusStatus !== 'needs_review') {
+              stage = 'rpc_complete_guest_install_bonus_guarded'
+              const { data: completed, error: completeError } = await auditedRpc('complete_guest_install_bonus_guarded', {
+                  p_wallet_id: walletId, p_secret_hash: secretHash,
+                  p_lock_owner: lockOwner,
+                })
+              if (completeError) throw completeError
+              if (completed === false) {
+                const { data: priorGrant, error: grantError } = await supabase
+                  .from('credit_transactions').select('id').eq('device_id', walletId)
+                  .in('transaction_type', ['install_bonus', 'install_bonus_restore']).limit(1)
+                if (grantError) throw grantError
+                if (!priorGrant?.length) bonusStatus = 'needs_review'
+              }
+            }
+          }
+        } finally {
+          const previousStage = stage
+          stage = 'rpc_release_guest_bonus_devicecheck_lock'
+          const { error: releaseError } = await auditedRpc('release_guest_bonus_devicecheck_lock', { p_owner: lockOwner })
+          if (releaseError) {
+            console.error(JSON.stringify({
+              event: 'wallet_link_v2_failure', action: requestAction, auditId,
+              walletFingerprints: [...walletFingerprints], operationFingerprint,
+              stage, reason: 'devicecheck_lock_release_failed',
+            }))
+          }
+          stage = previousStage
         }
-        // A retry after DeviceCheck succeeded but the final DB write failed
-        // completes the pending claim for this same wallet secret only.
-        const { error: completeError } = await supabase
-          .rpc('complete_guest_install_bonus', {
-            p_wallet_id: walletId, p_secret_hash: secretHash,
-          })
-        if (completeError) throw completeError
+        if (deviceCheckUnavailable) bonusStatus = 'verification_pending'
       }
       const { data: wallet, error: walletError } = await supabase.from('device_credits')
         .select('free_credits, paid_credits, apple_user_id')
         .eq('device_id', walletId).single()
       if (walletError) throw walletError
-      if (wallet.apple_user_id !== null) return respond({ error: 'Wallet already linked.' }, 409)
       const { data: credential, error: credentialError } = await supabase
         .from('wallet_v2_credentials').select('state')
         .eq('wallet_id', walletId).single()
       if (credentialError) throw credentialError
+      if (wallet.apple_user_id !== null) {
+        if (credential.state !== 'linked') return respond({ error: 'Wallet requires review.' }, 409)
+        // Registration can finish after Apple linking; the Apple session owns the balance.
+        return respond({ walletId, freeCredits: 0, paidCredits: 0,
+          state: 'linked', bonusStatus }, 201)
+      }
       return respond({ walletId, freeCredits: wallet.free_credits,
-        paidCredits: wallet.paid_credits, state: credential.state }, 201)
+        paidCredits: wallet.paid_credits, state: credential.state, bonusStatus }, 201)
     }
 
     if (body.action === 'activate') {
@@ -191,7 +512,7 @@ Deno.serve(async (req: Request) => {
           !/^v2:[0-9a-f-]{36}$/.test(body.walletId)) {
         return respond({ error: 'Invalid wallet proof.' }, 400)
       }
-      const { data: activated, error } = await supabase.rpc('activate_guest_wallet_v2', {
+      const { data: activated, error } = await auditedRpc('activate_guest_wallet_v2', {
         p_wallet_id: body.walletId,
         p_secret_hash: await sha256(body.walletSecret),
       })
@@ -214,7 +535,8 @@ Deno.serve(async (req: Request) => {
       if (typeof body.identityToken === 'string' && body.identityToken.length <= 16_384) {
         const testIdentity = await verifyAppleIdentityToken(body.identityToken, BUNDLE_ID)
         testAccountAllowed = !!testIdentity &&
-          await sha256(testIdentity.sub) === '014252a83ff1048722f43fecfec725a43c4ce151af89bc1aad535f0609de8c45'
+          (await sha256(testIdentity.sub) ===
+           '014252a83ff1048722f43fecfec725a43c4ce151af89bc1aad535f0609de8c45')
       } else if ((body.action === 'rotate_session' || body.action === 'revoke_session') &&
                  isHexSecret(body.sessionToken)) {
         const { data: testSession, error: testSessionError } = await supabase
@@ -222,7 +544,8 @@ Deno.serve(async (req: Request) => {
           .eq('token_hash', await walletTokenHash(body.sessionToken)).maybeSingle()
         if (testSessionError) throw testSessionError
         testAccountAllowed = !!testSession?.apple_sub &&
-          await sha256(testSession.apple_sub) === '014252a83ff1048722f43fecfec725a43c4ce151af89bc1aad535f0609de8c45'
+          (await sha256(testSession.apple_sub) ===
+           '014252a83ff1048722f43fecfec725a43c4ce151af89bc1aad535f0609de8c45')
       }
       if (!testAccountAllowed) return respond({ error: 'Not found.' }, 404)
     }
@@ -238,12 +561,12 @@ Deno.serve(async (req: Request) => {
       if (readError) throw readError
       if (!session) return respond({ error: 'Not found.' }, 404)
       if (body.action === 'revoke_session') {
-        const { error } = await supabase.rpc('revoke_apple_wallet_session', { p_token_hash: oldHash })
+        const { error } = await auditedRpc('revoke_apple_wallet_session', { p_token_hash: oldHash })
         if (error) throw error
         return respond({ state: 'revoked' })
       }
       if (!isHexSecret(body.nextSessionToken)) return respond({ error: 'Invalid next session.' }, 400)
-      const { data: walletId, error } = await supabase.rpc('rotate_apple_wallet_session', {
+      const { data: walletId, error } = await auditedRpc('rotate_apple_wallet_session', {
         p_old_hash: oldHash,
         p_new_hash: await walletTokenHash(body.nextSessionToken),
         p_expires_at: new Date(Date.now() + 29 * 24 * 60 * 60 * 1000).toISOString(),
@@ -269,8 +592,14 @@ Deno.serve(async (req: Request) => {
         return respond({ error: 'Active Apple wallet session required.' }, 401)
       }
       const appleSub = session.apple_sub as string
+      const subscriptionCanaries = new Set(
+        (Deno.env.get('WALLET_SUBSCRIPTION_MERGE_CANARY_APPLE_IDS') ?? '')
+          .split(',').map((id) => id.trim()).filter(Boolean),
+      )
+      const isSubscriptionCanary = subscriptionCanaries.has(appleSub) ||
+        await sha256(appleSub) === '014252a83ff1048722f43fecfec725a43c4ce151af89bc1aad535f0609de8c45'
       if (!walletAutoMergeAllUsersEnabled &&
-          await sha256(appleSub) !== '014252a83ff1048722f43fecfec725a43c4ce151af89bc1aad535f0609de8c45') {
+          !isSubscriptionCanary) {
         return respond({ error: 'Wallet merge unavailable.' }, 404)
       }
       const { data: canonical, error: canonicalError } = await supabase
@@ -297,7 +626,7 @@ Deno.serve(async (req: Request) => {
         if (history.request_id !== body.idempotencyKey) {
           return respond({ error: 'Wallet merge request does not match.' }, 409)
         }
-        const { data, error } = await supabase.rpc('merge_verified_v2_subscribed_guest_preserving_once', {
+        const { data, error } = await auditedRpc('merge_verified_v2_subscribed_guest_preserving_once', {
           p_guest_wallet_id: body.walletId, p_guest_secret_hash: secretHash,
           p_apple_sub: appleSub, p_session_token_hash: sessionHash,
           p_request_id: body.idempotencyKey, p_purchase_token: history.purchase_token,
@@ -316,10 +645,11 @@ Deno.serve(async (req: Request) => {
         if (balanceError) throw balanceError
         if (purchase || (balance?.subscription_credits ?? 0) > 0) {
           if (!purchase?.product_id || !purchase.purchase_token ||
-              !await verifyAppleSubscriptionRecord(
-                purchase.purchase_token, purchase.product_id, BUNDLE_ID, false,
+              !await verifySubscribedGuestPurchase(
+                purchase.purchase_token, purchase.product_id, appleSub,
+                body.walletId, isSubscriptionCanary, walletAutoMergeAllUsersEnabled,
               )) return respond({ error: 'Subscription transfer requires review.' }, 409)
-          const { data, error } = await supabase.rpc('merge_verified_v2_subscribed_guest_preserving_once', {
+          const { data, error } = await auditedRpc('merge_verified_v2_subscribed_guest_preserving_once', {
             p_guest_wallet_id: body.walletId, p_guest_secret_hash: secretHash,
             p_apple_sub: appleSub, p_session_token_hash: sessionHash,
             p_request_id: body.idempotencyKey, p_purchase_token: purchase.purchase_token,
@@ -328,7 +658,7 @@ Deno.serve(async (req: Request) => {
           if (error) throw error
           result = data?.[0] ?? null
         } else {
-          const { data, error } = await supabase.rpc('merge_verified_v2_guest_wallet_once', {
+          const { data, error } = await auditedRpc('merge_verified_v2_guest_wallet_once', {
             p_guest_wallet_id: body.walletId, p_guest_secret_hash: secretHash,
             p_apple_sub: appleSub, p_session_token_hash: sessionHash,
             p_request_id: body.idempotencyKey,
@@ -340,6 +670,33 @@ Deno.serve(async (req: Request) => {
       }
       if (!result) throw new Error('Missing resumed wallet merge result')
       return respond({ decision: result.decision, canonicalWalletId: result.canonical_wallet_id })
+    }
+
+    // Resume only the wallet belonging to this live session, never a client-supplied pair.
+    if (body.action === 'resume_linked') {
+      if (!walletAutoMergeAllUsersEnabled) return respond({ error: 'Wallet merge unavailable.' }, 404)
+      if (!isHexSecret(body.sessionToken)) return respond({ error: 'Invalid wallet session.' }, 401)
+      const tokenHash = await walletTokenHash(body.sessionToken)
+      const { data: session, error } = await supabase.from('credit_wallet_sessions')
+        .select('apple_sub, wallet_id, expires_at, revoked_at')
+        .eq('token_hash', tokenHash).maybeSingle()
+      if (error) throw error
+      if (!session || session.revoked_at || Date.parse(session.expires_at) <= Date.now()) {
+        return respond({ error: 'Active Apple wallet session required.' }, 401)
+      }
+      const { data: owner, error: ownerError } = await supabase.from('device_credits')
+        .select('apple_user_id').eq('device_id', session.wallet_id).maybeSingle()
+      if (ownerError) throw ownerError
+      if (owner?.apple_user_id !== session.apple_sub) {
+        return respond({ error: 'Wallet session no longer matches the account.' }, 403)
+      }
+      const { data: activated, error: activationError } = await supabase.from('credit_protected_wallets')
+        .select('wallet_id').eq('wallet_id', session.wallet_id).maybeSingle()
+      if (activationError) throw activationError
+      if (!activated) return respond({ error: 'Apple wallet session must be activated.' }, 409)
+      const linkedMerge = await mergeLinkedAppleSubject(session.apple_sub, session.wallet_id,
+        tokenHash, `linked-merge:auto-v1:${await sha256(session.apple_sub)}`)
+      return respond({ walletId: session.wallet_id, linkedMerge })
     }
 
     if (typeof body?.identityToken !== 'string' || body.identityToken.length > 16_384) {
@@ -355,7 +712,7 @@ Deno.serve(async (req: Request) => {
     if (body.action === 'sign_in') {
       const bytes = crypto.getRandomValues(new Uint8Array(32))
       const sessionToken = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
-      const { data: walletId, error } = await supabase.rpc('issue_apple_wallet_session', {
+      const { data: walletId, error } = await auditedRpc('issue_apple_wallet_session', {
         p_apple_sub: identity.sub,
         p_token_hash: await walletTokenHash(sessionToken),
         p_expires_at: new Date(Date.now() + 29 * 24 * 60 * 60 * 1000).toISOString(),
@@ -379,10 +736,19 @@ Deno.serve(async (req: Request) => {
       if (!session || session.apple_sub !== identity.sub) {
         return respond({ error: 'Wallet session does not match Apple account.' }, 403)
       }
-      const { data: walletId, error } = await supabase.rpc('activate_apple_wallet_session', {
+      const { data: walletId, error } = await auditedRpc('activate_apple_wallet_session', {
         p_token_hash: tokenHash,
       })
       if (error) throw error
+      if (walletAutoMergeAllUsersEnabled) {
+        const linkedMerge = await mergeLinkedAppleSubject(
+          identity.sub,
+          walletId,
+          tokenHash,
+          `linked-merge:auto-v1:${await sha256(identity.sub)}`,
+        )
+        return respond({ walletId, state: 'active', linkedMerge })
+      }
       return respond({ walletId, state: 'active' })
     }
 
@@ -392,21 +758,33 @@ Deno.serve(async (req: Request) => {
           body.idempotencyKey.length < 1 || body.idempotencyKey.length > 128) {
         return respond({ error: 'Invalid merge proof.' }, 400)
       }
-      const { data, error } = await supabase.rpc('merge_linked_apple_subject_wallets_once', {
-        p_apple_sub: identity.sub,
-        p_request_id: body.idempotencyKey,
-        p_token_hash: await walletTokenHash(body.sessionToken),
-      })
-      if (error?.code === 'P0001') return respond({ error: 'Wallet transfer requires review.' }, 409)
-      if (error) throw error
-      const result = data?.[0]
-      if (!result) throw new Error('Missing merge result')
-      return respond({
-        decision: result.decision,
-        canonicalWalletId: result.canonical_wallet_id,
-        freeCredits: result.free_credits_remaining,
-        paidCredits: result.paid_credits_remaining,
-      })
+      const tokenHash = await walletTokenHash(body.sessionToken)
+      const { data: session, error: sessionError } = await supabase
+        .from('credit_wallet_sessions')
+        .select('wallet_id, apple_sub, expires_at, revoked_at')
+        .eq('token_hash', tokenHash)
+        .maybeSingle()
+      if (sessionError) throw sessionError
+      if (!session || session.revoked_at || Date.parse(session.expires_at) <= Date.now()) {
+        return respond({ error: 'Active Apple wallet session required.' }, 401)
+      }
+      if (session.apple_sub !== identity.sub) {
+        return respond({ error: 'Wallet session does not match Apple account.' }, 403)
+      }
+      const result = await mergeLinkedAppleSubject(
+        identity.sub,
+        session.wallet_id,
+        tokenHash,
+        body.idempotencyKey,
+      )
+      if (result.decision === 'retry_later') {
+        return respond({ error: 'Wallet merge is temporarily deferred.',
+          code: 'WALLET_MERGE_RETRY_LATER', retry_after_seconds: result.retryAfterSeconds }, 409)
+      }
+      if (result.decision === 'review_required') {
+        return respond({ error: 'Wallet transfer requires review.' }, 409)
+      }
+      return respond(result)
     }
 
     if (body.action === 'merge_legacy') {
@@ -418,18 +796,72 @@ Deno.serve(async (req: Request) => {
           body.idempotencyKey.length < 1 || body.idempotencyKey.length > 128) {
         return respond({ error: 'Invalid legacy merge proof.' }, 400)
       }
-      // Legacy IDs are public identifiers, not possession proofs. Keep this
-      // route closed except for a separately reviewed subject/source pair.
+      // Session activation may already have merged the Apple-subject wallet.
+      // Recognize that exact alias before retrying through the legacy RPC.
+      if (body.sourceWalletId === identity.sub) {
+        const tokenHash = await walletTokenHash(body.sessionToken)
+        const { data: session, error: sessionError } = await supabase
+          .from('credit_wallet_sessions')
+          .select('wallet_id, apple_sub, expires_at, revoked_at')
+          .eq('token_hash', tokenHash)
+          .maybeSingle()
+        if (sessionError) throw sessionError
+        if (!session || session.apple_sub !== identity.sub || session.revoked_at ||
+            Date.parse(session.expires_at) <= Date.now()) {
+          return respond({ error: 'Active Apple wallet session required.' }, 401)
+        }
+        const { data: activatedWallet, error: activationError } = await supabase
+          .from('credit_protected_wallets')
+          .select('wallet_id')
+          .eq('wallet_id', session.wallet_id)
+          .maybeSingle()
+        if (activationError) throw activationError
+        if (!activatedWallet) {
+          return respond({ error: 'Apple wallet session must be activated.' }, 409)
+        }
+        const { data: priorAlias, error: aliasError } = await supabase
+          .from('credit_wallet_aliases')
+          .select('canonical_wallet_id, apple_sub')
+          .eq('source_wallet_id', body.sourceWalletId)
+          .maybeSingle()
+        if (aliasError) throw aliasError
+        if (priorAlias) {
+          if (priorAlias.apple_sub !== identity.sub ||
+              priorAlias.canonical_wallet_id !== session.wallet_id) {
+            return respond({ error: 'Wallet transfer requires review.' }, 409)
+          }
+          const { data: canonicalWallet, error: walletError } = await supabase
+            .from('device_credits')
+            .select('free_credits, paid_credits, subscription_credits, apple_user_id')
+            .eq('device_id', session.wallet_id)
+            .maybeSingle()
+          if (walletError) throw walletError
+          if (!canonicalWallet || canonicalWallet.apple_user_id !== identity.sub) {
+            return respond({ error: 'Wallet transfer requires review.' }, 409)
+          }
+          return respond({
+            decision: 'already_linked',
+            canonicalWalletId: session.wallet_id,
+            freeCredits: canonicalWallet.free_credits,
+            paidCredits: canonicalWallet.paid_credits,
+            subscriptionCredits: canonicalWallet.subscription_credits,
+          })
+        }
+      }
+      // Legacy IDs are public identifiers, not possession proofs.
       if (Deno.env.get('WALLET_LEGACY_MERGE_ENABLED') !== 'true') {
         return respond({ error: 'Wallet transfer requires review.' }, 409)
       }
-      // A legacy wallet ID is public and cannot prove possession. No global
-      // rollout flag may bypass the separately reviewed exact-pair allowlist.
+      // Apple proves ownership of its own subject-ID wallet. Arbitrary legacy
+      // device IDs still need the separately reviewed exact-pair allowlist.
       const approvedPairs = JSON.parse(
         Deno.env.get('WALLET_LEGACY_MERGE_CANARY_PAIRS') ?? '{}',
       ) as Record<string, string[]>
-      if (!Array.isArray(approvedPairs[identity.sub]) ||
-          !approvedPairs[identity.sub].includes(body.sourceWalletId)) {
+      const ownsAppleSubjectWallet = walletAutoMergeAllUsersEnabled &&
+        body.sourceWalletId === identity.sub
+      const reviewedPair = Array.isArray(approvedPairs[identity.sub]) &&
+        approvedPairs[identity.sub].includes(body.sourceWalletId)
+      if (!ownsAppleSubjectWallet && !reviewedPair) {
         return respond({ error: 'Wallet transfer requires review.' }, 409)
       }
       const { data: sourceWallet, error: sourceWalletError } = await supabase
@@ -470,13 +902,14 @@ Deno.serve(async (req: Request) => {
       }
       if ((Number(sourceWallet?.subscription_credits ?? 0) > 0 || sourcePurchase) &&
           (!verifiedSubscriptionToken || !verifiedProductId ||
-           !await verifyAppleSubscriptionRecord(
-             verifiedSubscriptionToken, verifiedProductId, BUNDLE_ID,
+           !await verifySubscribedGuestPurchase(
+             verifiedSubscriptionToken, verifiedProductId, identity.sub,
+             body.sourceWalletId, false, walletAutoMergeAllUsersEnabled,
            ))) {
         return respond({ error: 'Subscription transfer requires review.' }, 409)
       }
 
-      const { data, error } = await supabase.rpc('merge_verified_legacy_wallet_v2_once', {
+      const { data, error } = await auditedRpc('merge_verified_legacy_wallet_v2_once', {
         p_source_wallet_id: body.sourceWalletId,
         p_apple_sub: identity.sub,
         p_session_token_hash: await walletTokenHash(body.sessionToken),
@@ -484,6 +917,10 @@ Deno.serve(async (req: Request) => {
         p_verified_subscription_token: verifiedSubscriptionToken,
         p_verified_product_id: verifiedProductId,
       })
+      if (error?.code === 'P0001' && error.message === 'Recent AI usage must settle before wallet merge') {
+        return respond({ error: 'Wallet merge is temporarily deferred.',
+          code: 'WALLET_MERGE_RETRY_LATER', retry_after_seconds: 300 }, 409)
+      }
       if (error?.code === 'P0001') return respond({ error: 'Wallet transfer requires review.' }, 409)
       if (error) throw error
       const result = data?.[0]
@@ -509,7 +946,7 @@ Deno.serve(async (req: Request) => {
           body.idempotencyKey.length < 1 || body.idempotencyKey.length > 128) {
         return respond({ error: 'Invalid merge proof.' }, 400)
       }
-      const { data, error } = await supabase.rpc('merge_verified_v2_guest_wallet_once', {
+      const { data, error } = await auditedRpc('merge_verified_v2_guest_wallet_once', {
         p_guest_wallet_id: body.walletId,
         p_guest_secret_hash: secretHash,
         p_apple_sub: identity.sub,
@@ -533,8 +970,9 @@ Deno.serve(async (req: Request) => {
         (Deno.env.get('WALLET_SUBSCRIPTION_MERGE_CANARY_APPLE_IDS') ?? '')
           .split(',').map((id) => id.trim()).filter(Boolean),
       )
-      if ((!allUsersEnabled && !subscriptionCanaries.has(identity.sub) &&
-           await sha256(identity.sub) !== '014252a83ff1048722f43fecfec725a43c4ce151af89bc1aad535f0609de8c45') ||
+      const isSubscriptionCanary = subscriptionCanaries.has(identity.sub) ||
+        await sha256(identity.sub) === '014252a83ff1048722f43fecfec725a43c4ce151af89bc1aad535f0609de8c45'
+      if ((!allUsersEnabled && !isSubscriptionCanary) ||
           !isHexSecret(body.sessionToken) ||
           typeof body.idempotencyKey !== 'string' || body.idempotencyKey.length < 1 ||
           body.idempotencyKey.length > 128) {
@@ -568,8 +1006,9 @@ Deno.serve(async (req: Request) => {
           return respond({ error: 'Subscription transfer requires review.' }, 409)
         }
       }
-      if (!priorTransfer && !await verifyAppleSubscriptionRecord(
-        purchaseToken!, sourcePurchase!.product_id, BUNDLE_ID, false,
+      if (!priorTransfer && !await verifySubscribedGuestPurchase(
+        purchaseToken!, sourcePurchase!.product_id, identity.sub, body.walletId,
+        isSubscriptionCanary, walletAutoMergeAllUsersEnabled,
       )) {
         // A failed purchase check must never move subscription credits. For
         // approved test accounts, defer the transfer without blocking sign-in.
@@ -579,7 +1018,7 @@ Deno.serve(async (req: Request) => {
         }
         return respond({ error: 'Apple subscription does not match this wallet.' }, 409)
       }
-      const { data, error } = await supabase.rpc('merge_verified_v2_subscribed_guest_preserving_once', {
+      const { data, error } = await auditedRpc('merge_verified_v2_subscribed_guest_preserving_once', {
         p_guest_wallet_id: body.walletId,
         p_guest_secret_hash: secretHash,
         p_apple_sub: identity.sub,
@@ -604,7 +1043,7 @@ Deno.serve(async (req: Request) => {
           body.idempotencyKey.length < 1 || body.idempotencyKey.length > 128) {
         return respond({ error: 'Invalid idempotency key.' }, 400)
       }
-      const { data, error } = await supabase.rpc('link_apple_wallet_v2', {
+      const { data, error } = await auditedRpc('link_apple_wallet_v2', {
         p_wallet_id: body.walletId,
         p_secret_hash: secretHash,
         p_apple_sub: identity.sub,
@@ -636,7 +1075,21 @@ Deno.serve(async (req: Request) => {
 
     return respond({ error: 'Unknown action.' }, 400)
   } catch (error) {
-    console.error('[wallet_link_v2]', error)
+    const details = error && typeof error === 'object'
+      ? error as { code?: unknown; message?: unknown }
+      : {}
+    const message = typeof details.message === 'string' ? details.message : ''
+    console.error(JSON.stringify({
+      event: 'wallet_link_v2_failure',
+      auditId,
+      walletFingerprints: [...walletFingerprints],
+      operationFingerprint,
+      action: requestAction,
+      stage,
+      sqlstate: typeof details.code === 'string' ? details.code : null,
+      reason: message === 'Service role required' ? 'service_role_required' : 'other',
+      serviceRoleKeyKind: serviceRoleKeyKind(Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')),
+    }))
     return respond({ error: 'Wallet linking unavailable.' }, 500)
   }
 })

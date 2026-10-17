@@ -1,0 +1,195 @@
+{
+  "recordedAt": "2026-10-18",
+  "source": "Supabase read-only connector, verified against live-functions",
+  "note": "Only ../_shared imports in entrypoints are relocated to ./_shared to preserve each live bundle independently.",
+  "functions": {
+    "apple_notifications": {
+      "files": [
+        {
+          "source": "apple_notifications/index.ts",
+          "snapshot": "apple_notifications/apple_notifications/index.ts",
+          "sha256": "468d91cab313797c53f8c403b72f66f3a1f126b39fcdd1d49b5a7da9e62e34c7"
+        },
+        {
+          "source": "apple_notifications/_shared/apple_notification_verifier.ts",
+          "snapshot": "apple_notifications/_shared/apple_notification_verifier.ts",
+          "sha256": "5ebdb79d78031d55d3000a53d6b4c33992467c17a2c248eb475b6ce233dbc167"
+        },
+        {
+          "source": "apple_notifications/_shared/apple_subscription_portable.ts",
+          "snapshot": "apple_notifications/_shared/apple_subscription_portable.ts",
+          "sha256": "7287457ae7d472180d8f1ad9d4359fcbd73d75c77289e7ec5fa698892fc285d9"
+        },
+        {
+          "source": "apple_notifications/_shared/telegram.ts",
+          "snapshot": "apple_notifications/_shared/telegram.ts",
+          "sha256": "932ca4944375a8bfe063af51609eb31d51c3f01f2ccd2a0d692b032ea60572dc"
+        },
+        {
+          "source": "apple_notifications/_shared/credits.ts",
+          "snapshot": "apple_notifications/_shared/credits.ts",
+          "sha256": "efbc3a7f6c9a006c3bc1abedcd460c849fed435bba48d198b9991182c3fe5470"
+        }
+      ]
+    },
+    "correct": {
+      "files": [
+        {
+          "source": "correct/index.ts",
+          "snapshot": "correct/correct/index.ts",
+          "sha256": "5def43dc16aec1df1077cfc1493335964e36bb28a9e60b29f86037e6f83a3033"
+        },
+        {
+          "source": "correct/proofing_edits.ts",
+          "snapshot": "correct/correct/proofing_edits.ts",
+          "sha256": "12deac4c152276fbabc0ba60e839cdc3fc3293972a24a8224b452eb93b82d7fb"
+        },
+        {
+          "source": "correct/_shared/credits.ts",
+          "snapshot": "correct/correct/_shared/credits.ts",
+          "sha256": "efbc3a7f6c9a006c3bc1abedcd460c849fed435bba48d198b9991182c3fe5470"
+        },
+        {
+          "source": "correct/_shared/wallet_auth.ts",
+          "snapshot": "correct/correct/_shared/wallet_auth.ts",
+          "sha256": "92072cf8d93e3b5561680529bacab74b17506238dd07b29703dce7bac3f42382"
+        }
+      ]
+    },
+    "get_credits": {
+      "files": [
+        {
+          "source": "get_credits/index.ts",
+          "snapshot": "get_credits/get_credits/index.ts",
+          "sha256": "6264071f8c80e9f66ec6eebd3cb023700036ba385cefc2ea01fc3552935068a0"
+        },
+        {
+          "source": "get_credits/_shared/wallet_auth.ts",
+          "snapshot": "get_credits/_shared/wallet_auth.ts",
+          "sha256": "c85f95c44a33bf9ba540810937b20b892a23653272f2cfa32b025b5e1aa06ef6"
+        }
+      ]
+    },
+    "link_apple_user": {
+      "files": [
+        {
+          "source": "link_apple_user/index.ts",
+          "snapshot": "link_apple_user/link_apple_user/index.ts",
+          "sha256": "cbcd7adf91cdad203d6836e8665c8b67fc37c20e3dc998bbd2ad8d49fc95acf3"
+        },
+        {
+          "source": "link_apple_user/_shared/apple_auth.ts",
+          "snapshot": "link_apple_user/_shared/apple_auth.ts",
+          "sha256": "4fbadff3c5f340fc85d9ff837dd00f9fcd9a5d9c30a5cfe435bc630a3d1c5ff4"
+        },
+        {
+          "source": "link_apple_user/_shared/wallet_auth.ts",
+          "snapshot": "link_apple_user/_shared/wallet_auth.ts",
+          "sha256": "26507c2a7a8b6725117a03cc9cde841ec9be40f34d7bea111638a622169baa1c"
+        }
+      ]
+    },
+    "sync_subscription_ios": {
+      "files": [
+        {
+          "source": "sync_subscription_ios/index.ts",
+          "snapshot": "sync_subscription_ios/sync_subscription_ios/index.ts",
+          "sha256": "bd262c58a03fd2c15e751588cedf33a05ed0949d4e7f9aa7d1165b58ad11ab77"
+        },
+        {
+          "source": "sync_subscription_ios/_shared/credits.ts",
+          "snapshot": "sync_subscription_ios/_shared/credits.ts",
+          "sha256": "efbc3a7f6c9a006c3bc1abedcd460c849fed435bba48d198b9991182c3fe5470"
+        },
+        {
+          "source": "sync_subscription_ios/_shared/apple_receipt.ts",
+          "snapshot": "sync_subscription_ios/_shared/apple_receipt.ts",
+          "sha256": "b19ff55ec3cd1fbc8d9f59e2be013277f3207ab76763fc2a0e57a06ada685368"
+        },
+        {
+          "source": "sync_subscription_ios/_shared/apple_subscription_status.ts",
+          "snapshot": "sync_subscription_ios/_shared/apple_subscription_status.ts",
+          "sha256": "3e4635dffcafe41e75ff3880db5895a3e6cddb025974e95f31a9c935816c6bd4"
+        },
+        {
+          "source": "sync_subscription_ios/_shared/apple_subscription_portable.ts",
+          "snapshot": "sync_subscription_ios/_shared/apple_subscription_portable.ts",
+          "sha256": "4adaf6808394efd4fcefed1470cbaf5b1b0c6f6fe36671ffd92d580fc30b3cd9"
+        },
+        {
+          "source": "sync_subscription_ios/_shared/wallet_auth.ts",
+          "snapshot": "sync_subscription_ios/_shared/wallet_auth.ts",
+          "sha256": "e6ece4f32cd5d7d5358b6d1d23bab5f7dd1228914081c9de53d0a84281fd1cfe"
+        },
+        {
+          "source": "sync_subscription_ios/_shared/subscription_audit.ts",
+          "snapshot": "sync_subscription_ios/_shared/subscription_audit.ts",
+          "sha256": "609166e46167ee5380d2a323e875294d1ab268ffe412999a0648b6ea72e38554"
+        },
+        {
+          "source": "sync_subscription_ios/_shared/subscription_alerts.ts",
+          "snapshot": "sync_subscription_ios/_shared/subscription_alerts.ts",
+          "sha256": "c7d42ee3f3af1b36c69bc12cfb65eafbd3d8f04d7d70e7decc6375c448270369"
+        }
+      ]
+    },
+    "translate": {
+      "files": [
+        {
+          "source": "translate/index.ts",
+          "snapshot": "translate/translate/index.ts",
+          "sha256": "3089de6f02d005fc1c343dcdf613084d6f93a42e3e083a27cccf43ec9b9530e1"
+        },
+        {
+          "source": "translate/_shared/credits.ts",
+          "snapshot": "translate/_shared/credits.ts",
+          "sha256": "b45ea99450b2cc6b1b3393bc090fa89114e414e3d79aa504bd1c89711b0edb22"
+        },
+        {
+          "source": "translate/_shared/wallet_auth.ts",
+          "snapshot": "translate/_shared/wallet_auth.ts",
+          "sha256": "22f29ed721d95783b4edb9b57e40b2f56ada18365d2b89ae03940b34776f1473"
+        }
+      ]
+    },
+    "wallet_link_v2": {
+      "files": [
+        {
+          "source": "wallet_link_v2/index.ts",
+          "snapshot": "wallet_link_v2/wallet_link_v2/index.ts",
+          "sha256": "9d7299f2b3ec977a269ea1fe99a874e61a874a93217ec6b7219f688aa7235187"
+        },
+        {
+          "source": "wallet_link_v2/_shared/apple_auth.ts",
+          "snapshot": "wallet_link_v2/_shared/apple_auth.ts",
+          "sha256": "055bd2a8e05d6aa0df646fe826bece2d7ba747b26d0f41dff366cabd2983e62e"
+        },
+        {
+          "source": "wallet_link_v2/_shared/apple_subscription_status.ts",
+          "snapshot": "wallet_link_v2/_shared/apple_subscription_status.ts",
+          "sha256": "f8eaed6cfa72c6a6fdba5b3289fd7e3ac0aa3a34cf259e2947a7a6b54eebdcff"
+        },
+        {
+          "source": "wallet_link_v2/_shared/apple_subscription_portable.ts",
+          "snapshot": "wallet_link_v2/_shared/apple_subscription_portable.ts",
+          "sha256": "4adaf6808394efd4fcefed1470cbaf5b1b0c6f6fe36671ffd92d580fc30b3cd9"
+        },
+        {
+          "source": "wallet_link_v2/_shared/wallet_auth.ts",
+          "snapshot": "wallet_link_v2/_shared/wallet_auth.ts",
+          "sha256": "47348a452be75a1d32d8a7e283b6269c46b3c7348492511ff268245443a889fb"
+        },
+        {
+          "source": "wallet_link_v2/_shared/devicecheck.ts",
+          "snapshot": "wallet_link_v2/_shared/devicecheck.ts",
+          "sha256": "0817dcfd6ef4b19f481770657bc85856f29321f543164d6630c5d5449fdfbbe5"
+        },
+        {
+          "source": "wallet_link_v2/_shared/subscription_audit.ts",
+          "snapshot": "wallet_link_v2/_shared/subscription_audit.ts",
+          "sha256": "300a5315f509b49e653b68201e2bf7806527b2b3a1aa11a8153a54ad087b0f35"
+        }
+      ]
+    }
+  }
+}
