@@ -1,0 +1,101 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { stripTypeScriptTypes } from 'node:module';
+import { test } from 'node:test';
+
+const source = readFileSync(new URL('../functions/daily_checkin/index.ts', import.meta.url), 'utf8');
+const runnable = stripTypeScriptTypes(source
+  .replace(/^import \{ createClient \} from .*$/m, 'const createClient = globalThis.__createClient;')
+  .replace(/^import \{ resolveCreditWallet, WalletAccessError \} from .*$/m,
+    'const resolveCreditWallet = globalThis.__resolveCreditWallet; const WalletAccessError = globalThis.__WalletAccessError;'));
+
+async function invoke({ existing = null, requireV2 = false, lookupError = null } = {}) {
+  let handler;
+  const upserts = [];
+  let insertedRow = null;
+  globalThis.Deno = {
+    env: { get: (key) => key === 'WALLET_REQUIRE_V2_GUEST_REGISTRATION' && requireV2 ? 'true' : undefined },
+    serve: (callback) => { handler = callback; },
+  };
+  globalThis.__WalletAccessError = class WalletAccessError extends Error {};
+  globalThis.__resolveCreditWallet = async (_req, _supabase, requestedId) => ({
+    walletId: requestedId,
+    authenticated: false,
+  });
+  globalThis.__createClient = () => ({
+    from(table) {
+      assert.equal(table, 'device_credits');
+      const builder = {
+        select() { return this; },
+        eq(_column, _value) { return this; },
+        maybeSingle: async () => ({ data: existing, error: lookupError }),
+        upsert(row) {
+          upserts.push(row);
+          insertedRow = row;
+          return this;
+        },
+        single: async () => ({
+          data: insertedRow && { free_credits: insertedRow.free_credits, paid_credits: insertedRow.paid_credits },
+          error: null,
+        }),
+        then(resolve, reject) {
+          return Promise.resolve({ data: insertedRow ? [{ device_id: insertedRow.device_id }] : [], error: null })
+            .then(resolve, reject);
+        },
+      };
+      return builder;
+    },
+  });
+  await import(`data:text/javascript,${encodeURIComponent(runnable)}#${crypto.randomUUID()}`);
+  const response = await handler(new Request('http://localhost/daily_checkin', {
+    method: 'POST',
+    body: JSON.stringify({ deviceId: 'legacy-device' }),
+  }));
+  return {
+    status: response.status,
+    body: await response.json(),
+    diagnosticHeader: response.headers.get('X-Kingboard-Diagnostic-ID'),
+    upserts,
+  };
+}
+
+test('rollout gate keeps existing legacy wallets readable without granting again', async () => {
+  const result = await invoke({
+    existing: { device_id: 'legacy-device', free_credits: 27, paid_credits: 90, subscription_credits: 4000 },
+    requireV2: true,
+  });
+  assert.equal(result.status, 200);
+  assert.equal(result.body.free_credits_remaining, 27);
+  assert.equal(result.body.paid_credits_remaining, 4090);
+  assert.equal(result.body.credits_remaining, 4117);
+  assert.equal(result.body.awarded_credits, 0);
+  assert.equal(result.upserts.length, 0);
+});
+
+test('a missing wallet is never created or granted 500 through daily check-in', async () => {
+  const result = await invoke();
+  assert.equal(result.status, 409);
+  assert.equal(result.body.code, 'WALLET_REGISTRATION_REQUIRED');
+  assert.match(result.body.error, /최신 버전으로 업데이트/);
+  assert.equal(result.upserts.length, 0);
+});
+
+test('live lookup failure returns 500 without a replacement wallet or credit grant', async () => {
+  const result = await invoke({ lookupError: new Error('private database diagnostic') });
+  assert.equal(result.status, 500);
+  assert.equal(typeof result.body.error, 'string');
+  assert.equal(result.upserts.length, 0);
+
+});
+
+test('existing legacy wallet remains readable and unchanged even with V2 rollout requested', async () => {
+  const result = await invoke({
+    existing: { device_id: 'legacy-device', free_credits: 312, paid_credits: 80, subscription_credits: 0 },
+    requireV2: true,
+  });
+  assert.equal(result.status, 200);
+  assert.equal(result.body.free_credits_remaining, 312);
+  assert.equal(result.body.paid_credits_remaining, 80);
+  assert.equal(result.body.awarded_credits, 0);
+  assert.equal(result.upserts.length, 0);
+});

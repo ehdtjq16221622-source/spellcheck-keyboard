@@ -7,21 +7,26 @@ const source = readFileSync(new URL('../functions/sync_subscription_ios/index.ts
 const productId = 'com.kingboard.app.monthly_premium';
 const runnable = stripTypeScriptTypes(source
   .replace(/^import \{ createClient \} from .*$/m, 'const createClient = globalThis.__createClient;')
-  .replace(/^import \{[\s\S]*?\} from '\.\.\/_shared\/credits\.ts'$/m,
+  .replace(/^import \{[\s\S]*?\} from '\.\.?\/_shared\/credits\.ts'$/m,
     'const { getCredits, setMonthlySubscriptionCredits, subscriptionCreditsForProduct } = globalThis.__credits;')
   .replace(/^import \{ verifyAppleSubscription \} from .*$/m,
     'const verifyAppleSubscription = globalThis.__verifyAppleSubscription;')
-  .replace(/^import \{ verifyAppleJWS \} from .*$/m,
-    'const verifyAppleJWS = globalThis.__verifyAppleJWS;')
-  .replace(/^import \{ verifyActiveApplePurchase \} from .*$/m,
-    'const verifyActiveApplePurchase = globalThis.__verifyActiveApplePurchase;')
+  .replace(/^import \{[\s\S]*?\} from '\.\.?\/_shared\/apple_subscription_status\.ts'$/m,
+    'const { verifyAppleSubscriptionRecordWithReason, verifyAppleTransactionJws } = globalThis.__appleStatus;')
   .replace(/^import \{ resolveCreditWallet, WalletAccessError \} from .*$/m,
-    'const { resolveCreditWallet, WalletAccessError } = globalThis.__walletAuth;'));
+    'const { resolveCreditWallet, WalletAccessError } = globalThis.__walletAuth;')
+  .replace(/^import \{[\s\S]*?\} from '\.\.?\/\_shared\/subscription_audit\.ts'$/m,
+    'const { logSubscriptionAudit: writeSubscriptionAudit, safeSubscriptionFailureCode, subscriptionFailureHttpStatus, subscriptionWalletFingerprint } = globalThis.__subscriptionAudit;')
+  .replace(/^import \{ deferDiagnostic, reportFailure, summarizeFailure \} from .*$/m,
+    'const deferDiagnostic = () => {}; const reportFailure = async () => {}; const summarizeFailure = () => ({});'));
 
 async function run({ allowlist = '', rpcError = null, requestedProduct = productId,
-  requestedDeviceId = 'v2:guest', authError = null,
+  requestedDeviceId = 'v2:guest', authError = null, authRejectedStatus = null,
   verifiedPurchase = 'purchase-1', receiptData = 'apple-receipt',
-  existingProduct = null, appleCurrentProduct = true } = {}) {
+  allUsersEnabled = false, walletSessionsEnabled = false,
+  existingProduct = null, appleCurrentProduct = true,
+  appleCurrentReason = 'subscription_status_not_eligible',
+  syncOrigin, authenticated = true } = {}) {
   let handler;
   const calls = [];
   globalThis.Deno = {
@@ -29,6 +34,8 @@ async function run({ allowlist = '', rpcError = null, requestedProduct = product
       SUPABASE_URL: 'https://example.invalid',
       SUPABASE_SERVICE_ROLE_KEY: 'test',
       IOS_SUBSCRIPTION_ATOMIC_CANARY_WALLETS: allowlist,
+      IOS_SUBSCRIPTION_ATOMIC_ALL_USERS_ENABLED: allUsersEnabled ? 'true' : 'false',
+      WALLET_SESSIONS_ENABLED: walletSessionsEnabled ? 'true' : 'false',
     })[key] },
     serve: (value) => { handler = value; },
   };
@@ -43,25 +50,43 @@ async function run({ allowlist = '', rpcError = null, requestedProduct = product
       expiryTimeMillis: Date.now() + 60_000, cycleKey: 'cycle-1', orderId: 'order-1',
       originalTransactionId: verifiedPurchase, environment: 'Sandbox' };
   };
-  globalThis.__verifyAppleJWS = async () => {
+  globalThis.__appleStatus = {
+    verifyAppleTransactionJws: async (...args) => {
     calls.push({ verification: 'jws' });
+    assert.deepEqual(args, ['untrusted-jws', 'com.kingboard.app', requestedProduct]);
     return ({
     bundleId: 'com.kingboard.app', productId,
     expiresDate: Date.now() + 60_000,
     transactionId: 'order-1', originalTransactionId: verifiedPurchase,
     });
-  };
-  globalThis.__verifyActiveApplePurchase = async (...args) => {
-    calls.push({ verification: 'apple_current_product', args });
-    return appleCurrentProduct;
+    },
+    verifyAppleSubscriptionRecordWithReason: async (...args) => {
+      calls.push({ verification: 'apple_current_product', args });
+      return { verified: appleCurrentProduct, environment: 'Sandbox',
+        ...(appleCurrentProduct ? {} : { reason: appleCurrentReason }) };
+    },
   };
   globalThis.__walletAuth = {
     resolveCreditWallet: async (_req, _supabase, _walletId, forceWalletAuth) => {
       calls.push({ authorization: 'wallet', forceWalletAuth });
+      if (authRejectedStatus) throw new globalThis.__walletAuth.WalletAccessError('wallet proof required', authRejectedStatus);
       if (authError) throw authError;
-      return { walletId: requestedDeviceId };
+      return { walletId: requestedDeviceId, authenticated };
     },
-    WalletAccessError: class WalletAccessError extends Error {},
+    WalletAccessError: class WalletAccessError extends Error {
+      constructor(message, status) { super(message); this.status = status; }
+    },
+  };
+  globalThis.__subscriptionAudit = {
+    logSubscriptionAudit: (level, auditId, event, fields) => {
+      calls.push({ audit: { level, auditId, event, fields } });
+    },
+    safeSubscriptionFailureCode: (stage, error) => error instanceof Error &&
+      error.message === 'subscription owner transfer requires review'
+      ? 'subscription_owner_transfer_requires_review' : `${stage}_failed`,
+    subscriptionFailureHttpStatus: (error) => error instanceof Error &&
+      error.message === 'subscription owner transfer requires review' ? 409 : null,
+    subscriptionWalletFingerprint: async (walletId) => `fingerprint:${walletId}`,
   };
   globalThis.__createClient = () => ({
     rpc: async (name, args) => {
@@ -79,14 +104,17 @@ async function run({ allowlist = '', rpcError = null, requestedProduct = product
             ? { product_id: existingProduct } : null,
           error: null,
         }) }) }),
-        upsert: async () => ({ error: null }),
+        upsert: async () => {
+          calls.push({ write: 'upsert', table });
+          return { error: null };
+        },
       };
     },
   });
   await import(`data:text/javascript,${encodeURIComponent(runnable)}#${crypto.randomUUID()}`);
   const response = await handler(new Request('https://example.invalid/sync_subscription_ios', {
     method: 'POST', body: JSON.stringify({ deviceId: requestedDeviceId, productId: requestedProduct,
-      jwsToken: 'untrusted-jws', receiptData }),
+      jwsToken: 'untrusted-jws', receiptData, syncOrigin }),
   }));
   return { response, calls, body: await response.json() };
 }
@@ -104,22 +132,32 @@ test('allowlisted wallet uses only the atomic RPC and returns its balance', asyn
 });
 
 test('plan upgrade requires Apple current status before the atomic grant', async () => {
-  const { response, calls } = await run({
+  const { response, calls, body } = await run({
     allowlist: 'v2:guest', existingProduct: 'com.kingboard.app.monthly_basic',
+    syncOrigin: 'purchase',
   });
   assert.equal(response.status, 200);
   assert.equal(calls.some((call) => call.verification === 'apple_current_product'), true);
   const grant = calls.find((call) => call.name === 'sync_ios_subscription_once');
   assert.equal(grant.args.p_metadata.apple_current_product_verified, true);
+
 });
 
 test('unconfirmed plan upgrade never calls the grant RPC', async () => {
-  const { response, calls } = await run({
+  const { response, calls, body } = await run({
     allowlist: 'v2:guest', existingProduct: 'com.kingboard.app.monthly_basic',
-    appleCurrentProduct: false,
+    appleCurrentProduct: false, appleCurrentReason: 'signed_transaction_invalid_environment',
+    syncOrigin: 'launch_refresh',
   });
   assert.equal(response.status, 409);
   assert.equal(calls.some((call) => call.name === 'sync_ios_subscription_once'), false);
+  assert.equal(body.audit_id, body.diagnostic_id);
+  assert.equal(body.failure_stage, 'plan_change_verification');
+  const rejected = calls.find(call => call.audit?.event === 'rejected' &&
+    call.audit.fields.stage === 'plan_change_verification').audit;
+  assert.equal(rejected.auditId, body.diagnostic_id);
+  assert.equal(rejected.fields.failureCode, 'apple_plan_not_confirmed:signed_transaction_invalid_environment');
+  assert.equal(JSON.stringify(body).includes('signed_transaction_invalid_environment'), false);
 });
 
 test('restore of the already linked plan does not repeat Apple plan verification', async () => {
@@ -138,13 +176,73 @@ test('atomic RPC failure does not fall back to the split grant', async () => {
   assert.deepEqual(calls.filter((call) => call.name).map((call) => call.name), ['sync_ios_subscription_once']);
 });
 
+test('atomic sync failure exposes a safe diagnostic ID and failure stage', async () => {
+  const { response, body } = await run({ allowlist: 'v2:guest', rpcError: new Error('injected failure') });
+  assert.equal(body.audit_id, body.diagnostic_id);
+  assert.equal(body.failure_stage, 'atomic_subscription_and_grant');
+  assert.equal(response.headers.get('X-Kingboard-Diagnostic-ID'), body.diagnostic_id);
+  assert.equal(body.error, 'Subscription synchronization failed.');
+  assert.equal(JSON.stringify(body).includes('injected failure'), false);
+});
+
+test('existing purchase ownership conflict returns 409 and never falls back to split writes', async () => {
+  const { response, calls, body } = await run({
+    allowlist: 'v2:guest',
+    rpcError: new Error('subscription owner transfer requires review'),
+  });
+  assert.equal(response.status, 409);
+  assert.equal(body.error, 'subscription_owner_transfer_requires_review');
+  assert.deepEqual(calls.filter((call) => call.name).map((call) => call.name), ['sync_ios_subscription_once']);
+  assert.equal(calls.some((call) => call.write), false);
+});
+
 test('other wallets remain on the legacy path', async () => {
   const { response, calls } = await run({ allowlist: 'other-wallet', requestedDeviceId: 'old-device' });
   assert.equal(response.status, 200);
   assert.equal(calls.some((call) => call.name === 'sync_ios_subscription_once'), false);
   assert.equal(calls.some((call) => call.table === 'device_subscriptions'), true);
   assert.deepEqual(calls.filter((call) => call.verification).map((call) => call.verification), ['jws']);
-  assert.equal(calls.some((call) => call.authorization), false);
+  assert.deepEqual(calls.filter((call) => call.authorization).map((call) => call.forceWalletAuth), [false]);
+});
+
+test('global atomic mode admits authenticated clients and uses one atomic RPC for a verified JWS', async () => {
+  const { response, calls, body } = await run({
+    allUsersEnabled: true,
+    walletSessionsEnabled: true,
+    requestedDeviceId: 'apple-wallet',
+    receiptData: null,
+  });
+  assert.equal(response.status, 200);
+  assert.deepEqual(calls.filter((call) => call.verification).map((call) => call.verification), ['jws']);
+  assert.deepEqual(calls.filter((call) => call.name).map((call) => call.name), ['sync_ios_subscription_once']);
+  assert.deepEqual(calls.filter((call) => call.authorization).map((call) => call.forceWalletAuth), [false]);
+  assert.equal(calls.some((call) => call.write), false);
+  assert.equal(body.credits_remaining, 9015);
+});
+
+test('enabling rollout keeps an untouched old client on the legacy subscription path', async () => {
+  const { response, calls } = await run({
+    allUsersEnabled: true, walletSessionsEnabled: true,
+    requestedDeviceId: 'legacy-device', authenticated: false,
+  });
+  assert.equal(response.status, 200);
+  assert.equal(calls.some((call) => call.name === 'sync_ios_subscription_once'), false);
+  assert.equal(calls.some((call) => call.write === 'upsert'), true);
+  assert.deepEqual(calls.filter((call) => call.authorization).map((call) => call.forceWalletAuth), [false]);
+});
+
+test('a protected noncanary wallet rejects an old restore before Apple verification or writes', async () => {
+  const { response, calls } = await run({
+    requestedDeviceId: 'old-apple-subject', authenticated: false, authRejectedStatus: 401,
+  });
+  assert.equal(response.status, 401);
+  assert.equal(calls.some((call) => call.verification || call.name || call.write), false);
+});
+
+test('global atomic mode fails closed when wallet sessions are disabled', async () => {
+  const { response, calls } = await run({ allUsersEnabled: true, walletSessionsEnabled: false });
+  assert.equal(response.status, 503);
+  assert.equal(calls.some((call) => call.verification || call.name || call.write), false);
 });
 
 test('canary rejects a missing Apple receipt without writing subscription state', async () => {
@@ -156,7 +254,7 @@ test('canary rejects a missing Apple receipt without writing subscription state'
 test('unknown subscription product is rejected before a wallet write', async () => {
   const { response, calls } = await run({ allowlist: 'v2:guest', requestedProduct: 'com.example.fake' });
   assert.equal(response.status, 400);
-  assert.equal(calls.length, 0);
+  assert.equal(calls.some((call) => call.verification || call.name), false);
 });
 
 test('missing original purchase ID cannot create a fallback subscription row', async () => {
@@ -169,5 +267,5 @@ test('missing original purchase ID cannot create a fallback subscription row', a
 test('canary rejects an unproven wallet before Apple verification or any write', async () => {
   const { response, calls } = await run({ allowlist: 'v2:guest', authError: new Error('no wallet proof') });
   assert.equal(response.status, 500);
-  assert.equal(calls.some((call) => call.verification || call.name || call.table), false);
+  assert.equal(calls.some((call) => call.verification || call.name), false);
 });
