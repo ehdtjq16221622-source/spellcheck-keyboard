@@ -53,7 +53,7 @@ test('smart tone keeps Gemini and receives the source ending instruction', async
   const { handler, calls } = await createHandler();
   const response = await handler(new Request('http://localhost/correct', {
     method: 'POST',
-    body: JSON.stringify({ text: '이렇게 하면 되겠어.', formalMode: true, formalLevel: 'smart' }),
+    body: JSON.stringify({ deviceId: 'fixture', requestId: 'fixture-request', text: '이렇게 하면 되겠어.', formalMode: true, formalLevel: 'smart' }),
   }));
   const result = await response.json();
 
@@ -61,6 +61,7 @@ test('smart tone keeps Gemini and receives the source ending instruction', async
   assert.equal(calls.length, 1);
   assert.match(calls[0].url, /gemini-3\.1-flash-lite/);
   assert.match(calls[0].body.system_instruction.parts[0].text, /문장 종결형과 높임 단계를 원문에 맞춰 유지하라/);
+  assert.doesNotMatch(calls[0].body.system_instruction.parts[0].text, /예외 규칙:|"얼만큼"/);
 });
 
 test('custom tone uses Luna low with a bounded stateless Responses request', async () => {
@@ -68,7 +69,7 @@ test('custom tone uses Luna low with a bounded stateless Responses request', asy
   const response = await handler(new Request('http://localhost/correct', {
     method: 'POST',
     body: JSON.stringify({
-      text: '오늘 안으로 보내줘.',
+      deviceId: 'fixture', requestId: 'fixture-request', text: '오늘 안으로 보내줘.',
       formalMode: true,
       formalLevel: 'custom',
       customPrompt: '친구에게 부드럽게 말해줘.',
@@ -85,6 +86,7 @@ test('custom tone uses Luna low with a bounded stateless Responses request', asy
   assert.equal(calls[0].body.store, false);
   assert.equal(calls[0].body.input, '오늘 안으로 보내줘.');
   assert.match(calls[0].body.instructions, /친구에게 부드럽게 말해줘/);
+  assert.doesNotMatch(calls[0].body.instructions, /예외 규칙:|"얼만큼"/);
 });
 
 test('proofing safety fallback warning carries the response diagnostic ID', async () => {
@@ -99,7 +101,7 @@ test('proofing safety fallback warning carries the response diagnostic ID', asyn
   try {
     const response = await handler(new Request('http://localhost/correct', {
       method: 'POST',
-      body: JSON.stringify({ text: '오늘은 날씨가 정말 좋고 산책을 가고 싶습니다.' }),
+      body: JSON.stringify({ deviceId: 'fixture', requestId: 'fixture-request', text: '오늘은 날씨가 정말 좋고 산책을 가고 싶습니다.' }),
     }));
     const body = await response.json();
 
@@ -137,18 +139,37 @@ test('insufficient-credit responses include a safe diagnostic ID and failure sta
   const { handler } = await createHandler({
     consumeResult: { accepted: false, freeCredits: 0, paidCredits: 0, remaining: 0 },
   });
-  const response = await handler(new Request('http://localhost/correct', {
-    method: 'POST',
-    body: JSON.stringify({
-      text: '맞춤법을 고쳐줘',
-      deviceId: 'test-device',
-      requestId: 'test-request-id',
-    }),
-  }));
+  let warning;
+  const originalWarn = console.warn;
+  console.warn = (...args) => { warning = args; };
+  let response;
+  try {
+    response = await handler(new Request('http://localhost/correct', {
+      method: 'POST',
+      body: JSON.stringify({
+        text: '맞춤법을 고쳐줘',
+        deviceId: 'test-device',
+        requestId: 'test-request-id',
+      }),
+    }));
+  } finally {
+    console.warn = originalWarn;
+  }
   const result = await response.json();
 
   assert.equal(response.status, 429);
   assert.equal(result.error, 'NO_CREDITS');
   assert.equal(result.credits_remaining, 0);
   assertDiagnostic(response, result, 'credit_precharge');
+  const expectedWalletFingerprint = Array.from(
+    new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode('test-device'))),
+    (byte) => byte.toString(16).padStart(2, '0'),
+  ).join('');
+  assert.equal(warning?.[1]?.diagnostic_id, result.diagnostic_id);
+  assert.equal(warning?.[1]?.requested_wallet_fingerprint, expectedWalletFingerprint);
+  assert.equal(warning?.[1]?.canonical_wallet_fingerprint, expectedWalletFingerprint);
+  assert.equal(warning?.[1]?.free_credits_remaining, 0);
+  assert.equal(warning?.[1]?.paid_credits_remaining, 0);
+  assert.equal(JSON.stringify(warning).includes('test-device'), false);
+  assert.equal(JSON.stringify(warning).includes('test-request-id'), false);
 });
