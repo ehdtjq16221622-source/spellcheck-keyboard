@@ -1,0 +1,73 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { resolveCreditWallet, WalletAccessError } from '../_shared/wallet_auth.ts'
+
+const cors = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+const coupons: Record<string, number> = {
+  KINGBOARDTEST5000: 5000,
+  KINGBOARDTEST10000: 10000,
+}
+
+function json(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...cors, 'Content-Type': 'application/json' },
+  })
+}
+
+Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
+  if (req.method !== 'POST') return json({ ok: false, error: '허용되지 않은 요청입니다.' }, 405)
+
+  try {
+    const body = await req.json()
+    const requestedId = typeof body?.deviceId === 'string' ? body.deviceId.trim() : ''
+    const rawCode = typeof body?.couponCode === 'string' ? body.couponCode.trim() : ''
+    if (!requestedId || !rawCode) {
+      return json({ ok: false, error: '기기 정보와 쿠폰 번호를 확인해 주세요.' }, 400)
+    }
+
+    const couponCode = rawCode.toUpperCase().replace(/[\s-]+/g, '')
+    const amount = coupons[couponCode]
+    if (!amount) return json({ ok: false, error: '유효하지 않은 쿠폰입니다.' }, 400)
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    )
+    const { walletId } = await resolveCreditWallet(req, supabase, requestedId)
+    const { data, error } = await supabase.rpc('redeem_coupon_once', {
+      p_device_id: walletId,
+      p_coupon_code: couponCode,
+      p_credits: amount,
+    })
+    if (error) throw error
+
+    const result = Array.isArray(data) ? data[0] : data
+    if (!result || typeof result.applied !== 'boolean') {
+      throw new Error('Coupon redemption returned an invalid result.')
+    }
+    if (!result.applied) return json({ ok: false, error: '이미 사용한 쿠폰입니다.' }, 409)
+
+    return json({
+      ok: true,
+      message: `쿠폰 적용 완료 · 크레딧 +${amount}`,
+      awarded_credits: amount,
+      free_credits_remaining: result.free_credits_remaining,
+      paid_credits_remaining: result.paid_credits_remaining + result.subscription_credits_remaining,
+      credits_remaining: result.credits_remaining,
+    })
+  } catch (error) {
+    if (error instanceof WalletAccessError) {
+      return json({ ok: false, error: error.message, code: 'WALLET_UPDATE_REQUIRED' }, error.status)
+    }
+    console.error('coupon_redemption_failed', {
+      error_type: error instanceof Error ? error.name : typeof error,
+    })
+    return json({ ok: false, error: '쿠폰 적용을 완료하지 못했어요. 잠시 후 다시 시도해 주세요.' }, 500)
+  }
+})
+
