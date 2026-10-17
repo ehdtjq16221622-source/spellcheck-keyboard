@@ -85,3 +85,4 @@ Deno.serve(async (req: Request) => {
     return respond({ error: 'Unable to confirm Apple wallet.' }, 500)
   }
 })
+

@@ -37,3 +37,4 @@ export async function verifyAppleIdentityToken(
     return null
   }
 }
+
