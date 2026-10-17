@@ -200,6 +200,10 @@
     "translate/index.ts": {
       "sha256": "f7f07ace80cf7d40dc0da4e3da37d3a6dab4b5ca2e3146ca0df31d4c86988658",
       "reason": "Pending parser extraction and plain-response fallback; live request-ID and pronunciation guards retained."
+    },
+    "wallet_link_v2/index.ts": {
+      "sha256": "e4fbd91c448401f98f4dfd3fa24e2acd6cce1a4fa4a9594283e72dfd430255fc",
+      "reason": "Pending immediate verification_pending on lock_busy instead of live eight-second retry; resume/duplicate-bonus/race guards retained. Not approved for deployment."
     }
   }
 }

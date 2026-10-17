@@ -392,20 +392,12 @@ Deno.serve(async (req: Request) => {
       if (deviceCheckBonus) {
         const lockOwner = crypto.randomUUID()
         stage = 'rpc_acquire_guest_bonus_devicecheck_lock'
-        const lockStartedAt = Date.now()
-        let locked = false
-        let lockAttempts = 0
-        do {
-          const { data, error: lockError } = await auditedRpc('acquire_guest_bonus_devicecheck_lock', { p_owner: lockOwner })
-          if (lockError) throw lockError
-          locked = data === true
-          lockAttempts++
-          if (locked || Date.now() - lockStartedAt >= 8000) break
-          const retryMs = Math.min(100 + Math.random() * 300, 8000 - (Date.now() - lockStartedAt))
-          await new Promise((resolve) => setTimeout(resolve, retryMs))
-        } while (true)
-        audit('devicecheck_lock_result', { acquired: locked, attempts: lockAttempts, waitMs: Date.now() - lockStartedAt })
-        if (!locked) return respond({ error: 'Device verification is busy.' }, 503)
+        const { data: locked, error: lockError } = await auditedRpc('acquire_guest_bonus_devicecheck_lock', { p_owner: lockOwner })
+        if (lockError) throw lockError
+        if (!locked) {
+          bonusStatus = 'verification_pending'
+          audit('devicecheck_lock_busy', { outcome: 'verification_pending' })
+        } else {
         try {
           let deviceAlreadyMarked = false
           try {
@@ -484,6 +476,7 @@ Deno.serve(async (req: Request) => {
           stage = previousStage
         }
         if (deviceCheckUnavailable) bonusStatus = 'verification_pending'
+        }
       }
       const { data: wallet, error: walletError } = await supabase.from('device_credits')
         .select('free_credits, paid_credits, apple_user_id')
