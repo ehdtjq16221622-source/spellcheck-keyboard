@@ -163,4 +163,15 @@ test('successful balance lookup returns the same diagnostic id in body and heade
   assert.equal(result.status, 200);
   assert.match(result.diagnostic_id, /^[0-9a-f-]{36}$/);
   assert.equal(result.diagnosticHeader, result.diagnostic_id);
+  const completed = JSON.parse(result.logs.find((entry) => entry.level === 'info').message);
+  const expectedFingerprint = Array.from(
+    new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode('local'))),
+    (byte) => byte.toString(16).padStart(2, '0'),
+  ).join('');
+  assert.equal(completed.requested_wallet_fingerprint, expectedFingerprint);
+  assert.equal(completed.canonical_wallet_fingerprint, expectedFingerprint);
+  assert.equal(completed.free_credits_remaining, result.free_credits_remaining);
+  assert.equal(completed.paid_credits_remaining, result.paid_credits_remaining);
+  assert.equal(completed.authenticated_wallet, true);
+  assert.equal(JSON.stringify(completed).includes('local'), false);
 });
