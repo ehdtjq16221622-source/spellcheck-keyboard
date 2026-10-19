@@ -19,3 +19,9 @@ Source SHA256 must equal the already-tested candidate 5cdb42fcdc7bee51fb8a548664
 ## Rollback
 
 `baseline/supabase/functions/correct/` contains exact v170 code (same source as v167). To undo, restore only changed correct/index.ts from this committed baseline into supabase/functions/correct, commit and push that reversal, dry run `node scripts/supabase/deploy-function.mjs correct`, then deploy with `--yes`. Verify live source and commit live-functions/DEPLOYS.md afterward. No SQL or balance reversal is needed.
+
+## Deployment result
+
+Deployed correct v171 from pushed commit 434c739 at 2026-10-19 19:18:48 KST. ACTIVE, verify_jwt=false; all four downloaded source/dependency files match. Post-deploy local scope/routing/response/probe checks: 77 passing. Deno source check passed before deployment.
+
+Runtime rejection checks passed (CORS200, missing-request-ID409, invalid-preview400). Both temporary probes remain closed (410). The first 16 seconds of aggregate logs showed six POST200 responses, no recorded 5xx or AI/incomplete/refund failures; the sample is too small and logs may lag. This is not a new paid linguistic test or proof of long-term reliability.

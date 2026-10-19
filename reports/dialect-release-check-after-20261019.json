@@ -1,0 +1,66 @@
+{
+  "phase": "after",
+  "observedAt": "2026-10-19T10:19:04.756Z",
+  "correct": {
+    "version": 171,
+    "status": "ACTIVE",
+    "verify_jwt": false,
+    "updated_at": 1792405128543
+  },
+  "checks": [
+    {
+      "name": "cors",
+      "status": 200,
+      "cors": "*"
+    },
+    {
+      "name": "missing_request_id",
+      "status": 409,
+      "cors": "*"
+    },
+    {
+      "name": "invalid_preview",
+      "status": 400,
+      "cors": "*"
+    },
+    {
+      "name": "dialect_standardization_experiment_closed",
+      "status": 410
+    },
+    {
+      "name": "tone_completion_probe_closed",
+      "status": 410
+    }
+  ],
+  "window": {
+    "start": "2026-10-19T10:18:48.543Z",
+    "end": "2026-10-19T10:19:04.756Z"
+  },
+  "logs": {
+    "requests": {
+      "available": true,
+      "response": {
+        "result": [
+          {
+            "method": "POST",
+            "requests": 6,
+            "status": "200",
+            "version": "171"
+          }
+        ]
+      }
+    },
+    "diagnostics": {
+      "available": true,
+      "response": {
+        "result": [
+          {
+            "ai_failed": 0,
+            "incomplete": 0,
+            "refund_failed": 0
+          }
+        ]
+      }
+    }
+  }
+}

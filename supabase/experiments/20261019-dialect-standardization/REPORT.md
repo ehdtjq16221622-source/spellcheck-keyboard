@@ -28,3 +28,7 @@ Completed 60/60 corrections via the protected Supabase Edge route, 60 real provi
 Manual review: all 23 dialect-bearing cases standardized, versus 4/23 on the live prompt. One standard-language control regressed (case21: 구먼 -> 네요); case7 register and case10 intention deserve review. No promotion of this candidate into production correct was performed or recommended unchanged.
 
 See RESULTS.md for all 30 pairs and summary.json for measured counts. Wallet/DB/credit boundaries were simulated, not production writes. No paid OFF or real-device test was performed.
+
+## Subsequent owner decision
+
+After reviewing RESULTS.md, the owner approved the exact candidate as sufficient and requested spelling-only application. It was deployed as correct v171 at 2026-10-19 19:18:48 KST from 434c739. No prompt tuning was silently added. Historical experiment results and caveats are unchanged; see deploy-bundles/20261019-dialect-proofing-release/README.md for rollout and rollback.
