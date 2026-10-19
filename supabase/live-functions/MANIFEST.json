@@ -248,7 +248,18 @@
         "service_monitor/index.ts": "60b510e8306637ec",
         "_shared/telegram.ts": "932ca4944375a8bf"
       }
+    },
+    "tone_completion_probe": {
+      "version": 1,
+      "verify_jwt": true,
+      "updated_at": 1792396543197,
+      "files": {
+        "tone_completion_probe/cases.ts": "16c2a0e3b54fff8c",
+        "tone_completion_probe/generated-after.ts": "d13bbb741328d75a",
+        "tone_completion_probe/generated-before.ts": "0b39c3eec9e7661d",
+        "tone_completion_probe/index.ts": "2912a3e29ee2d85c"
+      }
     }
   },
-  "recorded_at": "2026-10-17T19:37:17.441Z"
+  "recorded_at": "2026-10-19T07:55:50.807Z"
 }
