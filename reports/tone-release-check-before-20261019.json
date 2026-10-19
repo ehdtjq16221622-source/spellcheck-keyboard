@@ -1,0 +1,77 @@
+{
+  "phase": "before",
+  "observedAt": "2026-10-19T07:59:43.300Z",
+  "correct": {
+    "version": 166,
+    "status": "ACTIVE",
+    "verify_jwt": false,
+    "updated_at": 1791910412489
+  },
+  "probe": {
+    "version": 4,
+    "verify_jwt": true,
+    "closed": true
+  },
+  "checks": [
+    {
+      "name": "cors",
+      "status": 200,
+      "cors": "*"
+    },
+    {
+      "name": "missing_request_id",
+      "status": 409,
+      "cors": "*"
+    },
+    {
+      "name": "invalid_preview",
+      "status": 400,
+      "cors": "*"
+    },
+    {
+      "name": "probe_closed",
+      "status": 410
+    }
+  ],
+  "window": {
+    "start": "2026-10-19T07:44:43.300Z",
+    "end": "2026-10-19T07:59:43.300Z"
+  },
+  "logs": {
+    "available": true,
+    "response": {
+      "result": [
+        {
+          "method": "POST",
+          "requests": 20,
+          "status": "200",
+          "version": "166"
+        },
+        {
+          "method": "POST",
+          "requests": 12,
+          "status": "200",
+          "version": "165"
+        },
+        {
+          "method": "POST",
+          "requests": 174,
+          "status": "200",
+          "version": "163"
+        },
+        {
+          "method": "POST",
+          "requests": 2,
+          "status": "401",
+          "version": "163"
+        },
+        {
+          "method": "POST",
+          "requests": 1,
+          "status": "429",
+          "version": "163"
+        }
+      ]
+    }
+  }
+}

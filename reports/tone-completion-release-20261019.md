@@ -41,3 +41,10 @@ Prepared: response/trace/routing tests 54 passed; probe safety tests 8 passed; D
 - Result file: `reports/tone-probe-results-20261019.json`. It contains synthetic sentences/results and token usage, not customer input, keys or wallet data.
 - Control was explicitly closed in the runner's finally block and an authenticated request returned HTTP 410. No runtime provider key was exported.
 - Connector log reads still fail with a permission error; do not translate a failed lookup into zero errors.
+
+## Final pre-deploy recheck
+
+- The dry run observed current metadata v166 rather than v163. Deployment was paused to compare again; all four downloaded source files remained byte-identical to the tested v163 baseline after LF normalization. No additional live code change was overwritten or rebased away.
+- Probe metadata became v4 after its control-setting updates; its source is unchanged and it is closed. Version changes alone are not evidence that function source changed.
+- Management API log reading succeeded using the refreshed CLI session (the connector still fails). At 07:59:43 UTC, the preceding 15-minute correct window contained 206 HTTP 200 requests, 2 HTTP 401 requests and 1 HTTP 429 request; zero recorded 5xx. These are requests, not unique users. Log ingestion can lag the smoke requests below.
+- Pre-deploy no-write smoke checks: OPTIONS 200; missing request ID 409/APP_UPDATE_REQUIRED; invalid preview 400; protected probe 410. No real AI or DB/credit path is invoked by these smoke cases.
