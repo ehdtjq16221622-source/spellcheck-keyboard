@@ -9,11 +9,13 @@ const here = new URL('./', import.meta.url);
 const output = new URL('../../functions/dialect_standardization_experiment/', here);
 const read = (path) => readFileSync(new URL(path, here), 'utf8').replace(/\r\n/g, '\n');
 const hash = (text) => createHash('sha256').update(text).digest('hex');
-const manifest = JSON.parse(read('../../live-functions/MANIFEST.json')).functions.correct;
-const before = read('../../live-functions/correct/correct/index.ts');
-const beforeEdits = read('../../live-functions/correct/correct/proofing_edits.ts');
-assert.equal(hash(before).slice(0, 16), manifest.files['correct/index.ts']);
-assert.equal(hash(beforeEdits).slice(0, 16), manifest.files['correct/proofing_edits.ts']);
+// Keep the completed experiment reproducible after production moves forward.
+const recorded = JSON.parse(read('./prepared.json'));
+const baseline = '../../deploy-bundles/20261019-dialect-proofing-release/baseline/supabase/functions/correct/';
+const before = read(baseline + 'index.ts');
+const beforeEdits = read(baseline + 'proofing_edits.ts');
+assert.equal(hash(before), recorded.before);
+assert.equal(hash(beforeEdits), recorded.beforeEdits);
 
 export function buildPipeline(source, edits) {
   assert.equal((source.match(/^import .*$/gm) ?? []).length, 4, 'Review changed imports before preparing');
@@ -126,7 +128,7 @@ export function prepare() {
     '// Generated offline by prepare.mjs; do not edit.\nexport const cases = ' + JSON.stringify(cases, null, 2) + ';\n');
   const record = {
     liveCheck: '2026-10-19 check-live correct succeeded: live v167, recorded snapshot and source match',
-    snapshotVersion: manifest.version,
+    snapshotVersion: recorded.snapshotVersion,
     before: hash(before), after: hash(after),
     afterScope: 'Exact live pipeline plus one helper and three spelling-ON branches; tone and OFF unchanged',
     beforeEdits: hash(beforeEdits), afterEdits: hash(afterEdits),

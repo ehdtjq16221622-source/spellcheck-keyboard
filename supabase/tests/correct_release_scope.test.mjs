@@ -5,7 +5,8 @@ import { test } from 'node:test'
 import { runInNewContext } from 'node:vm'
 
 const beforeRoot = new URL('../deploy-bundles/20261014-tone-complete-response/baseline/supabase/functions/correct/', import.meta.url)
-const afterRoot = new URL('../functions/correct/', import.meta.url)
+// Historical response-only release; the subsequent approved dialect release has its own scope test.
+const afterRoot = new URL('../deploy-bundles/20261019-dialect-proofing-release/baseline/supabase/functions/correct/', import.meta.url)
 const read = (root, file) => readFileSync(new URL(file, root), 'utf8').replace(/\r\n/g, '\n')
 const builders = (source) => {
   const context = { Deno: { serve: () => {} } }

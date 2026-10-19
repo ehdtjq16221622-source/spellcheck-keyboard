@@ -18,7 +18,8 @@ function factory(source, edits) {
   vm.runInContext(stripTypeScriptTypes(buildPipeline(source, edits).replace(/^export /gm, '')) + '\nglobalThis.factory = createPipeline;', context);
   return context.factory;
 }
-const before = factory(read('../live-functions/correct/correct/index.ts'), read('../live-functions/correct/correct/proofing_edits.ts'));
+const baseline = '../deploy-bundles/20261019-dialect-proofing-release/baseline/supabase/functions/correct/';
+const before = factory(read(baseline + 'index.ts'), read(baseline + 'proofing_edits.ts'));
 const projectedAfter = dialectOnlyCandidate(read('../functions/correct/index.ts'));
 const after = factory(projectedAfter, read('../functions/correct/proofing_edits.ts'));
 const actual = factory(read('../functions/correct/index.ts'), read('../functions/correct/proofing_edits.ts'));
@@ -61,7 +62,7 @@ const request = (body = { caseId: 1, variant: 'after', includeDialect: true }, h
 
 test('prepared pipelines and corpus are deterministic copies of current exact sources', () => {
   for (const [variant, source, edits] of [
-    ['before', '../live-functions/correct/correct/index.ts', '../live-functions/correct/correct/proofing_edits.ts'],
+    ['before', baseline + 'index.ts', baseline + 'proofing_edits.ts'],
     ['after', '../functions/correct/index.ts', '../functions/correct/proofing_edits.ts'],
   ]) {
     assert.equal(read(`../functions/dialect_standardization_experiment/generated-${variant}.ts`), buildPipeline(variant === 'after' ? projectedAfter : read(source), read(edits)));
