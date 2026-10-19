@@ -23,4 +23,8 @@
 
 ## Current status
 
-Prepared for test, not yet executed. No claim of production readiness or physical-device verification.
+Completed 60/60 corrections via the protected Supabase Edge route, 60 real provider calls, no failed/incomplete responses. Explicit closure confirmed HTTP410 at 2026-10-19 09:53:02 UTC.
+
+Manual review: all 23 dialect-bearing cases standardized, versus 4/23 on the live prompt. One standard-language control regressed (case21: 구먼 -> 네요); case7 register and case10 intention deserve review. No promotion of this candidate into production correct was performed or recommended unchanged.
+
+See RESULTS.md for all 30 pairs and summary.json for measured counts. Wallet/DB/credit boundaries were simulated, not production writes. No paid OFF or real-device test was performed.

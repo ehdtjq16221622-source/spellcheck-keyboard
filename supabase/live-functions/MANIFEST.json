@@ -1,7 +1,7 @@
 {
   "functions": {
     "correct": {
-      "version": 167,
+      "version": 170,
       "verify_jwt": false,
       "updated_at": 1792396847594,
       "files": {
@@ -261,7 +261,7 @@
       }
     },
     "dialect_standardization_experiment": {
-      "version": 1,
+      "version": 4,
       "verify_jwt": true,
       "updated_at": 1792403476376,
       "files": {
@@ -272,5 +272,5 @@
       }
     }
   },
-  "recorded_at": "2026-10-19T09:51:23.599Z"
+  "recorded_at": "2026-10-19T09:54:59.657Z"
 }

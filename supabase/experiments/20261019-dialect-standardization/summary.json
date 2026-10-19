@@ -1,0 +1,51 @@
+{
+  "review": "completed_with_regression_do_not_promote_unchanged",
+  "measuredAt": "2026-10-19T09:53:00.255Z",
+  "correctionJobs": 60,
+  "actualProviderCalls": 60,
+  "httpOrCorrectionErrors": 0,
+  "incompleteProviderResults": 0,
+  "manualDialectReview": {
+    "sampleSize": 23,
+    "beforeFullyStandardized": 4,
+    "afterFullyStandardized": 23,
+    "criterion": "All dialect words/endings replaced, separate from strict meaning/style acceptability"
+  },
+  "manualControlReview": {
+    "standardCases": 3,
+    "beforeUnnecessaryChanges": 0,
+    "afterUnnecessaryChanges": 1,
+    "regressionIds": [
+      21
+    ],
+    "ambiguousBothVariantsId": 26
+  },
+  "manualMeaningReview": {
+    "observedMajorClauseOmissions": 0,
+    "reviewNuanceIds": [
+      7,
+      10
+    ],
+    "note": "Not all outputs declared fully correct; one observation per variant only"
+  },
+  "protectedLiteralLosses": [],
+  "variants": {
+    "before": {
+      "corrections": 30,
+      "medianServerMs": 1156.5,
+      "providerTokens": 14770
+    },
+    "after": {
+      "corrections": 30,
+      "medianServerMs": 1108.5,
+      "providerTokens": 18115
+    }
+  },
+  "closure": {
+    "startedAt": "2026-10-19T09:51:39.424Z",
+    "closed": true,
+    "closedStatus": 410,
+    "wrongTokenStatus": 401,
+    "finishedAt": "2026-10-19T09:53:02.806Z"
+  }
+}

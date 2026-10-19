@@ -1,0 +1,2252 @@
+{
+  "startedAt": "2026-10-19T09:51:44.693Z",
+  "status": "completed_pending_human_review",
+  "prepared": {
+    "liveCheck": "2026-10-19 check-live correct succeeded: live v167, recorded snapshot and source match",
+    "snapshotVersion": 167,
+    "before": "4528a1612c16e9d41008c484092caba58e46bdc167e3e365fd59381abcb0f786",
+    "after": "5cdb42fcdc7bee51fb8a548664a902fd362fdf7a30c667b90989eed949b834f2",
+    "afterScope": "Exact live pipeline plus one helper and three spelling-ON branches; tone and OFF unchanged",
+    "beforeEdits": "12deac4c152276fbabc0ba60e839cdc3fc3293972a24a8224b452eb93b82d7fb",
+    "afterEdits": "12deac4c152276fbabc0ba60e839cdc3fc3293972a24a8224b452eb93b82d7fb",
+    "cases": "9da3b2feb9001f00bc3b204ebb56effd619bc0eae7bfda2c60387cc795f72f06",
+    "paidCallsApproved": true,
+    "defaultPlan": {
+      "sentences": 30,
+      "includeDialect": true,
+      "primaryCorrections": 60,
+      "maxProviderAttemptsOneRunner": 240,
+      "globalCapEnforced": false
+    },
+    "optionalPaidOff": "Separate approval, runner flag and server gate required; default OFF verification is offline",
+    "scope": "Original HTTP handler and full AI correction pipeline; wallet/DB boundaries simulated; no real auth/DB/credits"
+  },
+  "includePaidOff": false,
+  "correctionLimit": 60,
+  "providerAttemptCeilingThisRunner": 240,
+  "globalCeilingEnforced": false,
+  "providerAttempts": 60,
+  "results": [
+    {
+      "caseId": 1,
+      "variant": "before",
+      "includeDialect": true,
+      "input": "니 오늘 창고에 가믄 파란 상자 2개만 가져온나.",
+      "correctionStatus": 200,
+      "result": "너 오늘 창고에 가면 파란 상자 2개만 가져온나.",
+      "durationMs": 1454,
+      "diagnosticId": "1b83c0ff-7f69-4361-b0ea-c0257509c4c9",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 346,
+            "candidatesTokenCount": 18,
+            "totalTokenCount": 504,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 346
+              }
+            ],
+            "thoughtsTokenCount": 140,
+            "serviceTier": "standard"
+          },
+          "rawResult": "너 오늘 창고에 가면 파란 상자 2개만 가져온나."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 1,
+      "variant": "after",
+      "includeDialect": true,
+      "input": "니 오늘 창고에 가믄 파란 상자 2개만 가져온나.",
+      "correctionStatus": 200,
+      "result": "너 오늘 창고에 가면 파란 상자 2개만 가져와라.",
+      "durationMs": 1083,
+      "diagnosticId": "9d6b346f-b452-4db8-b217-9d202d0a1cc3",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 469,
+            "candidatesTokenCount": 18,
+            "totalTokenCount": 593,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 469
+              }
+            ],
+            "thoughtsTokenCount": 106,
+            "serviceTier": "standard"
+          },
+          "rawResult": "너 오늘 창고에 가면 파란 상자 2개만 가져와라."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 2,
+      "variant": "after",
+      "includeDialect": true,
+      "input": "지점장님, 서류는 어제 보냈심더. 확인 좀 해주이소.",
+      "correctionStatus": 200,
+      "result": "지점장님, 서류는 어제 보냈습니다. 확인 좀 해주세요.",
+      "durationMs": 1320,
+      "diagnosticId": "4519f331-3509-4cf2-80c6-57d845047173",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 471,
+            "candidatesTokenCount": 19,
+            "totalTokenCount": 615,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 471
+              }
+            ],
+            "thoughtsTokenCount": 125,
+            "serviceTier": "standard"
+          },
+          "rawResult": "지점장님, 서류는 어제 보냈습니다. 확인 좀 해주세요."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 2,
+      "variant": "before",
+      "includeDialect": true,
+      "input": "지점장님, 서류는 어제 보냈심더. 확인 좀 해주이소.",
+      "correctionStatus": 200,
+      "result": "지점장님, 서류는 어제 보냈심더. 확인 좀 해주이소.",
+      "durationMs": 1203,
+      "diagnosticId": "370f3088-c1ee-4765-abef-5053d7b96fee",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 348,
+            "candidatesTokenCount": 21,
+            "totalTokenCount": 503,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 348
+              }
+            ],
+            "thoughtsTokenCount": 134,
+            "serviceTier": "standard"
+          },
+          "rawResult": "지점장님, 서류는 어제 보냈심더. 확인 좀 해주이소."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 3,
+      "variant": "before",
+      "includeDialect": true,
+      "input": "엄니는 집에 계시고 나는 아직 회사에 있당께.",
+      "correctionStatus": 200,
+      "result": "엄니는 집에 계시고 나는 아직 회사에 있당께.",
+      "durationMs": 1307,
+      "diagnosticId": "9ead0fff-a0ac-4dd2-990a-aada270fa302",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 341,
+            "candidatesTokenCount": 14,
+            "totalTokenCount": 472,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 341
+              }
+            ],
+            "thoughtsTokenCount": 117,
+            "serviceTier": "standard"
+          },
+          "rawResult": "엄니는 집에 계시고 나는 아직 회사에 있당께."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 3,
+      "variant": "after",
+      "includeDialect": true,
+      "input": "엄니는 집에 계시고 나는 아직 회사에 있당께.",
+      "correctionStatus": 200,
+      "result": "어머니는 집에 계시고 나는 아직 회사에 있어.",
+      "durationMs": 1134,
+      "diagnosticId": "ac1f7c21-ad0f-41fc-a8af-5dfbaa2ce1d4",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 464,
+            "candidatesTokenCount": 12,
+            "totalTokenCount": 580,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 464
+              }
+            ],
+            "thoughtsTokenCount": 104,
+            "serviceTier": "standard"
+          },
+          "rawResult": "어머니는 집에 계시고 나는 아직 회사에 있어."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 4,
+      "variant": "after",
+      "includeDialect": true,
+      "input": "택배는 문 앞에 놔뒀슈. 비 맞지 않게 봉투도 씌웠어유.",
+      "correctionStatus": 200,
+      "result": "택배는 문 앞에 놔뒀어요. 비 맞지 않게 봉투도 씌웠어요.",
+      "durationMs": 1059,
+      "diagnosticId": "67a5eff5-6db4-4119-9c00-f013e840dd65",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 474,
+            "candidatesTokenCount": 23,
+            "totalTokenCount": 601,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 474
+              }
+            ],
+            "thoughtsTokenCount": 104,
+            "serviceTier": "standard"
+          },
+          "rawResult": "택배는 문 앞에 놔뒀어요. 비 맞지 않게 봉투도 씌웠어요."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 4,
+      "variant": "before",
+      "includeDialect": true,
+      "input": "택배는 문 앞에 놔뒀슈. 비 맞지 않게 봉투도 씌웠어유.",
+      "correctionStatus": 200,
+      "result": "택배는 문 앞에 놔뒀슈. 비 맞지 않게 봉투도 씌웠어유.",
+      "durationMs": 1175,
+      "diagnosticId": "f4393b69-0df0-4a8c-b480-7c97e9dded96",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 351,
+            "candidatesTokenCount": 24,
+            "totalTokenCount": 514,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 351
+              }
+            ],
+            "thoughtsTokenCount": 139,
+            "serviceTier": "standard"
+          },
+          "rawResult": "택배는 문 앞에 놔뒀슈. 비 맞지 않게 봉투도 씌웠어유."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 5,
+      "variant": "before",
+      "includeDialect": true,
+      "input": "와 전화 안 받았노? 나는 역 앞에서 20분 기다렸데이.",
+      "correctionStatus": 200,
+      "result": "와 전화 안 받았노? 나는 역 앞에서 20분 기다렸데이.",
+      "durationMs": 1149,
+      "diagnosticId": "21df9e35-af42-48f9-a3af-bbed281476b0",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 344,
+            "candidatesTokenCount": 17,
+            "totalTokenCount": 494,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 344
+              }
+            ],
+            "thoughtsTokenCount": 133,
+            "serviceTier": "standard"
+          },
+          "rawResult": "와 전화 안 받았노? 나는 역 앞에서 20분 기다렸데이."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 5,
+      "variant": "after",
+      "includeDialect": true,
+      "input": "와 전화 안 받았노? 나는 역 앞에서 20분 기다렸데이.",
+      "correctionStatus": 200,
+      "result": "왜 전화 안 받았어? 나는 역 앞에서 20분 기다렸어.",
+      "durationMs": 1103,
+      "diagnosticId": "fbfa09ed-65b6-41ab-a287-fcc18561dab3",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 467,
+            "candidatesTokenCount": 17,
+            "totalTokenCount": 589,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 467
+              }
+            ],
+            "thoughtsTokenCount": 105,
+            "serviceTier": "standard"
+          },
+          "rawResult": "왜 전화 안 받았어? 나는 역 앞에서 20분 기다렸어."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 6,
+      "variant": "after",
+      "includeDialect": true,
+      "input": "쪼까 늦어도 괜찮응께 뛰어오지는 말어.",
+      "correctionStatus": 200,
+      "result": "조금 늦어도 괜찮으니까 뛰어오지는 마.",
+      "durationMs": 1147,
+      "diagnosticId": "4948ef4c-2dad-4acb-ac8a-a20e18c61d83",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 464,
+            "candidatesTokenCount": 12,
+            "totalTokenCount": 616,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 464
+              }
+            ],
+            "thoughtsTokenCount": 140,
+            "serviceTier": "standard"
+          },
+          "rawResult": "조금 늦어도 괜찮으니까 뛰어오지는 마."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 6,
+      "variant": "before",
+      "includeDialect": true,
+      "input": "쪼까 늦어도 괜찮응께 뛰어오지는 말어.",
+      "correctionStatus": 200,
+      "result": "쪼까 늦어도 괜찮응께 뛰어오지는 말어.",
+      "durationMs": 1169,
+      "diagnosticId": "05ae038b-d258-4457-8057-97b0def4b650",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 341,
+            "candidatesTokenCount": 13,
+            "totalTokenCount": 488,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 341
+              }
+            ],
+            "thoughtsTokenCount": 134,
+            "serviceTier": "standard"
+          },
+          "rawResult": "쪼까 늦어도 괜찮응께 뛰어오지는 말어."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 7,
+      "variant": "before",
+      "includeDialect": true,
+      "input": "할매한테 빨간 우산은 내가 챙겼다고 전해 줘잉.",
+      "correctionStatus": 200,
+      "result": "할매한테 빨간 우산은 내가 챙겼다고 전해 줘잉.",
+      "durationMs": 3083,
+      "diagnosticId": "02090988-252f-4fa6-bc0b-99aa3d33b151",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 346,
+            "candidatesTokenCount": 19,
+            "totalTokenCount": 485,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 346
+              }
+            ],
+            "thoughtsTokenCount": 120,
+            "serviceTier": "standard"
+          },
+          "rawResult": "할매한테 빨간 우산은 내가 챙겼다고 전해 줘잉."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 7,
+      "variant": "after",
+      "includeDialect": true,
+      "input": "할매한테 빨간 우산은 내가 챙겼다고 전해 줘잉.",
+      "correctionStatus": 200,
+      "result": "할머니께 빨간 우산은 제가 챙겼다고 전해 주세요.",
+      "durationMs": 1213,
+      "diagnosticId": "f00288ec-2de1-41de-aadb-c962caaeec9e",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 469,
+            "candidatesTokenCount": 17,
+            "totalTokenCount": 594,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 469
+              }
+            ],
+            "thoughtsTokenCount": 108,
+            "serviceTier": "standard"
+          },
+          "rawResult": "할머니께 빨간 우산은 제가 챙겼다고 전해 주세요."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 8,
+      "variant": "after",
+      "includeDialect": true,
+      "input": "내일 아침 9시에 다시 와주실 수 있겠어유?",
+      "correctionStatus": 200,
+      "result": "내일 아침 9시에 다시 와주실 수 있겠어요?",
+      "durationMs": 1191,
+      "diagnosticId": "6ed6de2e-6895-42a4-bace-cbf1112e3132",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 467,
+            "candidatesTokenCount": 16,
+            "totalTokenCount": 586,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 467
+              }
+            ],
+            "thoughtsTokenCount": 103,
+            "serviceTier": "standard"
+          },
+          "rawResult": "내일 아침 9시에 다시 와주실 수 있겠어요?"
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 8,
+      "variant": "before",
+      "includeDialect": true,
+      "input": "내일 아침 9시에 다시 와주실 수 있겠어유?",
+      "correctionStatus": 200,
+      "result": "내일 아침 9시에 다시 와주실 수 있겠어유?",
+      "durationMs": 1243,
+      "diagnosticId": "30f18403-26bc-4b6a-93c7-adebf68be539",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 344,
+            "candidatesTokenCount": 17,
+            "totalTokenCount": 485,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 344
+              }
+            ],
+            "thoughtsTokenCount": 124,
+            "serviceTier": "standard"
+          },
+          "rawResult": "내일 아침 9시에 다시 와주실 수 있겠어유?"
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 9,
+      "variant": "before",
+      "includeDialect": true,
+      "input": "인자 불 껐으니께 문만 잠그고 나가자.",
+      "correctionStatus": 200,
+      "result": "이제 불 껐으니까 문만 잠그고 나가자.",
+      "durationMs": 1044,
+      "diagnosticId": "9908bf38-6f54-4fd3-a9a0-b253ddaf1293",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 342,
+            "candidatesTokenCount": 12,
+            "totalTokenCount": 491,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 342
+              }
+            ],
+            "thoughtsTokenCount": 137,
+            "serviceTier": "standard"
+          },
+          "rawResult": "이제 불 껐으니까 문만 잠그고 나가자."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 9,
+      "variant": "after",
+      "includeDialect": true,
+      "input": "인자 불 껐으니께 문만 잠그고 나가자.",
+      "correctionStatus": 200,
+      "result": "이제 불 껐으니까 문만 잠그고 나가자.",
+      "durationMs": 864,
+      "diagnosticId": "2b257779-cee8-42e0-8f35-d89db4e07e8e",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 465,
+            "candidatesTokenCount": 13,
+            "totalTokenCount": 582,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 465
+              }
+            ],
+            "thoughtsTokenCount": 104,
+            "serviceTier": "standard"
+          },
+          "rawResult": "이제 불 껐으니까 문만 잠그고 나가자."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 10,
+      "variant": "after",
+      "includeDialect": true,
+      "input": "비가 올랑가 모르겠네. 우산은 일단 챙길란다.",
+      "correctionStatus": 200,
+      "result": "비가 올지 모르겠네. 우산은 일단 챙겨야겠다.",
+      "durationMs": 1068,
+      "diagnosticId": "7674907d-8bae-43ac-9e15-2080b90bb3e1",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 469,
+            "candidatesTokenCount": 18,
+            "totalTokenCount": 594,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 469
+              }
+            ],
+            "thoughtsTokenCount": 107,
+            "serviceTier": "standard"
+          },
+          "rawResult": "비가 올지 모르겠네. 우산은 일단 챙겨야겠다."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 10,
+      "variant": "before",
+      "includeDialect": true,
+      "input": "비가 올랑가 모르겠네. 우산은 일단 챙길란다.",
+      "correctionStatus": 200,
+      "result": "비가 올랑가 모르겠네. 우산은 일단 챙길란다.",
+      "durationMs": 1055,
+      "diagnosticId": "dd85cccc-6624-41c4-9ffb-c4f7f4adc103",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 346,
+            "candidatesTokenCount": 19,
+            "totalTokenCount": 498,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 346
+              }
+            ],
+            "thoughtsTokenCount": 133,
+            "serviceTier": "standard"
+          },
+          "rawResult": "비가 올랑가 모르겠네. 우산은 일단 챙길란다."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 11,
+      "variant": "before",
+      "includeDialect": true,
+      "input": "민수는 금요일에 부산 간다카더라. 나는 안 간다.",
+      "correctionStatus": 200,
+      "result": "민수는 금요일에 부산 간다 카더라. 나는 안 간다.",
+      "durationMs": 1153,
+      "diagnosticId": "8d7e39be-83f9-4861-af68-37e7cc9316c5",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 343,
+            "candidatesTokenCount": 16,
+            "totalTokenCount": 478,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 343
+              }
+            ],
+            "thoughtsTokenCount": 119,
+            "serviceTier": "standard"
+          },
+          "rawResult": "민수는 금요일에 부산 간다 카더라. 나는 안 간다."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 11,
+      "variant": "after",
+      "includeDialect": true,
+      "input": "민수는 금요일에 부산 간다카더라. 나는 안 간다.",
+      "correctionStatus": 200,
+      "result": "민수는 금요일에 부산 간다더라. 나는 안 간다.",
+      "durationMs": 1321,
+      "diagnosticId": "17946694-b0cf-4f1f-ac12-0d0268cda38f",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 466,
+            "candidatesTokenCount": 15,
+            "totalTokenCount": 590,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 466
+              }
+            ],
+            "thoughtsTokenCount": 109,
+            "serviceTier": "standard"
+          },
+          "rawResult": "민수는 금요일에 부산 간다더라. 나는 안 간다."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 12,
+      "variant": "after",
+      "includeDialect": true,
+      "input": "밥 묵고 약 챙겨 묵어라. 빈속에는 묵지 마라.",
+      "correctionStatus": 200,
+      "result": "밥 먹고 약 챙겨 먹어라. 빈속에는 먹지 마라.",
+      "durationMs": 984,
+      "diagnosticId": "efa8618e-98f9-4bee-b79e-b76d9108350e",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 472,
+            "candidatesTokenCount": 19,
+            "totalTokenCount": 622,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 472
+              }
+            ],
+            "thoughtsTokenCount": 131,
+            "serviceTier": "standard"
+          },
+          "rawResult": "밥 먹고 약 챙겨 먹어라. 빈속에는 먹지 마라."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 12,
+      "variant": "before",
+      "includeDialect": true,
+      "input": "밥 묵고 약 챙겨 묵어라. 빈속에는 묵지 마라.",
+      "correctionStatus": 200,
+      "result": "밥 먹고 약 챙겨 먹어라. 빈속에는 먹지 마라.",
+      "durationMs": 1146,
+      "diagnosticId": "2beb0908-fe82-4466-9a6e-99681d5f3992",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 349,
+            "candidatesTokenCount": 19,
+            "totalTokenCount": 508,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 349
+              }
+            ],
+            "thoughtsTokenCount": 140,
+            "serviceTier": "standard"
+          },
+          "rawResult": "밥 먹고 약 챙겨 먹어라. 빈속에는 먹지 마라."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 13,
+      "variant": "before",
+      "includeDialect": true,
+      "input": "이 파일은 PDF로 저장했구유, 원본은 지우지 않았어유.",
+      "correctionStatus": 200,
+      "result": "이 파일은 PDF로 저장했유, 원본은 지우지 않았유.",
+      "durationMs": 1116,
+      "diagnosticId": "341fa117-3ce8-42b7-8ea3-848624c45dba",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 347,
+            "candidatesTokenCount": 18,
+            "totalTokenCount": 483,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 347
+              }
+            ],
+            "thoughtsTokenCount": 118,
+            "serviceTier": "standard"
+          },
+          "rawResult": "이 파일은 PDF로 저장했유, 원본은 지우지 않았유."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 13,
+      "variant": "after",
+      "includeDialect": true,
+      "input": "이 파일은 PDF로 저장했구유, 원본은 지우지 않았어유.",
+      "correctionStatus": 200,
+      "result": "이 파일은 PDF로 저장했고, 원본은 지우지 않았어요.",
+      "durationMs": 966,
+      "diagnosticId": "cfd75c48-c1ec-4a21-9197-9c85814165a5",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 470,
+            "candidatesTokenCount": 17,
+            "totalTokenCount": 615,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 470
+              }
+            ],
+            "thoughtsTokenCount": 128,
+            "serviceTier": "standard"
+          },
+          "rawResult": "이 파일은 PDF로 저장했고, 원본은 지우지 않았어요."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 14,
+      "variant": "after",
+      "includeDialect": true,
+      "input": "아따 오늘 억수로 덥네 ㅋㅋ 물 500ml 챙겨라.",
+      "correctionStatus": 200,
+      "result": "아이고 오늘 정말 덥네 ㅋㅋ 물 500ml 챙겨라.",
+      "durationMs": 887,
+      "diagnosticId": "6a62b103-9c9f-4a8f-b881-5481d48fc65d",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 471,
+            "candidatesTokenCount": 19,
+            "totalTokenCount": 623,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 471
+              }
+            ],
+            "thoughtsTokenCount": 133,
+            "serviceTier": "standard"
+          },
+          "rawResult": "아이고 오늘 정말 덥네 ㅋㅋ 물 500ml 챙겨라."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 14,
+      "variant": "before",
+      "includeDialect": true,
+      "input": "아따 오늘 억수로 덥네 ㅋㅋ 물 500ml 챙겨라.",
+      "correctionStatus": 200,
+      "result": "아따 오늘 억수로 덥네 ㅋㅋ 물 500ml 챙겨라.",
+      "durationMs": 1252,
+      "diagnosticId": "8e3b0dfa-5a2d-4621-838d-6cdedd37707b",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 348,
+            "candidatesTokenCount": 21,
+            "totalTokenCount": 486,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 348
+              }
+            ],
+            "thoughtsTokenCount": 117,
+            "serviceTier": "standard"
+          },
+          "rawResult": "아따 오늘 억수로 덥네 ㅋㅋ 물 500ml 챙겨라."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 15,
+      "variant": "before",
+      "includeDialect": true,
+      "input": "주소는 https://example.com/a 에 적어놨슈. 거기서 확인해 봐유.",
+      "correctionStatus": 200,
+      "result": "주소는 https://example.com/a 에 적어 놨슈. 거기서 확인해 봐유.",
+      "durationMs": 1144,
+      "diagnosticId": "48d162bf-3de7-42bf-9e04-bd1a32e0973f",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 350,
+            "candidatesTokenCount": 24,
+            "totalTokenCount": 492,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 350
+              }
+            ],
+            "thoughtsTokenCount": 118,
+            "serviceTier": "standard"
+          },
+          "rawResult": "주소는 https://example.com/a 에 적어 놨슈. 거기서 확인해 봐유."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 15,
+      "variant": "after",
+      "includeDialect": true,
+      "input": "주소는 https://example.com/a 에 적어놨슈. 거기서 확인해 봐유.",
+      "correctionStatus": 200,
+      "result": "주소는 https://example.com/a 에 적어 놨어요. 거기서 확인해 봐요.",
+      "durationMs": 1158,
+      "diagnosticId": "f0921ecd-6d05-408b-9106-982b81e3235e",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 473,
+            "candidatesTokenCount": 24,
+            "totalTokenCount": 630,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 473
+              }
+            ],
+            "thoughtsTokenCount": 133,
+            "serviceTier": "standard"
+          },
+          "rawResult": "주소는 https://example.com/a 에 적어 놨어요. 거기서 확인해 봐요."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 16,
+      "variant": "after",
+      "includeDialect": true,
+      "input": "니 숙제 다햇나? 안됬으면 내일 같이 하자.",
+      "correctionStatus": 200,
+      "result": "너 숙제 다 했니? 안 됐으면 내일 같이 하자.",
+      "durationMs": 1050,
+      "diagnosticId": "e05dade7-2ab0-4ec6-879a-4f6f34c55b89",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 465,
+            "candidatesTokenCount": 15,
+            "totalTokenCount": 613,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 465
+              }
+            ],
+            "thoughtsTokenCount": 133,
+            "serviceTier": "standard"
+          },
+          "rawResult": "너 숙제 다 했니? 안 됐으면 내일 같이 하자."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 16,
+      "variant": "before",
+      "includeDialect": true,
+      "input": "니 숙제 다햇나? 안됬으면 내일 같이 하자.",
+      "correctionStatus": 200,
+      "result": "너 숙제 다 했나? 안 됐으면 내일 같이 하자.",
+      "durationMs": 1004,
+      "diagnosticId": "c392cd9d-0167-4a56-b002-3fea873889dd",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 342,
+            "candidatesTokenCount": 15,
+            "totalTokenCount": 497,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 342
+              }
+            ],
+            "thoughtsTokenCount": 140,
+            "serviceTier": "standard"
+          },
+          "rawResult": "너 숙제 다 했나? 안 됐으면 내일 같이 하자."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 17,
+      "variant": "before",
+      "includeDialect": true,
+      "input": "제가 2틀 전에 연락드렸는디 답장이 아직 안왓어유.",
+      "correctionStatus": 200,
+      "result": "제가 이틀 전에 연락드렸는디 답장이 아직 안 왔어유.",
+      "durationMs": 1195,
+      "diagnosticId": "51511151-ec8f-4a9a-b9d3-243556b6040e",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 344,
+            "candidatesTokenCount": 16,
+            "totalTokenCount": 499,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 344
+              }
+            ],
+            "thoughtsTokenCount": 139,
+            "serviceTier": "standard"
+          },
+          "rawResult": "제가 이틀 전에 연락드렸는디 답장이 아직 안 왔어유."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 17,
+      "variant": "after",
+      "includeDialect": true,
+      "input": "제가 2틀 전에 연락드렸는디 답장이 아직 안왓어유.",
+      "correctionStatus": 200,
+      "result": "제가 이틀 전에 연락드렸는데 답장이 아직 안 왔어요.",
+      "durationMs": 1111,
+      "diagnosticId": "d3a7e8f1-6ff0-4657-8d8c-ec50db3467bd",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 467,
+            "candidatesTokenCount": 14,
+            "totalTokenCount": 614,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 467
+              }
+            ],
+            "thoughtsTokenCount": 133,
+            "serviceTier": "standard"
+          },
+          "rawResult": "제가 이틀 전에 연락드렸는데 답장이 아직 안 왔어요."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 18,
+      "variant": "after",
+      "includeDialect": true,
+      "input": "우리 생각이 틀린 거지 니 답이 틀렷다는 말은 아니여.",
+      "correctionStatus": 200,
+      "result": "우리 생각이 다른 거지 네 답이 틀렸다는 말은 아니야.",
+      "durationMs": 1135,
+      "diagnosticId": "a1ab911e-50c8-4c8d-8b1b-ac3d50ca8e6e",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 466,
+            "candidatesTokenCount": 15,
+            "totalTokenCount": 609,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 466
+              }
+            ],
+            "thoughtsTokenCount": 128,
+            "serviceTier": "standard"
+          },
+          "rawResult": "우리 생각이 다른 거지 네 답이 틀렸다는 말은 아니야."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 18,
+      "variant": "before",
+      "includeDialect": true,
+      "input": "우리 생각이 틀린 거지 니 답이 틀렷다는 말은 아니여.",
+      "correctionStatus": 200,
+      "result": "우리 생각이 다른 거지 네 답이 틀렸다는 말은 아니여.",
+      "durationMs": 1147,
+      "diagnosticId": "dcdbcd22-fad8-4779-a825-9a108c83e7db",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 343,
+            "candidatesTokenCount": 15,
+            "totalTokenCount": 496,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 343
+              }
+            ],
+            "thoughtsTokenCount": 138,
+            "serviceTier": "standard"
+          },
+          "rawResult": "우리 생각이 다른 거지 네 답이 틀렸다는 말은 아니여."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 19,
+      "variant": "before",
+      "includeDialect": true,
+      "input": "못 가겄으면 미리 말혀. 예약은 내가 취소할게.",
+      "correctionStatus": 200,
+      "result": "못 가겠으면 미리 말해. 예약은 내가 취소할게.",
+      "durationMs": 1205,
+      "diagnosticId": "f2a251ff-258a-4b5a-8f7c-3834877d35b3",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 345,
+            "candidatesTokenCount": 16,
+            "totalTokenCount": 493,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 345
+              }
+            ],
+            "thoughtsTokenCount": 132,
+            "serviceTier": "standard"
+          },
+          "rawResult": "못 가겠으면 미리 말해. 예약은 내가 취소할게."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 19,
+      "variant": "after",
+      "includeDialect": true,
+      "input": "못 가겄으면 미리 말혀. 예약은 내가 취소할게.",
+      "correctionStatus": 200,
+      "result": "못 가겠으면 미리 말해. 예약은 내가 취소할게.",
+      "durationMs": 1075,
+      "diagnosticId": "daa6de93-ceef-4555-85f9-4e3d5c75faf4",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 468,
+            "candidatesTokenCount": 16,
+            "totalTokenCount": 589,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 468
+              }
+            ],
+            "thoughtsTokenCount": 105,
+            "serviceTier": "standard"
+          },
+          "rawResult": "못 가겠으면 미리 말해. 예약은 내가 취소할게."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 20,
+      "variant": "after",
+      "includeDialect": true,
+      "input": "할아버지는 먼저 드셨고 저는 아직 안 묵었심더.",
+      "correctionStatus": 200,
+      "result": "할아버지는 먼저 드셨고 저는 아직 안 먹었습니다.",
+      "durationMs": 863,
+      "diagnosticId": "c6a0c722-8959-44d1-8cd4-8d09514b09cb",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 467,
+            "candidatesTokenCount": 14,
+            "totalTokenCount": 591,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 467
+              }
+            ],
+            "thoughtsTokenCount": 110,
+            "serviceTier": "standard"
+          },
+          "rawResult": "할아버지는 먼저 드셨고 저는 아직 안 먹었습니다."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 20,
+      "variant": "before",
+      "includeDialect": true,
+      "input": "할아버지는 먼저 드셨고 저는 아직 안 묵었심더.",
+      "correctionStatus": 200,
+      "result": "할아버지는 먼저 드셨고 저는 아직 안 묵었심더.",
+      "durationMs": 1737,
+      "diagnosticId": "d1f1fcee-8eda-499a-b599-d0fa235524ee",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 344,
+            "candidatesTokenCount": 17,
+            "totalTokenCount": 502,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 344
+              }
+            ],
+            "thoughtsTokenCount": 141,
+            "serviceTier": "standard"
+          },
+          "rawResult": "할아버지는 먼저 드셨고 저는 아직 안 묵었심더."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 21,
+      "variant": "before",
+      "includeDialect": true,
+      "input": "이 방법도 꽤 쓸 만하구먼.",
+      "correctionStatus": 200,
+      "result": "이 방법도 꽤 쓸 만하구먼.",
+      "durationMs": 1174,
+      "diagnosticId": "a7138340-d075-49e1-813f-bf41387454d9",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 338,
+            "candidatesTokenCount": 11,
+            "totalTokenCount": 488,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 338
+              }
+            ],
+            "thoughtsTokenCount": 139,
+            "serviceTier": "standard"
+          },
+          "rawResult": "이 방법도 꽤 쓸 만하구먼."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 21,
+      "variant": "after",
+      "includeDialect": true,
+      "input": "이 방법도 꽤 쓸 만하구먼.",
+      "correctionStatus": 200,
+      "result": "이 방법도 꽤 쓸 만하네요.",
+      "durationMs": 1018,
+      "diagnosticId": "073478b4-3ba8-4780-b9e9-7435eb2cdbc3",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 461,
+            "candidatesTokenCount": 10,
+            "totalTokenCount": 581,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 461
+              }
+            ],
+            "thoughtsTokenCount": 110,
+            "serviceTier": "standard"
+          },
+          "rawResult": "이 방법도 꽤 쓸 만하네요."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 22,
+      "variant": "after",
+      "includeDialect": true,
+      "input": "너는 먼저 가. 나는 여기서 조금 더 기다릴게.",
+      "correctionStatus": 200,
+      "result": "너는 먼저 가. 나는 여기서 조금 더 기다릴게.",
+      "durationMs": 1103,
+      "diagnosticId": "81840a8f-0102-4462-87a5-2791f03444fd",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 463,
+            "candidatesTokenCount": 13,
+            "totalTokenCount": 576,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 463
+              }
+            ],
+            "thoughtsTokenCount": 100,
+            "serviceTier": "standard"
+          },
+          "rawResult": "너는 먼저 가. 나는 여기서 조금 더 기다릴게."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 22,
+      "variant": "before",
+      "includeDialect": true,
+      "input": "너는 먼저 가. 나는 여기서 조금 더 기다릴게.",
+      "correctionStatus": 200,
+      "result": "너는 먼저 가. 나는 여기서 조금 더 기다릴게.",
+      "durationMs": 1109,
+      "diagnosticId": "6f8355cb-7d46-4c71-bda4-10bd936217c2",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 340,
+            "candidatesTokenCount": 13,
+            "totalTokenCount": 467,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 340
+              }
+            ],
+            "thoughtsTokenCount": 114,
+            "serviceTier": "standard"
+          },
+          "rawResult": "너는 먼저 가. 나는 여기서 조금 더 기다릴게."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 23,
+      "variant": "before",
+      "includeDialect": true,
+      "input": "회의는 취소되지 않았어요. 장소만 3층으로 바뀌었어요.",
+      "correctionStatus": 200,
+      "result": "회의는 취소되지 않았어요. 장소만 3층으로 바뀌었어요.",
+      "durationMs": 1073,
+      "diagnosticId": "4eca73ae-34d3-4e0e-8d74-409469713cec",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 345,
+            "candidatesTokenCount": 18,
+            "totalTokenCount": 481,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 345
+              }
+            ],
+            "thoughtsTokenCount": 118,
+            "serviceTier": "standard"
+          },
+          "rawResult": "회의는 취소되지 않았어요. 장소만 3층으로 바뀌었어요."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 23,
+      "variant": "after",
+      "includeDialect": true,
+      "input": "회의는 취소되지 않았어요. 장소만 3층으로 바뀌었어요.",
+      "correctionStatus": 200,
+      "result": "회의는 취소되지 않았어요. 장소만 3층으로 바뀌었어요.",
+      "durationMs": 1106,
+      "diagnosticId": "b7d5dc45-545e-4bf1-8dc4-5700d340db2e",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 468,
+            "candidatesTokenCount": 18,
+            "totalTokenCount": 595,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 468
+              }
+            ],
+            "thoughtsTokenCount": 109,
+            "serviceTier": "standard"
+          },
+          "rawResult": "회의는 취소되지 않았어요. 장소만 3층으로 바뀌었어요."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 24,
+      "variant": "after",
+      "includeDialect": true,
+      "input": "거시기 작은 것 말고 큰 것 좀 가져와.",
+      "correctionStatus": 200,
+      "result": "거시기 작은 것 말고 큰 것 좀 가져와.",
+      "durationMs": 1155,
+      "diagnosticId": "3aaced29-b1ca-4f98-b9ca-d7f91365e76b",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 461,
+            "candidatesTokenCount": 11,
+            "totalTokenCount": 597,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 461
+              }
+            ],
+            "thoughtsTokenCount": 125,
+            "serviceTier": "standard"
+          },
+          "rawResult": "거시기 작은 것 말고 큰 것 좀 가져와."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 24,
+      "variant": "before",
+      "includeDialect": true,
+      "input": "거시기 작은 것 말고 큰 것 좀 가져와.",
+      "correctionStatus": 200,
+      "result": "거시기 작은 것 말고 큰 것 좀 가져와.",
+      "durationMs": 1098,
+      "diagnosticId": "5096bd17-6613-4824-bf42-a79c7d3b2d19",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 338,
+            "candidatesTokenCount": 11,
+            "totalTokenCount": 460,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 338
+              }
+            ],
+            "thoughtsTokenCount": 111,
+            "serviceTier": "standard"
+          },
+          "rawResult": "거시기 작은 것 말고 큰 것 좀 가져와."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 25,
+      "variant": "before",
+      "includeDialect": true,
+      "input": "그 뭐냐, 어제 말한 거는 아직 거기 있어.",
+      "correctionStatus": 200,
+      "result": "그 뭐냐, 어제 말한 거는 아직 거기 있어.",
+      "durationMs": 1034,
+      "diagnosticId": "70c56420-cad7-41cf-97fd-65e2bdff0ddb",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 341,
+            "candidatesTokenCount": 14,
+            "totalTokenCount": 472,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 341
+              }
+            ],
+            "thoughtsTokenCount": 117,
+            "serviceTier": "standard"
+          },
+          "rawResult": "그 뭐냐, 어제 말한 거는 아직 거기 있어."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 25,
+      "variant": "after",
+      "includeDialect": true,
+      "input": "그 뭐냐, 어제 말한 거는 아직 거기 있어.",
+      "correctionStatus": 200,
+      "result": "그 뭐냐, 어제 말한 거는 아직 거기 있어.",
+      "durationMs": 1176,
+      "diagnosticId": "829f4946-73fc-476b-8cd5-ae778068fbf2",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 464,
+            "candidatesTokenCount": 14,
+            "totalTokenCount": 611,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 464
+              }
+            ],
+            "thoughtsTokenCount": 133,
+            "serviceTier": "standard"
+          },
+          "rawResult": "그 뭐냐, 어제 말한 거는 아직 거기 있어."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 26,
+      "variant": "after",
+      "includeDialect": true,
+      "input": "그 사람이 어제 왔데? 나는 못 봤는데.",
+      "correctionStatus": 200,
+      "result": "그 사람이 어제 왔대? 나는 못 봤는데.",
+      "durationMs": 1134,
+      "diagnosticId": "8ada93de-cddd-4f77-9aa6-7b75392ef2d9",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 462,
+            "candidatesTokenCount": 12,
+            "totalTokenCount": 606,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 462
+              }
+            ],
+            "thoughtsTokenCount": 132,
+            "serviceTier": "standard"
+          },
+          "rawResult": "그 사람이 어제 왔대? 나는 못 봤는데."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 26,
+      "variant": "before",
+      "includeDialect": true,
+      "input": "그 사람이 어제 왔데? 나는 못 봤는데.",
+      "correctionStatus": 200,
+      "result": "그 사람이 어제 왔대? 나는 못 봤는데.",
+      "durationMs": 1136,
+      "diagnosticId": "3a0a1b74-2d89-4065-b9ff-a58475095c6e",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 339,
+            "candidatesTokenCount": 12,
+            "totalTokenCount": 492,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 339
+              }
+            ],
+            "thoughtsTokenCount": 141,
+            "serviceTier": "standard"
+          },
+          "rawResult": "그 사람이 어제 왔대? 나는 못 봤는데."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 27,
+      "variant": "before",
+      "includeDialect": true,
+      "input": "니가 가져간 게 아니라 동생이 가져갔제?",
+      "correctionStatus": 200,
+      "result": "네가 가져간 게 아니라 동생이 가져갔제?",
+      "durationMs": 1160,
+      "diagnosticId": "2ad544c1-d6da-4de7-bba2-dc453842a33f",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 340,
+            "candidatesTokenCount": 13,
+            "totalTokenCount": 487,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 340
+              }
+            ],
+            "thoughtsTokenCount": 134,
+            "serviceTier": "standard"
+          },
+          "rawResult": "네가 가져간 게 아니라 동생이 가져갔제?"
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 27,
+      "variant": "after",
+      "includeDialect": true,
+      "input": "니가 가져간 게 아니라 동생이 가져갔제?",
+      "correctionStatus": 200,
+      "result": "네가 가져간 게 아니라 동생이 가져갔지?",
+      "durationMs": 1010,
+      "diagnosticId": "91127f4a-a160-404c-88ee-9bb6aad97003",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 463,
+            "candidatesTokenCount": 13,
+            "totalTokenCount": 580,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 463
+              }
+            ],
+            "thoughtsTokenCount": 104,
+            "serviceTier": "standard"
+          },
+          "rawResult": "네가 가져간 게 아니라 동생이 가져갔지?"
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 28,
+      "variant": "after",
+      "includeDialect": true,
+      "input": "물건은 받았는디 1개가 빠졌어유 ㅠㅠ 다시 확인해 주셔유.",
+      "correctionStatus": 200,
+      "result": "물건은 받았는데 1개가 빠졌어요 ㅠㅠ 다시 확인해 주세요.",
+      "durationMs": 1192,
+      "diagnosticId": "92244078-9467-4712-b80f-a58697368b5c",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 472,
+            "candidatesTokenCount": 18,
+            "totalTokenCount": 623,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 472
+              }
+            ],
+            "thoughtsTokenCount": 133,
+            "serviceTier": "standard"
+          },
+          "rawResult": "물건은 받았는데 1개가 빠졌어요 ㅠㅠ 다시 확인해 주세요."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 28,
+      "variant": "before",
+      "includeDialect": true,
+      "input": "물건은 받았는디 1개가 빠졌어유 ㅠㅠ 다시 확인해 주셔유.",
+      "correctionStatus": 200,
+      "result": "물건은 받았는디 1개가 빠졌어유 ㅠㅠ 다시 확인해 주셔유.",
+      "durationMs": 1124,
+      "diagnosticId": "3585d99c-49aa-4d36-a28d-279a2c1a6e9e",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 349,
+            "candidatesTokenCount": 22,
+            "totalTokenCount": 492,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 349
+              }
+            ],
+            "thoughtsTokenCount": 121,
+            "serviceTier": "standard"
+          },
+          "rawResult": "물건은 받았는디 1개가 빠졌어유 ㅠㅠ 다시 확인해 주셔유."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 29,
+      "variant": "before",
+      "includeDialect": true,
+      "input": "I sent 2 files yesterday. Please keep both. 🙂",
+      "correctionStatus": 200,
+      "result": "I sent 2 files yesterday. Please keep both. 🙂",
+      "durationMs": 1309,
+      "diagnosticId": "b447448a-000b-48dd-b4a3-b3096c62edd2",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 339,
+            "candidatesTokenCount": 12,
+            "totalTokenCount": 490,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 339
+              }
+            ],
+            "thoughtsTokenCount": 139,
+            "serviceTier": "standard"
+          },
+          "rawResult": "I sent 2 files yesterday. Please keep both. 🙂"
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 29,
+      "variant": "after",
+      "includeDialect": true,
+      "input": "I sent 2 files yesterday. Please keep both. 🙂",
+      "correctionStatus": 200,
+      "result": "I sent 2 files yesterday. Please keep both. 🙂",
+      "durationMs": 1191,
+      "diagnosticId": "1154f65f-440e-47b6-abf0-260269f1203c",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 462,
+            "candidatesTokenCount": 12,
+            "totalTokenCount": 606,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 462
+              }
+            ],
+            "thoughtsTokenCount": 132,
+            "serviceTier": "standard"
+          },
+          "rawResult": "I sent 2 files yesterday. Please keep both. 🙂"
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 30,
+      "variant": "after",
+      "includeDialect": true,
+      "input": "내가 어제 오전에 엄니한테 전화했는디 안 받으셔서 문자만 남겼어. 오늘은 동생이 오후 4시에 다시 연락한다카더라. 나는 회의가 있어서 같이 못 간당께, 예약 2개는 취소하지 말고 그대로 둬.",
+      "correctionStatus": 200,
+      "result": "내가 어제 오전에 어머니께 전화했는데 안 받으셔서 문자만 남겼어. 오늘은 동생이 오후 4시에 다시 연락한다고 하더라. 나는 회의가 있어서 같이 못 가니까, 예약 2개는 취소하지 말고 그대로 둬.",
+      "durationMs": 1267,
+      "diagnosticId": "a3ad2428-30f8-467a-b76e-661843afed44",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 510,
+            "candidatesTokenCount": 56,
+            "totalTokenCount": 694,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 510
+              }
+            ],
+            "thoughtsTokenCount": 128,
+            "serviceTier": "standard"
+          },
+          "rawResult": "내가 어제 오전에 어머니께 전화했는데 안 받으셔서 문자만 남겼어. 오늘은 동생이 오후 4시에 다시 연락한다고 하더라. 나는 회의가 있어서 같이 못 가니까, 예약 2개는 취소하지 말고 그대로 둬."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    },
+    {
+      "caseId": 30,
+      "variant": "before",
+      "includeDialect": true,
+      "input": "내가 어제 오전에 엄니한테 전화했는디 안 받으셔서 문자만 남겼어. 오늘은 동생이 오후 4시에 다시 연락한다카더라. 나는 회의가 있어서 같이 못 간당께, 예약 2개는 취소하지 말고 그대로 둬.",
+      "correctionStatus": 200,
+      "result": "내가 어제 오전에 엄니한테 전화했는디 안 받으셔서 문자만 남겼어. 오늘은 동생이 오후 4시에 다시 연락한다카더라. 나는 회의가 있어서 같이 못 간당께, 예약 2개는 취소하지 말고 그대로 둬.",
+      "durationMs": 1176,
+      "diagnosticId": "39ed4680-8335-4984-8d18-8fe0d71a2a7d",
+      "calls": [
+        {
+          "structuredEdits": false,
+          "status": 200,
+          "finishReason": "STOP",
+          "usage": {
+            "promptTokenCount": 387,
+            "candidatesTokenCount": 60,
+            "totalTokenCount": 573,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 387
+              }
+            ],
+            "thoughtsTokenCount": 126,
+            "serviceTier": "standard"
+          },
+          "rawResult": "내가 어제 오전에 엄니한테 전화했는디 안 받으셔서 문자만 남겼어. 오늘은 동생이 오후 4시에 다시 연락한다카더라. 나는 회의가 있어서 같이 못 간당께, 예약 2개는 취소하지 말고 그대로 둬."
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0,
+        "slowLog": 0
+      }
+    }
+  ],
+  "finishedAt": "2026-10-19T09:53:00.255Z"
+}
