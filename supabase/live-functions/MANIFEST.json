@@ -1,11 +1,11 @@
 {
   "functions": {
     "correct": {
-      "version": 170,
+      "version": 171,
       "verify_jwt": false,
-      "updated_at": 1792396847594,
+      "updated_at": 1792405128543,
       "files": {
-        "correct/index.ts": "4528a1612c16e9d4",
+        "correct/index.ts": "5cdb42fcdc7bee51",
         "correct/proofing_edits.ts": "12deac4c152276fb",
         "correct/_shared/credits.ts": "efbc3a7f6c9a006c",
         "correct/_shared/wallet_auth.ts": "92072cf8d93e3b55"
@@ -272,5 +272,5 @@
       }
     }
   },
-  "recorded_at": "2026-10-19T09:54:59.657Z"
+  "recorded_at": "2026-10-19T10:18:55.621Z"
 }
