@@ -1,0 +1,640 @@
+{
+  "startedAt": "2026-10-19T07:56:08.764Z",
+  "hashes": {
+    "before": "5def43dc16aec1df1077cfc1493335964e36bb28a9e60b29f86037e6f83a3033",
+    "after": "4528a1612c16e9d41008c484092caba58e46bdc167e3e365fd59381abcb0f786"
+  },
+  "plan": {
+    "correctionJobs": 16,
+    "maxProviderCalls": 16,
+    "retries": 0
+  },
+  "rows": [
+    {
+      "caseId": 0,
+      "variant": "before",
+      "repeat": 0,
+      "sourceSha256": "5def43dc16aec1df1077cfc1493335964e36bb28a9e60b29f86037e6f83a3033",
+      "correctionStatus": 200,
+      "sourceChars": 108,
+      "result": "안녕하세요. 무음 모드에서도 앱 내 진동 설정을 활성화하시면 버튼 조작 시 진동이 정상적으로 작동합니다. 혹시 설정을 활성화했음에도 반응이 없다면, 사용 중이신 기종과 앱 버전을 말씀해 주시겠어요? 확인 후 다시 안내해 드리겠습니다.",
+      "durationMs": 1954,
+      "providerCalls": 1,
+      "traces": [
+        {
+          "status": 200,
+          "finishReason": "STOP",
+          "visibleParts": 1,
+          "providerChars": 130,
+          "usage": {
+            "promptTokenCount": 382,
+            "candidatesTokenCount": 67,
+            "totalTokenCount": 875,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 382
+              }
+            ],
+            "thoughtsTokenCount": 426,
+            "serviceTier": "standard"
+          }
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0
+      },
+      "realDatabaseCalls": 0,
+      "realCreditOperations": 0
+    },
+    {
+      "caseId": 0,
+      "variant": "after",
+      "repeat": 0,
+      "sourceSha256": "4528a1612c16e9d41008c484092caba58e46bdc167e3e365fd59381abcb0f786",
+      "correctionStatus": 200,
+      "sourceChars": 108,
+      "result": "안녕하세요. 무음 모드에서도 앱 내 진동 설정을 활성화하시면 버튼을 누를 때 진동이 정상적으로 작동합니다. 혹시 설정을 켰음에도 반응이 없다면, 사용 중인 기종과 버전을 알려 주시겠어요? 확인 후 다시 안내해 드리겠습니다.",
+      "durationMs": 2440,
+      "providerCalls": 1,
+      "traces": [
+        {
+          "status": 200,
+          "finishReason": "STOP",
+          "visibleParts": 1,
+          "providerChars": 124,
+          "usage": {
+            "promptTokenCount": 382,
+            "candidatesTokenCount": 64,
+            "totalTokenCount": 1012,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 382
+              }
+            ],
+            "thoughtsTokenCount": 566,
+            "serviceTier": "standard"
+          }
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0
+      },
+      "realDatabaseCalls": 0,
+      "realCreditOperations": 0
+    },
+    {
+      "caseId": 1,
+      "variant": "after",
+      "repeat": 0,
+      "sourceSha256": "4528a1612c16e9d41008c484092caba58e46bdc167e3e365fd59381abcb0f786",
+      "correctionStatus": 200,
+      "sourceChars": 257,
+      "result": "현재 한글 자판을 사용하고 있습니다. 숫자 화면으로 이동했다가 돌아올 때, 이전에 사용하던 자판 상태가 그대로 유지되었으면 합니다. 또한, 긴 문장을 입력한 뒤 말투를 변경할 때 중간 내용뿐만 아니라 마지막 설명까지 모두 보존되도록 개선 부탁드립니다.\n\n원활한 확인을 위해 다음 절차를 진행해 주시면 감사하겠습니다. 우선 입력 설정을 확인해 주시고, 이어서 소리와 진동 기능을 각각 시험해 보시기 바랍니다. 이후 앱을 다시 열어 설정이 정상적으로 유지되는지 확인 부탁드립니다. 마지막으로 시험 결과를 정리하여 담당자에게 전달해 주시면 감사하겠습니다.",
+      "durationMs": 2664,
+      "providerCalls": 1,
+      "traces": [
+        {
+          "status": 200,
+          "finishReason": "STOP",
+          "visibleParts": 1,
+          "providerChars": 307,
+          "usage": {
+            "promptTokenCount": 441,
+            "candidatesTokenCount": 138,
+            "totalTokenCount": 1181,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 441
+              }
+            ],
+            "thoughtsTokenCount": 602,
+            "serviceTier": "standard"
+          }
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0
+      },
+      "realDatabaseCalls": 0,
+      "realCreditOperations": 0
+    },
+    {
+      "caseId": 1,
+      "variant": "before",
+      "repeat": 0,
+      "sourceSha256": "5def43dc16aec1df1077cfc1493335964e36bb28a9e60b29f86037e6f83a3033",
+      "correctionStatus": 200,
+      "sourceChars": 257,
+      "result": "안녕하세요. 현재 한글 자판을 사용 중인데, 숫자 화면으로 전환했다가 돌아올 때 기존 자판 설정이 그대로 유지되도록 개선을 부탁드립니다. 또한, 긴 문장을 입력한 뒤 말투를 변경할 때 중간 내용뿐만 아니라 마지막 설명까지 모두 보존될 수 있도록 보완이 필요합니다.\n\n원활한 확인을 위해 다음 단계를 거쳐 테스트를 진행해 주시면 감사하겠습니다.\n\n첫째, 입력 설정을 다시 한번 확인해 주시기 바랍니다.\n둘째, 소리와 진동 기능을 각각 개별적으로 테스트해 주세요.\n셋째, 앱을 종료한 뒤 다시 실행하여 설정이 정상적으로 유지되는지 확인 부탁드립니다.\n\n위 과정을 통해 확인된 결과는 정리하여 담당자분께 전달해 주시면 감사하겠습니다.",
+      "durationMs": 2806,
+      "providerCalls": 1,
+      "traces": [
+        {
+          "status": 200,
+          "finishReason": "STOP",
+          "visibleParts": 1,
+          "providerChars": 351,
+          "usage": {
+            "promptTokenCount": 441,
+            "candidatesTokenCount": 165,
+            "totalTokenCount": 1176,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 441
+              }
+            ],
+            "thoughtsTokenCount": 570,
+            "serviceTier": "standard"
+          }
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0
+      },
+      "realDatabaseCalls": 0,
+      "realCreditOperations": 0
+    },
+    {
+      "caseId": 2,
+      "variant": "before",
+      "repeat": 0,
+      "sourceSha256": "5def43dc16aec1df1077cfc1493335964e36bb28a9e60b29f86037e6f83a3033",
+      "correctionStatus": 200,
+      "sourceChars": 203,
+      "result": "이번 주 회의는 수요일 오후 3시, 온라인으로 진행할 예정입니다. 참석이 어려우신 분께서는 화요일 정오까지 회신 부탁드립니다.\n\n검토 자료는 일정표와 비용 내역 두 가지입니다. 비용 내역은 예산 검토를 위한 자료이며, 아직 계약 체결이나 결제는 진행되지 않았습니다.\n\n참석자분들의 의견을 모두 수렴한 뒤 최종 일정을 확정하겠습니다.",
+      "durationMs": 2107,
+      "providerCalls": 1,
+      "traces": [
+        {
+          "status": 200,
+          "finishReason": "STOP",
+          "visibleParts": 1,
+          "providerChars": 185,
+          "usage": {
+            "promptTokenCount": 334,
+            "candidatesTokenCount": 98,
+            "totalTokenCount": 926,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 334
+              }
+            ],
+            "thoughtsTokenCount": 494,
+            "serviceTier": "standard"
+          }
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0
+      },
+      "realDatabaseCalls": 0,
+      "realCreditOperations": 0
+    },
+    {
+      "caseId": 2,
+      "variant": "after",
+      "repeat": 0,
+      "sourceSha256": "4528a1612c16e9d41008c484092caba58e46bdc167e3e365fd59381abcb0f786",
+      "correctionStatus": 200,
+      "sourceChars": 203,
+      "result": "이번 주 회의는 수요일 오후 3시에 온라인으로 진행할 예정입니다. 참석이 어려우신 분께서는 화요일 정오까지 회신 부탁드립니다.\n\n검토 자료는 일정표와 비용 내역 두 가지입니다. 비용 내역은 예산 검토를 위한 참고 자료이며, 아직 계약 체결이나 결제는 진행되지 않은 상태입니다.\n\n참석자분들의 의견을 취합한 뒤 최종 일정을 확정하겠습니다.",
+      "durationMs": 2588,
+      "providerCalls": 1,
+      "traces": [
+        {
+          "status": 200,
+          "finishReason": "STOP",
+          "visibleParts": 1,
+          "providerChars": 188,
+          "usage": {
+            "promptTokenCount": 334,
+            "candidatesTokenCount": 98,
+            "totalTokenCount": 1025,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 334
+              }
+            ],
+            "thoughtsTokenCount": 593,
+            "serviceTier": "standard"
+          }
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0
+      },
+      "realDatabaseCalls": 0,
+      "realCreditOperations": 0
+    },
+    {
+      "caseId": 3,
+      "variant": "after",
+      "repeat": 0,
+      "sourceSha256": "4528a1612c16e9d41008c484092caba58e46bdc167e3e365fd59381abcb0f786",
+      "correctionStatus": 200,
+      "sourceChars": 202,
+      "result": "학부모님, 안녕하세요. 다음 주 금요일에는 우리 아이들이 즐겁게 참여할 독서 활동이 예정되어 있습니다. 등교 시간은 평소와 같으며, 별도로 준비하실 물건은 없으니 가벼운 마음으로 보내주시면 됩니다. \n\n아이들은 학교 도서관에서 스스로 읽고 싶은 책을 한 권 골라 읽고, 친구들에게 마음에 드는 부분을 소개하며 소중한 시간을 보낼 예정입니다. 학교에 비치된 도서를 활용할 예정이니 책을 따로 구입하지 않으셔도 괜찮습니다. 활동 중 촬영한 사진은 외부에 공개하지 않으니 안심해 주세요. 혹시 결석 예정이라면 전날까지 꼭 알려 주시고, 추가로 궁금하신 점은 언제든 담임에게 편하게 문의해 주시기 바랍니다.",
+      "durationMs": 2674,
+      "providerCalls": 1,
+      "traces": [
+        {
+          "status": 200,
+          "finishReason": "STOP",
+          "visibleParts": 1,
+          "providerChars": 335,
+          "usage": {
+            "promptTokenCount": 327,
+            "candidatesTokenCount": 170,
+            "totalTokenCount": 1120,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 327
+              }
+            ],
+            "thoughtsTokenCount": 623,
+            "serviceTier": "standard"
+          }
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0
+      },
+      "realDatabaseCalls": 0,
+      "realCreditOperations": 0
+    },
+    {
+      "caseId": 3,
+      "variant": "before",
+      "repeat": 0,
+      "sourceSha256": "5def43dc16aec1df1077cfc1493335964e36bb28a9e60b29f86037e6f83a3033",
+      "correctionStatus": 200,
+      "sourceChars": 202,
+      "result": "학부모님, 안녕하세요. 다음 주 금요일에 우리 아이들과 함께 즐거운 독서 활동을 진행할 예정입니다. 아이들은 평소와 같이 등교하면 되며, 따로 준비해 올 물건은 없으니 마음 편히 보내주세요.\n\n이번 활동은 도서관에서 아이들이 직접 읽고 싶은 책을 한 권 골라 읽어보고, 그중 가장 좋았던 부분을 친구들과 함께 나누는 시간으로 꾸려질 예정입니다. 학교 도서관에 비치된 책들을 활용할 예정이니, 별도로 책을 구입하지 않으셔도 괜찮습니다.\n\n아이들의 활동 모습은 소중히 담되 외부에 공개하지 않으니 안심하셔도 좋습니다. 혹시 당일 결석 예정이라면 전날까지 미리 말씀 부탁드리며, 궁금하신 점은 언제든 담임에게 문의해 주세요. 아이들이 책과 함께 행복한 시간을 보낼 수 있도록 세심하게 살피겠습니다.",
+      "durationMs": 3430,
+      "providerCalls": 1,
+      "traces": [
+        {
+          "status": 200,
+          "finishReason": "STOP",
+          "visibleParts": 1,
+          "providerChars": 387,
+          "usage": {
+            "promptTokenCount": 327,
+            "candidatesTokenCount": 199,
+            "totalTokenCount": 1093,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 327
+              }
+            ],
+            "thoughtsTokenCount": 567,
+            "serviceTier": "standard"
+          }
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0
+      },
+      "realDatabaseCalls": 0,
+      "realCreditOperations": 0
+    },
+    {
+      "caseId": 0,
+      "variant": "after",
+      "repeat": 1,
+      "sourceSha256": "4528a1612c16e9d41008c484092caba58e46bdc167e3e365fd59381abcb0f786",
+      "correctionStatus": 200,
+      "sourceChars": 108,
+      "result": "무음 모드에서도 앱 내 진동 설정을 활성화하시면 버튼 입력 시 진동이 정상적으로 작동합니다. 만약 설정을 켰음에도 반응이 없다면, 사용 중인 기종과 버전을 알려주시기 바랍니다. 내용을 확인하는 대로 다시 안내해 드리겠습니다.",
+      "durationMs": 2436,
+      "providerCalls": 1,
+      "traces": [
+        {
+          "status": 200,
+          "finishReason": "STOP",
+          "visibleParts": 1,
+          "providerChars": 125,
+          "usage": {
+            "promptTokenCount": 382,
+            "candidatesTokenCount": 61,
+            "totalTokenCount": 959,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 382
+              }
+            ],
+            "thoughtsTokenCount": 516,
+            "serviceTier": "standard"
+          }
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0
+      },
+      "realDatabaseCalls": 0,
+      "realCreditOperations": 0
+    },
+    {
+      "caseId": 0,
+      "variant": "before",
+      "repeat": 1,
+      "sourceSha256": "5def43dc16aec1df1077cfc1493335964e36bb28a9e60b29f86037e6f83a3033",
+      "correctionStatus": 200,
+      "sourceChars": 108,
+      "result": "안녕하세요. 무음 모드에서도 앱 내 진동 설정을 켜두시면 버튼 조작 시 진동이 정상적으로 작동합니다. 혹시 설정을 활성화했음에도 반응이 없다면, 사용 중이신 기종과 앱 버전을 말씀해 주시겠어요? 내용을 확인한 뒤 다시 안내해 드리겠습니다.",
+      "durationMs": 2639,
+      "providerCalls": 1,
+      "traces": [
+        {
+          "status": 200,
+          "finishReason": "STOP",
+          "visibleParts": 1,
+          "providerChars": 133,
+          "usage": {
+            "promptTokenCount": 382,
+            "candidatesTokenCount": 70,
+            "totalTokenCount": 1013,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 382
+              }
+            ],
+            "thoughtsTokenCount": 561,
+            "serviceTier": "standard"
+          }
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0
+      },
+      "realDatabaseCalls": 0,
+      "realCreditOperations": 0
+    },
+    {
+      "caseId": 1,
+      "variant": "before",
+      "repeat": 1,
+      "sourceSha256": "5def43dc16aec1df1077cfc1493335964e36bb28a9e60b29f86037e6f83a3033",
+      "correctionStatus": 200,
+      "sourceChars": 257,
+      "result": "안녕하세요. 요청하신 내용을 바탕으로 다듬은 문장입니다.\n\n현재 한글 자판을 사용하고 있는데, 숫자 화면으로 이동했다가 돌아와도 이전 자판 설정이 그대로 유지되도록 개선을 부탁드립니다. 또한, 긴 문장을 입력한 뒤 말투를 변경할 때 중간 내용뿐만 아니라 마지막 설명까지 모두 누락 없이 보존되기를 바랍니다.\n\n원활한 확인을 위해 다음 단계를 진행해 주시면 감사하겠습니다.\n첫째, 입력 설정을 다시 한번 확인해 주십시오.\n둘째, 소리와 진동 기능을 각각 시험해 보시기 바랍니다.\n셋째, 앱을 재실행하여 설정이 정상적으로 유지되는지 확인해 주십시오.\n\n마지막으로 시험 결과를 정리하여 담당자에게 전달해 주시면 감사하겠습니다.",
+      "durationMs": 3016,
+      "providerCalls": 1,
+      "traces": [
+        {
+          "status": 200,
+          "finishReason": "STOP",
+          "visibleParts": 1,
+          "providerChars": 347,
+          "usage": {
+            "promptTokenCount": 441,
+            "candidatesTokenCount": 166,
+            "totalTokenCount": 1307,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 441
+              }
+            ],
+            "thoughtsTokenCount": 700,
+            "serviceTier": "standard"
+          }
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0
+      },
+      "realDatabaseCalls": 0,
+      "realCreditOperations": 0
+    },
+    {
+      "caseId": 1,
+      "variant": "after",
+      "repeat": 1,
+      "sourceSha256": "4528a1612c16e9d41008c484092caba58e46bdc167e3e365fd59381abcb0f786",
+      "correctionStatus": 200,
+      "sourceChars": 257,
+      "result": "현재 한글 자판을 사용하고 있습니다. 숫자 화면으로 이동했다가 돌아올 때, 이전에 사용하던 자판 설정이 그대로 유지되도록 개선을 부탁드립니다. 또한 긴 문장을 입력한 뒤 말투를 변경할 때, 중간 내용과 마지막 설명까지 모두 누락 없이 보존되었으면 합니다.\n\n테스트는 다음 순서로 진행해 주시기 바랍니다.\n첫째, 입력 설정을 확인해 주십시오.\n둘째, 소리와 진동 기능을 각각 시험해 주십시오.\n셋째, 앱을 다시 실행하여 설정이 정상적으로 유지되는지 확인해 주십시오.\n\n마지막으로 시험 결과를 정리하여 담당자에게 공유해 주시면 감사하겠습니다.",
+      "durationMs": 3292,
+      "providerCalls": 1,
+      "traces": [
+        {
+          "status": 200,
+          "finishReason": "STOP",
+          "visibleParts": 1,
+          "providerChars": 301,
+          "usage": {
+            "promptTokenCount": 441,
+            "candidatesTokenCount": 146,
+            "totalTokenCount": 1358,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 441
+              }
+            ],
+            "thoughtsTokenCount": 771,
+            "serviceTier": "standard"
+          }
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0
+      },
+      "realDatabaseCalls": 0,
+      "realCreditOperations": 0
+    },
+    {
+      "caseId": 2,
+      "variant": "after",
+      "repeat": 1,
+      "sourceSha256": "4528a1612c16e9d41008c484092caba58e46bdc167e3e365fd59381abcb0f786",
+      "correctionStatus": 200,
+      "sourceChars": 203,
+      "result": "이번 주 회의는 수요일 오후 3시에 온라인으로 진행할 예정입니다. 참석이 어려우신 분께서는 화요일 정오까지 회신해 주시기 바랍니다.\n\n검토 자료는 일정표와 비용 내역 총 두 가지입니다. 비용 내역은 예산 검토를 위한 참고 자료이며, 현재 계약 체결이나 결제는 진행되지 않은 상태입니다.\n\n참석자분들의 의견을 모두 취합한 후 최종 일정을 확정할 계획입니다.",
+      "durationMs": 2221,
+      "providerCalls": 1,
+      "traces": [
+        {
+          "status": 200,
+          "finishReason": "STOP",
+          "visibleParts": 1,
+          "providerChars": 198,
+          "usage": {
+            "promptTokenCount": 334,
+            "candidatesTokenCount": 104,
+            "totalTokenCount": 933,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 334
+              }
+            ],
+            "thoughtsTokenCount": 495,
+            "serviceTier": "standard"
+          }
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0
+      },
+      "realDatabaseCalls": 0,
+      "realCreditOperations": 0
+    },
+    {
+      "caseId": 2,
+      "variant": "before",
+      "repeat": 1,
+      "sourceSha256": "5def43dc16aec1df1077cfc1493335964e36bb28a9e60b29f86037e6f83a3033",
+      "correctionStatus": 200,
+      "sourceChars": 203,
+      "result": "이번 주 회의는 수요일 오후 3시에 온라인으로 진행할 예정입니다. 참석이 어려우신 분은 화요일 정오까지 회신 부탁드립니다.\n\n검토 자료는 일정표와 비용 내역 두 가지입니다. 비용 내역은 예산 검토용이며, 아직 계약 체결이나 결제가 진행되지 않은 상태임을 참고해 주시기 바랍니다. 모든 참석자의 의견을 수렴한 뒤 최종 일정을 확정하겠습니다.",
+      "durationMs": 2691,
+      "providerCalls": 1,
+      "traces": [
+        {
+          "status": 200,
+          "finishReason": "STOP",
+          "visibleParts": 1,
+          "providerChars": 189,
+          "usage": {
+            "promptTokenCount": 334,
+            "candidatesTokenCount": 95,
+            "totalTokenCount": 1121,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 334
+              }
+            ],
+            "thoughtsTokenCount": 692,
+            "serviceTier": "standard"
+          }
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0
+      },
+      "realDatabaseCalls": 0,
+      "realCreditOperations": 0
+    },
+    {
+      "caseId": 3,
+      "variant": "before",
+      "repeat": 1,
+      "sourceSha256": "5def43dc16aec1df1077cfc1493335964e36bb28a9e60b29f86037e6f83a3033",
+      "correctionStatus": 200,
+      "sourceChars": 202,
+      "result": "학부모님, 안녕하십니까? 다음 주 금요일에는 우리 아이들이 즐겁게 참여할 독서 활동이 예정되어 있습니다. 아이들은 평소와 다름없이 등교하면 되며, 별도로 준비할 물건은 없습니다. 도서관에서 직접 책을 한 권 골라 읽고, 친구들에게 마음에 드는 부분을 다정하게 소개하는 시간을 가질 예정입니다. 책은 학교에 비치된 도서를 활용할 예정이니 따로 구입하지 않으셔도 됩니다. 활동 사진은 외부로 공개되지 않으니 안심하셔도 좋습니다. 혹시 결석 예정이라면 전날까지 꼭 말씀 부탁드리며, 추가로 궁금하신 점은 언제든 담임에게 문의해 주세요. 아이들이 책과 함께 행복한 시간을 보낼 수 있도록 세심하게 살피겠습니다.",
+      "durationMs": 3049,
+      "providerCalls": 1,
+      "traces": [
+        {
+          "status": 200,
+          "finishReason": "STOP",
+          "visibleParts": 1,
+          "providerChars": 337,
+          "usage": {
+            "promptTokenCount": 327,
+            "candidatesTokenCount": 171,
+            "totalTokenCount": 1122,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 327
+              }
+            ],
+            "thoughtsTokenCount": 624,
+            "serviceTier": "standard"
+          }
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0
+      },
+      "realDatabaseCalls": 0,
+      "realCreditOperations": 0
+    },
+    {
+      "caseId": 3,
+      "variant": "after",
+      "repeat": 1,
+      "sourceSha256": "4528a1612c16e9d41008c484092caba58e46bdc167e3e365fd59381abcb0f786",
+      "correctionStatus": 200,
+      "sourceChars": 202,
+      "result": "학부모님, 안녕하세요. 우리 아이들과 함께하는 즐거운 독서 활동 소식을 전해드립니다. 다음 주 금요일, 아이들은 평소와 다름없이 등교하면 되며 별도로 준비해 주실 물건은 없습니다. 아이들이 도서관에서 직접 마음에 드는 책을 한 권 골라 읽어보고, 친구들과 함께 좋아하는 부분을 나누며 소중한 시간을 보낼 예정입니다. 책은 학교 도서관에 비치된 도서를 활용할 예정이니 따로 구입하지 않으셔도 괜찮습니다. 활동 중 촬영하는 사진은 외부로 공개되지 않으니 안심하셔도 좋습니다. 혹시 당일 결석 예정이라면 전날까지 꼭 말씀 부탁드리며, 더 궁금하신 점은 언제든 담임에게 문의해 주세요.",
+      "durationMs": 2955,
+      "providerCalls": 1,
+      "traces": [
+        {
+          "status": 200,
+          "finishReason": "STOP",
+          "visibleParts": 1,
+          "providerChars": 323,
+          "usage": {
+            "promptTokenCount": 327,
+            "candidatesTokenCount": 165,
+            "totalTokenCount": 1097,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 327
+              }
+            ],
+            "thoughtsTokenCount": 605,
+            "serviceTier": "standard"
+          }
+        }
+      ],
+      "simulated": {
+        "wallet": 1,
+        "charge": 1,
+        "refund": 0
+      },
+      "realDatabaseCalls": 0,
+      "realCreditOperations": 0
+    }
+  ],
+  "closed": true,
+  "finishedAt": "2026-10-19T07:57:00.976Z"
+}

@@ -31,3 +31,13 @@ If correction errors materially regress, restore only `correct`'s four files fro
 ## Verification status
 
 Prepared: response/trace/routing tests 54 passed; probe safety tests 8 passed; Deno checks for both function entry points passed. Additional final scope tests, paid results, source commit, deployment version and post-deploy checks are recorded below when actually completed. A mock refund test is not certification of an operational refund.
+
+## Real-server test results
+
+- Initial source commit `b793816` was pushed before the locked probe deployment. Probe v1 was deployed using the repository script, live source matched all four files, and deployment records were committed as `dca512e` and pushed.
+- Prompt/auth scope tests: 2 passed, including 134 exact prompt comparisons; total focused source/safety tests: 64 passed. Both entry points passed Deno type checking.
+- Paid comparison: 16 sequential Supabase jobs / 16 provider calls, with no retries and no actual wallet/credit/DB operations. Before: 8/8 HTTP 200 and provider STOP; after: 8/8 HTTP 200 and provider STOP.
+- Manually read all eight synthetic after-results: no mid-sentence endings; the key instructions, negative conditions and final requests remained present. This is a small synthetic sample, not a population-wide quality or latency guarantee. The original intermittent truncation did not reproduce in these eight baseline calls.
+- Result file: `reports/tone-probe-results-20261019.json`. It contains synthetic sentences/results and token usage, not customer input, keys or wallet data.
+- Control was explicitly closed in the runner's finally block and an authenticated request returned HTTP 410. No runtime provider key was exported.
+- Connector log reads still fail with a permission error; do not translate a failed lookup into zero errors.
