@@ -1,0 +1,127 @@
+{
+  "phase": "after",
+  "observedAt": "2026-10-19T08:06:08.017Z",
+  "correct": {
+    "version": 167,
+    "status": "ACTIVE",
+    "verify_jwt": false,
+    "updated_at": 1792396847594
+  },
+  "probe": {
+    "version": 4,
+    "verify_jwt": true,
+    "closed": true
+  },
+  "checks": [
+    {
+      "name": "cors",
+      "status": 200,
+      "cors": "*"
+    },
+    {
+      "name": "missing_request_id",
+      "status": 409,
+      "cors": "*"
+    },
+    {
+      "name": "invalid_preview",
+      "status": 400,
+      "cors": "*"
+    },
+    {
+      "name": "probe_closed",
+      "status": 410
+    }
+  ],
+  "window": {
+    "start": "2026-10-19T07:51:08.017Z",
+    "end": "2026-10-19T08:06:08.017Z"
+  },
+  "logs": {
+    "available": true,
+    "response": {
+      "result": [
+        {
+          "method": "POST",
+          "requests": 89,
+          "status": "200",
+          "version": "167"
+        },
+        {
+          "method": "POST",
+          "requests": 29,
+          "status": "200",
+          "version": "166"
+        },
+        {
+          "method": "POST",
+          "requests": 77,
+          "status": "200",
+          "version": "163"
+        },
+        {
+          "method": "POST",
+          "requests": 12,
+          "status": "200",
+          "version": "165"
+        },
+        {
+          "method": "POST",
+          "requests": 1,
+          "status": "409",
+          "version": "166"
+        },
+        {
+          "method": "POST",
+          "requests": 1,
+          "status": "409",
+          "version": "167"
+        },
+        {
+          "method": "POST",
+          "requests": 2,
+          "status": "400",
+          "version": "167"
+        },
+        {
+          "method": "POST",
+          "requests": 1,
+          "status": "429",
+          "version": "167"
+        },
+        {
+          "method": "OPTIONS",
+          "requests": 2,
+          "status": "200",
+          "version": "167"
+        },
+        {
+          "method": "POST",
+          "requests": 1,
+          "status": "400",
+          "version": "166"
+        },
+        {
+          "method": "OPTIONS",
+          "requests": 1,
+          "status": "200",
+          "version": "166"
+        }
+      ]
+    }
+  },
+  "diagnosticLogs": {
+    "available": true,
+    "start": "2026-10-19T08:00:47.594Z",
+    "response": {
+      "result": [
+        {
+          "ai_failed": 0,
+          "incomplete": 0,
+          "no_credits": 1,
+          "refund_failed": 0
+        }
+      ]
+    }
+  }
+}

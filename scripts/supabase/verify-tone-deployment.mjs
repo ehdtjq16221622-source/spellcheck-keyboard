@@ -46,6 +46,15 @@ try {
   logs = { available: true, response: await api(`/analytics/endpoints/logs?${params}`) }
   if (logs.response.error) throw new Error('Logs backend returned a query error')
 } catch (error) { logs = { available: false, error: String(error.message) } }
-const report = { phase, observedAt: end.toISOString(), correct: { version: correct.version, status: correct.status, verify_jwt: correct.verify_jwt, updated_at: correct.updated_at }, probe: { version: probe.version, verify_jwt: probe.verify_jwt, closed: true }, checks, window: { start: start.toISOString(), end: end.toISOString() }, logs }
+let diagnosticLogs
+try {
+  assert.match(correct.id, /^[a-f0-9-]{36}$/i)
+  const diagnosticsStart = new Date(Math.max(start.getTime(), correct.updated_at))
+  const query = `SELECT countIf(event_message LIKE '%NO_CREDITS%') AS no_credits, countIf(event_message LIKE '%AI_REQUEST_FAILED%') AS ai_failed, countIf(event_message LIKE '%AI_INCOMPLETE_RESPONSE%') AS incomplete, countIf(event_message LIKE '%AI_CREDIT_REFUND_FAILED%') AS refund_failed FROM logs WHERE source = 'function_logs' AND log_attributes['function_id'] = '${correct.id}' LIMIT 1`
+  const params = new URLSearchParams({ sql: query, iso_timestamp_start: diagnosticsStart.toISOString(), iso_timestamp_end: end.toISOString() })
+  diagnosticLogs = { available: true, start: diagnosticsStart.toISOString(), response: await api(`/analytics/endpoints/logs?${params}`) }
+  if (diagnosticLogs.response.error) throw new Error('Diagnostic log query failed')
+} catch (error) { diagnosticLogs = { available: false, error: String(error.message) } }
+const report = { phase, observedAt: end.toISOString(), correct: { version: correct.version, status: correct.status, verify_jwt: correct.verify_jwt, updated_at: correct.updated_at }, probe: { version: probe.version, verify_jwt: probe.verify_jwt, closed: true }, checks, window: { start: start.toISOString(), end: end.toISOString() }, logs, diagnosticLogs }
 writeFileSync(path.join(REPO, `reports/tone-release-check-${phase}-20261019.json`), JSON.stringify(report, null, 2) + '\n')
 console.log(JSON.stringify(report, null, 2))

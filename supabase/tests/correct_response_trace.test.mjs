@@ -246,8 +246,8 @@ test('custom completed/incomplete output keeps its 4000 budget and categorical p
   }
 });
 
-test('verified live custom missing-status success is reproduced; candidate rejects with an identical provider request', async () => {
-  const code = readFileSync(new URL('../live-functions/correct/correct/index.ts', import.meta.url), 'utf8');
+test('pre-repair custom missing-status success is reproduced; release rejects with an identical provider request', async () => {
+  const code = readFileSync(new URL('../deploy-bundles/20261014-tone-complete-response/baseline/supabase/functions/correct/index.ts', import.meta.url), 'utf8');
   const before = harness({ code, payload: { output_text: secret } });
   const after = harness({ payload: { output_text: secret } });
   assert.equal((await before.request({ formalLevel: 'custom' })).body.result, secret);

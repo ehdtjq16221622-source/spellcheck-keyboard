@@ -250,7 +250,7 @@
       }
     },
     "tone_completion_probe": {
-      "version": 1,
+      "version": 4,
       "verify_jwt": true,
       "updated_at": 1792396543197,
       "files": {
@@ -261,5 +261,5 @@
       }
     }
   },
-  "recorded_at": "2026-10-19T08:00:53.849Z"
+  "recorded_at": "2026-10-19T08:03:45.920Z"
 }

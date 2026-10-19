@@ -48,3 +48,14 @@ Prepared: response/trace/routing tests 54 passed; probe safety tests 8 passed; D
 - Probe metadata became v4 after its control-setting updates; its source is unchanged and it is closed. Version changes alone are not evidence that function source changed.
 - Management API log reading succeeded using the refreshed CLI session (the connector still fails). At 07:59:43 UTC, the preceding 15-minute correct window contained 206 HTTP 200 requests, 2 HTTP 401 requests and 1 HTTP 429 request; zero recorded 5xx. These are requests, not unique users. Log ingestion can lag the smoke requests below.
 - Pre-deploy no-write smoke checks: OPTIONS 200; missing request ID 409/APP_UPDATE_REQUIRED; invalid preview 400; protected probe 410. No real AI or DB/credit path is invoked by these smoke cases.
+
+## Production completion
+
+- Deployed `correct` v167 from pushed source commit `291ed7e` at 2026-10-19 08:00:47 UTC / 17:00:47 KST using the repository script. ACTIVE, verify_jwt=false, and downloaded source matches the candidate exactly. Deployment snapshot/log committed as `b52fa5d`.
+- Final script comparison: correct v167 and closed probe v4 both match their source trees, with zero unrecorded source differences. Probe metadata was refreshed after the control-setting version increments.
+- Post-deploy smoke checks retained OPTIONS 200, missing-ID 409/APP_UPDATE_REQUIRED, invalid-preview 400 and authenticated closed-probe 410.
+- At 08:06:08 UTC / 17:06:08 KST, recorded v167 traffic included 89 POST HTTP 200 responses, one HTTP 429, and zero 5xx. Deliberate no-write smoke requests also produce 400/409/OPTIONS events. These are request counts, not unique users or a measured tone-only success rate.
+- Function diagnostics from deployment onward: NO_CREDITS 1; AI_REQUEST_FAILED 0; AI_INCOMPLETE_RESPONSE 0; AI_CREDIT_REFUND_FAILED 0. The one credit-shortage rejection uses the unchanged rule. No real refund was exercised by the synthetic provider comparison.
+- This is an initial approximately five-minute observation with log-ingestion delay, not proof that intermittent truncation can never recur. In particular, completed model output can still omit meaning; the actual incident's provider finish reason was unavailable in the old deployment.
+- Final focused tests: 64 passed, 0 failed, 0 skipped; Deno checks and whitespace validation passed. Historical pre-repair tests now use a hash-pinned, pre-existing bundle with the exact v163/v166 source, rather than accidentally treating the newly updated live snapshot as the old baseline.
+- No app rebuild is needed for this server change; build 844 can exercise it. No balance, credit-price, subscription, schema or iOS changes were made in this release. Other dirty worktrees were preserved.

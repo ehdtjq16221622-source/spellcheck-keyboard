@@ -8,10 +8,11 @@ const read = (file) => readFileSync(new URL(file, root), 'utf8').replace(/\r\n/g
 const hash = (text) => createHash('sha256').update(text).digest('hex')
 mkdirSync(output, { recursive: true })
 for (const [variant, file] of Object.entries({
-  before: 'supabase/live-functions/correct/correct/index.ts',
+  before: 'supabase/deploy-bundles/20261014-tone-complete-response/baseline/supabase/functions/correct/index.ts',
   after: 'supabase/functions/correct/index.ts',
 })) {
   const source = read(file)
+  if (variant === 'before') assert.equal(hash(source), '5def43dc16aec1df1077cfc1493335964e36bb28a9e60b29f86037e6f83a3033', 'Historical baseline must match pre-release v163/v166')
   assert.equal((source.match(/^import .*$/gm) ?? []).length, 4)
   assert.equal((source.match(/Deno\.serve\(/g) ?? []).length, 1)
   const body = source.replace(/^import .*$/gm, '').replace('Deno.serve(', 'const handler = (')
