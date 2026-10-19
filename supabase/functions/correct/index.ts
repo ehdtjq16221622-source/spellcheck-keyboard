@@ -30,9 +30,11 @@ async function walletFingerprint(walletId: string): Promise<string | undefined> 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
 
-  const diagnosticId = crypto.randomUUID()
+  let diagnosticId: string = crypto.randomUUID()
   let failureStage = 'request_parse'
   let causeStage: string | undefined
+  let responseTrace: ToneResponseTrace | undefined
+  let responseStatus = 500
 
   try {
     const {
@@ -47,8 +49,14 @@ Deno.serve(async (req: Request) => {
       deviceId,
       requestId,
       preview,
+      diagnosticId: requestedDiagnosticId,
+      diagnosticTrace,
     } = await req.json()
 
+    if (typeof requestedDiagnosticId === 'string' &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestedDiagnosticId)) {
+      diagnosticId = requestedDiagnosticId
+    }
     const source = typeof text === 'string' ? text : ''
     const normalizedLevel = normalizeFormalLevelKey(formalLevel)
     const isLegacyPreview = !preview && formalMode === true && normalizedLevel === '커스텀' &&
@@ -86,6 +94,20 @@ Deno.serve(async (req: Request) => {
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
     failureStage = 'wallet_resolution'
     const wallet = isPreviewRequest ? null : await resolveCreditWallet(req, supabase, deviceId)
+    // Opt-in counts only, and only after wallet authorization. Never retain text.
+    if (formalMode && diagnosticTrace === true && wallet) {
+      responseTrace = {
+        source_utf16_units: source.length,
+        source_utf8_bytes: new TextEncoder().encode(source).length,
+        provider_utf16_units: null,
+        provider_utf8_bytes: null,
+        result_utf16_units: 0,
+        result_utf8_bytes: 0,
+        provider_http_status: null,
+        provider_status: 'not_called',
+        max_output_tokens: normalizedLevel === '커스텀' ? 4000 : 4096,
+      }
+    }
     failureStage = 'credit_precharge'
     const credits = !isPreviewRequest && serverManagedCredit && wallet
       ? await consumeAIUsage(supabase, wallet.walletId, requestId, creditKind)
@@ -98,6 +120,7 @@ Deno.serve(async (req: Request) => {
         free_credits_remaining: credits.freeCredits,
         paid_credits_remaining: credits.paidCredits,
       })
+      responseStatus = 429
       return noCredits(credits, diagnosticId, failureStage)
     }
 
@@ -125,8 +148,8 @@ Deno.serve(async (req: Request) => {
           customPrompt
         )
         const toneResult = normalizedLevel === '커스텀'
-          ? await callLuna(source, system)
-          : await callGemini(source, true, shouldRemovePunct, includeDialect, normalizedLevel, shouldIncludeFormalPunct, customPrompt)
+          ? await callLuna(source, system, responseTrace)
+          : await callGemini(source, true, shouldRemovePunct, includeDialect, normalizedLevel, shouldIncludeFormalPunct, customPrompt, responseTrace)
         result = applyProofingFallbacks(toneResult, source)
       }
     } catch (error) {
@@ -142,6 +165,11 @@ Deno.serve(async (req: Request) => {
       throw error
     }
 
+    if (responseTrace) {
+      responseTrace.result_utf16_units = result.length
+      responseTrace.result_utf8_bytes = new TextEncoder().encode(result).length
+    }
+    responseStatus = 200
     return new Response(
       JSON.stringify({
         result,
@@ -151,14 +179,46 @@ Deno.serve(async (req: Request) => {
       { headers: diagnosticHeaders(diagnosticId) }
     )
   } catch (e) {
+    responseStatus = e instanceof WalletAccessError ? e.status : 500
     const code = e instanceof WalletAccessError ? 'WALLET_ACCESS_ERROR' : 'AI_REQUEST_FAILED'
     logDiagnostic('error', diagnosticId, failureStage, code, causeStage)
     if (e instanceof WalletAccessError) {
       return diagnosticError(diagnosticId, failureStage, e.status, { error: e.message }, causeStage)
     }
     return diagnosticError(diagnosticId, failureStage, 500, { error: genericAiErrorMessage }, causeStage)
+  } finally {
+    if (responseTrace) {
+      console.log('[correct] response_trace', {
+        event: 'tone_response_trace',
+        diagnostic_id: diagnosticId,
+        ...responseTrace,
+        http_status: responseStatus,
+        status: responseStatus === 200 ? 'ok' : 'error',
+        ...(responseStatus === 200 ? {} : { failure_stage: failureStage }),
+      })
+    }
   }
 })
+
+type ToneResponseTrace = {
+  source_utf16_units: number
+  source_utf8_bytes: number
+  provider_utf16_units: number | null
+  provider_utf8_bytes: number | null
+  result_utf16_units: number
+  result_utf8_bytes: number
+  provider_http_status: number | null
+  provider_status: 'not_called' | 'awaiting_response' | 'network_error' | 'invalid_response' | 'http_error' | 'completed' | 'incomplete' | 'missing_status' | 'empty'
+  max_output_tokens: number
+  finish_reason?: 'STOP' | 'MAX_TOKENS' | 'SAFETY' | 'RECITATION' | 'MISSING' | 'OTHER'
+  code?: 'AI_INCOMPLETE_RESPONSE'
+}
+
+function recordProviderText(trace: ToneResponseTrace | undefined, text: string) {
+  if (!trace) return
+  trace.provider_utf16_units = text.length
+  trace.provider_utf8_bytes = new TextEncoder().encode(text).length
+}
 
 // Spelling requests slower than this are logged for the service monitor's
 // Telegram alert. Best-effort and off the response path: never throws.
@@ -573,7 +633,8 @@ async function callGemini(
   includeDialect: boolean,
   formalLevel: string,
   formalIncludePunct: boolean,
-  customPrompt?: string
+  customPrompt?: string,
+  trace?: ToneResponseTrace
 ): Promise<string> {
   const system = buildSystemPrompt(
     formalMode,
@@ -593,7 +654,7 @@ async function callGemini(
       contents: [{ role: 'user', parts: [{ text }] }],
       generationConfig: {
         temperature: formalMode ? 0.3 : 0.1,
-        maxOutputTokens: 1000,
+        maxOutputTokens: formalMode ? 4096 : 1000,
         ...(formalMode ? { thinkingConfig: { thinkingLevel: 'medium' } } : {}),
         ...(!formalMode ? {
           responseMimeType: 'application/json',
@@ -619,28 +680,60 @@ async function callGemini(
       },
     })
 
-  const res = await fetchWithTransientRetry(url, apiKey, requestBody)
-
+  if (trace) trace.provider_status = 'awaiting_response'
+  const res = await fetchWithTransientRetry(url, apiKey, requestBody, trace)
+  if (trace) {
+    trace.provider_http_status = res.status
+    trace.provider_status = res.ok ? 'invalid_response' : 'http_error'
+  }
   const data = await res.json()
-  if (!res.ok) throw new Error(data.error?.message ?? '교정 실패')
-  const content = data.candidates?.[0]?.content?.parts?.[0]?.text
-  if (!content) throw new Error(`빈 응답: ${JSON.stringify(data.candidates?.[0])}`)
+  if (!res.ok) throw new Error('AI provider request failed')
+  const candidate = data.candidates?.[0]
+  const parts = Array.isArray(candidate?.content?.parts) ? candidate.content.parts : []
+  const content = parts
+    .filter((part: { text?: unknown; thought?: boolean } | null) => part && typeof part.text === 'string' && part.thought !== true)
+    .map((part: { text: string }) => part.text)
+    .join('')
+  recordProviderText(trace, content)
+  if (trace) {
+    trace.finish_reason = candidate?.finishReason === undefined ? 'MISSING'
+      : ['STOP', 'MAX_TOKENS', 'SAFETY', 'RECITATION'].includes(candidate.finishReason) ? candidate.finishReason : 'OTHER'
+    trace.provider_status = candidate?.finishReason === 'STOP' ? 'completed'
+      : candidate?.finishReason === undefined ? 'missing_status' : 'incomplete'
+  }
+  if (candidate?.finishReason !== 'STOP') {
+    if (trace) trace.code = 'AI_INCOMPLETE_RESPONSE'
+    throw new Error('AI response did not complete')
+  }
+  if (!content.trim()) {
+    if (trace) trace.provider_status = 'empty'
+    throw new Error('AI returned an empty visible response')
+  }
   return content.trim()
 }
 
-async function fetchWithTransientRetry(url: string, apiKey: string, body: string): Promise<Response> {
+async function fetchWithTransientRetry(url: string, apiKey: string, body: string, trace?: ToneResponseTrace): Promise<Response> {
   let lastError: unknown
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
+      if (trace) {
+        trace.provider_http_status = null
+        trace.provider_status = 'awaiting_response'
+      }
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body,
       })
+      if (trace) {
+        trace.provider_http_status = response.status
+        trace.provider_status = response.ok ? 'invalid_response' : 'http_error'
+      }
       if (response.status < 500 && response.status !== 429) return response
       await response.body?.cancel()
       lastError = new Error(`AI provider HTTP ${response.status}`)
     } catch (error) {
+      if (trace) trace.provider_status = 'network_error'
       lastError = error
     }
     if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 250))
@@ -648,10 +741,11 @@ async function fetchWithTransientRetry(url: string, apiKey: string, body: string
   throw lastError instanceof Error ? lastError : new Error('AI provider request failed')
 }
 
-async function callLuna(text: string, system: string): Promise<string> {
+async function callLuna(text: string, system: string, trace?: ToneResponseTrace): Promise<string> {
   const apiKey = Deno.env.get('OPENAI_API_KEY')
   if (!apiKey) throw new Error('OPENAI_API_KEY is not configured')
 
+  if (trace) trace.provider_status = 'awaiting_response'
   const res = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: {
@@ -666,13 +760,17 @@ async function callLuna(text: string, system: string): Promise<string> {
       instructions: system,
       input: text,
     }),
+  }).catch((error: unknown) => {
+    if (trace) trace.provider_status = 'network_error'
+    throw error
   })
 
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.error?.message ?? 'Luna correction failed')
-  if (data.status && data.status !== 'completed') {
-    throw new Error(`Luna response incomplete: ${data.incomplete_details?.reason ?? data.status}`)
+  if (trace) {
+    trace.provider_http_status = res.status
+    trace.provider_status = res.ok ? 'invalid_response' : 'http_error'
   }
+  const data = await res.json()
+  if (!res.ok) throw new Error('Luna correction failed')
 
   const content = typeof data.output_text === 'string'
     ? data.output_text
@@ -683,7 +781,16 @@ async function callLuna(text: string, system: string): Promise<string> {
       .map((item: { text?: string }) => item.text ?? '')
       .join('')
 
-  if (!content.trim()) throw new Error('Luna returned an empty response')
+  recordProviderText(trace, content)
+  if (trace) trace.provider_status = data.status === 'completed' ? 'completed' : data.status ? 'incomplete' : 'missing_status'
+  if (data.status !== 'completed') {
+    if (trace) trace.code = 'AI_INCOMPLETE_RESPONSE'
+    throw new Error('Luna response incomplete')
+  }
+  if (!content.trim()) {
+    if (trace) trace.provider_status = 'empty'
+    throw new Error('Luna returned an empty response')
+  }
   return content.trim()
 }
 

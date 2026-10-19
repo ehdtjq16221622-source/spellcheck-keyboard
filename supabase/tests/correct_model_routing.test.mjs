@@ -36,7 +36,7 @@ async function createHandler({ consumeResult = { accepted: true, alreadyProcesse
     calls.push(request);
     const body = request.url.includes('api.openai.com')
       ? { status: 'completed', output_text: 'luna result' }
-      : { candidates: [{ content: { parts: [{ text: 'gemini result' }] } }] };
+      : { candidates: [{ finishReason: 'STOP', content: { parts: [{ text: 'gemini result' }] } }] };
     return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
   };
   await import(`data:text/javascript,${encodeURIComponent(runnable)}#${crypto.randomUUID()}`);

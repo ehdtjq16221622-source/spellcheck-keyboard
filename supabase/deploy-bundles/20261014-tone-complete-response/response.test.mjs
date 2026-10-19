@@ -1,11 +1,16 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
+import { join } from 'node:path';
 import { test } from 'node:test';
 import { runInNewContext } from 'node:vm';
 
 const root = new URL('./', import.meta.url);
-const source = (variant, file = 'index.ts') => readFileSync(new URL(`${variant}/supabase/functions/correct/${file}`, root), 'utf8');
+// Optional directories execute this same suite against a newly verified live/candidate pair.
+const source = (variant, file = 'index.ts') => readFileSync(
+  process.env[`CORRECT_RESPONSE_${variant.toUpperCase()}_DIR`]
+    ? join(process.env[`CORRECT_RESPONSE_${variant.toUpperCase()}_DIR`], file)
+    : new URL(`${variant}/supabase/functions/correct/${file}`, root), 'utf8');
 const baseline = source('baseline');
 const release = source('release');
 
@@ -15,6 +20,7 @@ function harness(code = release, { response, accepted = true, alreadyProcessed =
   const context = {
     Request, Response, TextEncoder, crypto, setTimeout,
     console: {
+      log: (...args) => calls.logs.push(args),
       warn: (...args) => calls.logs.push(args),
       error: (...args) => calls.logs.push(args),
     },
@@ -37,7 +43,7 @@ function harness(code = release, { response, accepted = true, alreadyProcessed =
   runInNewContext(runnable, context);
   return { context, calls, request: async (overrides = {}) => {
     const res = await context.handler(new Request('https://local.test/correct', {
-      method: 'POST', body: JSON.stringify({ text: 'source text', formalMode: true, formalLevel: 'smart', deviceId: 'test-wallet', requestId: 'test-request', ...overrides }),
+      method: 'POST', body: JSON.stringify({ text: 'source text', formalMode: true, formalLevel: 'smart', deviceId: 'test-wallet', requestId: 'test-request', diagnosticTrace: true, ...overrides }),
     }));
     return { res, body: await res.json() };
   } };
