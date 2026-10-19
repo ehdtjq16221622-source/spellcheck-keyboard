@@ -259,7 +259,18 @@
         "tone_completion_probe/generated-before.ts": "0b39c3eec9e7661d",
         "tone_completion_probe/index.ts": "2912a3e29ee2d85c"
       }
+    },
+    "dialect_standardization_experiment": {
+      "version": 1,
+      "verify_jwt": true,
+      "updated_at": 1792403476376,
+      "files": {
+        "dialect_standardization_experiment/generated-after.ts": "d6e55d809735da7d",
+        "dialect_standardization_experiment/generated-before.ts": "504afa2a1ea368f2",
+        "dialect_standardization_experiment/generated-cases.ts": "af1dfeba191b7539",
+        "dialect_standardization_experiment/index.ts": "01f5678a55a836e5"
+      }
     }
   },
-  "recorded_at": "2026-10-19T08:03:45.920Z"
+  "recorded_at": "2026-10-19T09:51:23.599Z"
 }
