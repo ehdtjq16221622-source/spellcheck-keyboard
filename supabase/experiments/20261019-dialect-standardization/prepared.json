@@ -1,0 +1,20 @@
+{
+  "liveCheck": "2026-10-19 check-live correct succeeded: live v167, recorded snapshot and source match",
+  "snapshotVersion": 167,
+  "before": "4528a1612c16e9d41008c484092caba58e46bdc167e3e365fd59381abcb0f786",
+  "after": "5cdb42fcdc7bee51fb8a548664a902fd362fdf7a30c667b90989eed949b834f2",
+  "afterScope": "Exact live pipeline plus one helper and three spelling-ON branches; tone and OFF unchanged",
+  "beforeEdits": "12deac4c152276fbabc0ba60e839cdc3fc3293972a24a8224b452eb93b82d7fb",
+  "afterEdits": "12deac4c152276fbabc0ba60e839cdc3fc3293972a24a8224b452eb93b82d7fb",
+  "cases": "9da3b2feb9001f00bc3b204ebb56effd619bc0eae7bfda2c60387cc795f72f06",
+  "paidCallsApproved": true,
+  "defaultPlan": {
+    "sentences": 30,
+    "includeDialect": true,
+    "primaryCorrections": 60,
+    "maxProviderAttemptsOneRunner": 240,
+    "globalCapEnforced": false
+  },
+  "optionalPaidOff": "Separate approval, runner flag and server gate required; default OFF verification is offline",
+  "scope": "Original HTTP handler and full AI correction pipeline; wallet/DB boundaries simulated; no real auth/DB/credits"
+}

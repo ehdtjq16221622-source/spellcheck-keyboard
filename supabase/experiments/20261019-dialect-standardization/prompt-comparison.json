@@ -1,0 +1,1861 @@
+{
+  "offlineOnly": true,
+  "offIdentical": 67,
+  "toneIdentical": 64,
+  "off": [
+    {
+      "builder": "buildLowCostProofingPrompt",
+      "args": [
+        false,
+        false
+      ],
+      "beforeSha256": "fe94c5aecb7f48442fc74fee648af0f6e82aa0bc9e235914a8da1c35026e62a0",
+      "afterSha256": "fe94c5aecb7f48442fc74fee648af0f6e82aa0bc9e235914a8da1c35026e62a0",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        false,
+        false,
+        "스마트 교정",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "afterSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        false,
+        false,
+        "존댓말",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "afterSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        false,
+        false,
+        "격식체",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "afterSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        false,
+        false,
+        "비즈니스",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "afterSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        false,
+        false,
+        "고객 안내",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "afterSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        false,
+        false,
+        "학부모 안내",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "afterSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        false,
+        false,
+        "소개팅체",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "afterSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        false,
+        false,
+        "커스텀",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "afterSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        false,
+        false,
+        "스마트 교정",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "afterSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        false,
+        false,
+        "존댓말",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "afterSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        false,
+        false,
+        "격식체",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "afterSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        false,
+        false,
+        "비즈니스",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "afterSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        false,
+        false,
+        "고객 안내",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "afterSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        false,
+        false,
+        "학부모 안내",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "afterSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        false,
+        false,
+        "소개팅체",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "afterSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        false,
+        false,
+        "커스텀",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "afterSha256": "c0ede118e2d728bc3829156e1197fd8824c5ea96e1ab007bc8c033a54a82ce47",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "스마트 교정",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "0539e1886b2fb26b540bae6af7142dec182c0ac6b495b104b94bf76e9f54b77a",
+      "afterSha256": "0539e1886b2fb26b540bae6af7142dec182c0ac6b495b104b94bf76e9f54b77a",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "존댓말",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "75d2b32138f915cc3a5710cdd37346e0f73da307f5b9628670dcf58f29fd7de8",
+      "afterSha256": "75d2b32138f915cc3a5710cdd37346e0f73da307f5b9628670dcf58f29fd7de8",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "격식체",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "90a550243badaaf42fff3356c08b9cd5792c1b9f71a2eafc2e6e9ebf9d814ce6",
+      "afterSha256": "90a550243badaaf42fff3356c08b9cd5792c1b9f71a2eafc2e6e9ebf9d814ce6",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "비즈니스",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "01444b349cd268f2e389a9d9a68f5ed7fab2bfa0fd76477cfac3f0750c35b7e4",
+      "afterSha256": "01444b349cd268f2e389a9d9a68f5ed7fab2bfa0fd76477cfac3f0750c35b7e4",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "고객 안내",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "9f34ea2830ec825266886bd62c38460049eeb66ba3116f208d80db5ecf5ad624",
+      "afterSha256": "9f34ea2830ec825266886bd62c38460049eeb66ba3116f208d80db5ecf5ad624",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "학부모 안내",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "c66e0eaea7f1868a05a22e7791f628471f02a60a8e5aefdef4a008fb083a9d5e",
+      "afterSha256": "c66e0eaea7f1868a05a22e7791f628471f02a60a8e5aefdef4a008fb083a9d5e",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "소개팅체",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "2b93c6ca4697a9666bc8c347e6bd38b0c58204324993a53c250295649fb3ccd0",
+      "afterSha256": "2b93c6ca4697a9666bc8c347e6bd38b0c58204324993a53c250295649fb3ccd0",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "커스텀",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "6e459be26885fdbaa60d1c79f4cf8c21b5eee4c8a689b758cba6772206d24c2b",
+      "afterSha256": "6e459be26885fdbaa60d1c79f4cf8c21b5eee4c8a689b758cba6772206d24c2b",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "스마트 교정",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "b756e3a8174f0ec73a3f2922277460f763579d9e6fa19c4058f70b48d4b5c2c3",
+      "afterSha256": "b756e3a8174f0ec73a3f2922277460f763579d9e6fa19c4058f70b48d4b5c2c3",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "존댓말",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "84d86d3d4e07c1ee6f4cb1198a1928ef490caca130960833c9c2b98365cfc9fc",
+      "afterSha256": "84d86d3d4e07c1ee6f4cb1198a1928ef490caca130960833c9c2b98365cfc9fc",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "격식체",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "813a2d76e4bb2fa20ffa40c42560a8bf8dee5653c2d55edf2c75fe1371830d4b",
+      "afterSha256": "813a2d76e4bb2fa20ffa40c42560a8bf8dee5653c2d55edf2c75fe1371830d4b",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "비즈니스",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "e48e9086243e01dffc9978184fc0eeaff8a3308bec505bb7b98187336e78d892",
+      "afterSha256": "e48e9086243e01dffc9978184fc0eeaff8a3308bec505bb7b98187336e78d892",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "고객 안내",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "31072259ee651d082896a084845703f1e0cabaa438909dfbd93de2848fc3f03e",
+      "afterSha256": "31072259ee651d082896a084845703f1e0cabaa438909dfbd93de2848fc3f03e",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "학부모 안내",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "724d66786f3390b0dc699e1eed66fbc70b1f5b646d81ca7c18c0316d1245ff54",
+      "afterSha256": "724d66786f3390b0dc699e1eed66fbc70b1f5b646d81ca7c18c0316d1245ff54",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "소개팅체",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "caa159f59ec31c3571c144632436441bce161747be92aad1f5fc8eede708cdac",
+      "afterSha256": "caa159f59ec31c3571c144632436441bce161747be92aad1f5fc8eede708cdac",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "커스텀",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "7605511aa14f1779f4ef586f5bf0ce5cf89a8313b2b33a4df8c641f713991da3",
+      "afterSha256": "7605511aa14f1779f4ef586f5bf0ce5cf89a8313b2b33a4df8c641f713991da3",
+      "identical": true
+    },
+    {
+      "builder": "buildLowCostProofingPrompt",
+      "args": [
+        true,
+        false
+      ],
+      "beforeSha256": "724f8f55ca86e6f2228c2e5311adf0f8609fa0017c001cca506336d5e03c6ed7",
+      "afterSha256": "724f8f55ca86e6f2228c2e5311adf0f8609fa0017c001cca506336d5e03c6ed7",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        true,
+        false,
+        "스마트 교정",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "afterSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        true,
+        false,
+        "존댓말",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "afterSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        true,
+        false,
+        "격식체",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "afterSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        true,
+        false,
+        "비즈니스",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "afterSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        true,
+        false,
+        "고객 안내",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "afterSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        true,
+        false,
+        "학부모 안내",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "afterSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        true,
+        false,
+        "소개팅체",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "afterSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        true,
+        false,
+        "커스텀",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "afterSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        true,
+        false,
+        "스마트 교정",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "afterSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        true,
+        false,
+        "존댓말",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "afterSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        true,
+        false,
+        "격식체",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "afterSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        true,
+        false,
+        "비즈니스",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "afterSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        true,
+        false,
+        "고객 안내",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "afterSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        true,
+        false,
+        "학부모 안내",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "afterSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        true,
+        false,
+        "소개팅체",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "afterSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        true,
+        false,
+        "커스텀",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "afterSha256": "efff121ac32a3325d86e390d6a665a6ade65034de5e16d58599d7faf932ac918",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "스마트 교정",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "0539e1886b2fb26b540bae6af7142dec182c0ac6b495b104b94bf76e9f54b77a",
+      "afterSha256": "0539e1886b2fb26b540bae6af7142dec182c0ac6b495b104b94bf76e9f54b77a",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "존댓말",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "75d2b32138f915cc3a5710cdd37346e0f73da307f5b9628670dcf58f29fd7de8",
+      "afterSha256": "75d2b32138f915cc3a5710cdd37346e0f73da307f5b9628670dcf58f29fd7de8",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "격식체",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "90a550243badaaf42fff3356c08b9cd5792c1b9f71a2eafc2e6e9ebf9d814ce6",
+      "afterSha256": "90a550243badaaf42fff3356c08b9cd5792c1b9f71a2eafc2e6e9ebf9d814ce6",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "비즈니스",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "01444b349cd268f2e389a9d9a68f5ed7fab2bfa0fd76477cfac3f0750c35b7e4",
+      "afterSha256": "01444b349cd268f2e389a9d9a68f5ed7fab2bfa0fd76477cfac3f0750c35b7e4",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "고객 안내",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "9f34ea2830ec825266886bd62c38460049eeb66ba3116f208d80db5ecf5ad624",
+      "afterSha256": "9f34ea2830ec825266886bd62c38460049eeb66ba3116f208d80db5ecf5ad624",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "학부모 안내",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "c66e0eaea7f1868a05a22e7791f628471f02a60a8e5aefdef4a008fb083a9d5e",
+      "afterSha256": "c66e0eaea7f1868a05a22e7791f628471f02a60a8e5aefdef4a008fb083a9d5e",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "소개팅체",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "2b93c6ca4697a9666bc8c347e6bd38b0c58204324993a53c250295649fb3ccd0",
+      "afterSha256": "2b93c6ca4697a9666bc8c347e6bd38b0c58204324993a53c250295649fb3ccd0",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "커스텀",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "6e459be26885fdbaa60d1c79f4cf8c21b5eee4c8a689b758cba6772206d24c2b",
+      "afterSha256": "6e459be26885fdbaa60d1c79f4cf8c21b5eee4c8a689b758cba6772206d24c2b",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "스마트 교정",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "0539e1886b2fb26b540bae6af7142dec182c0ac6b495b104b94bf76e9f54b77a",
+      "afterSha256": "0539e1886b2fb26b540bae6af7142dec182c0ac6b495b104b94bf76e9f54b77a",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "존댓말",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "75d2b32138f915cc3a5710cdd37346e0f73da307f5b9628670dcf58f29fd7de8",
+      "afterSha256": "75d2b32138f915cc3a5710cdd37346e0f73da307f5b9628670dcf58f29fd7de8",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "격식체",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "90a550243badaaf42fff3356c08b9cd5792c1b9f71a2eafc2e6e9ebf9d814ce6",
+      "afterSha256": "90a550243badaaf42fff3356c08b9cd5792c1b9f71a2eafc2e6e9ebf9d814ce6",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "비즈니스",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "01444b349cd268f2e389a9d9a68f5ed7fab2bfa0fd76477cfac3f0750c35b7e4",
+      "afterSha256": "01444b349cd268f2e389a9d9a68f5ed7fab2bfa0fd76477cfac3f0750c35b7e4",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "고객 안내",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "9f34ea2830ec825266886bd62c38460049eeb66ba3116f208d80db5ecf5ad624",
+      "afterSha256": "9f34ea2830ec825266886bd62c38460049eeb66ba3116f208d80db5ecf5ad624",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "학부모 안내",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "c66e0eaea7f1868a05a22e7791f628471f02a60a8e5aefdef4a008fb083a9d5e",
+      "afterSha256": "c66e0eaea7f1868a05a22e7791f628471f02a60a8e5aefdef4a008fb083a9d5e",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "소개팅체",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "2b93c6ca4697a9666bc8c347e6bd38b0c58204324993a53c250295649fb3ccd0",
+      "afterSha256": "2b93c6ca4697a9666bc8c347e6bd38b0c58204324993a53c250295649fb3ccd0",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "커스텀",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "6e459be26885fdbaa60d1c79f4cf8c21b5eee4c8a689b758cba6772206d24c2b",
+      "afterSha256": "6e459be26885fdbaa60d1c79f4cf8c21b5eee4c8a689b758cba6772206d24c2b",
+      "identical": true
+    },
+    {
+      "builder": "buildEditFallbackPrompt",
+      "args": [
+        false
+      ],
+      "beforeSha256": "6b9dddd815c2e8fae117213ccb10a7f217b846cf8ff0085dae3b2aa2018e9df3",
+      "afterSha256": "6b9dddd815c2e8fae117213ccb10a7f217b846cf8ff0085dae3b2aa2018e9df3",
+      "identical": true
+    }
+  ],
+  "tone": [
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "스마트 교정",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "0539e1886b2fb26b540bae6af7142dec182c0ac6b495b104b94bf76e9f54b77a",
+      "afterSha256": "0539e1886b2fb26b540bae6af7142dec182c0ac6b495b104b94bf76e9f54b77a",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "존댓말",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "75d2b32138f915cc3a5710cdd37346e0f73da307f5b9628670dcf58f29fd7de8",
+      "afterSha256": "75d2b32138f915cc3a5710cdd37346e0f73da307f5b9628670dcf58f29fd7de8",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "격식체",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "90a550243badaaf42fff3356c08b9cd5792c1b9f71a2eafc2e6e9ebf9d814ce6",
+      "afterSha256": "90a550243badaaf42fff3356c08b9cd5792c1b9f71a2eafc2e6e9ebf9d814ce6",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "비즈니스",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "01444b349cd268f2e389a9d9a68f5ed7fab2bfa0fd76477cfac3f0750c35b7e4",
+      "afterSha256": "01444b349cd268f2e389a9d9a68f5ed7fab2bfa0fd76477cfac3f0750c35b7e4",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "고객 안내",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "9f34ea2830ec825266886bd62c38460049eeb66ba3116f208d80db5ecf5ad624",
+      "afterSha256": "9f34ea2830ec825266886bd62c38460049eeb66ba3116f208d80db5ecf5ad624",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "학부모 안내",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "c66e0eaea7f1868a05a22e7791f628471f02a60a8e5aefdef4a008fb083a9d5e",
+      "afterSha256": "c66e0eaea7f1868a05a22e7791f628471f02a60a8e5aefdef4a008fb083a9d5e",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "소개팅체",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "2b93c6ca4697a9666bc8c347e6bd38b0c58204324993a53c250295649fb3ccd0",
+      "afterSha256": "2b93c6ca4697a9666bc8c347e6bd38b0c58204324993a53c250295649fb3ccd0",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "커스텀",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "6e459be26885fdbaa60d1c79f4cf8c21b5eee4c8a689b758cba6772206d24c2b",
+      "afterSha256": "6e459be26885fdbaa60d1c79f4cf8c21b5eee4c8a689b758cba6772206d24c2b",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        true,
+        "스마트 교정",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "0539e1886b2fb26b540bae6af7142dec182c0ac6b495b104b94bf76e9f54b77a",
+      "afterSha256": "0539e1886b2fb26b540bae6af7142dec182c0ac6b495b104b94bf76e9f54b77a",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        true,
+        "존댓말",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "75d2b32138f915cc3a5710cdd37346e0f73da307f5b9628670dcf58f29fd7de8",
+      "afterSha256": "75d2b32138f915cc3a5710cdd37346e0f73da307f5b9628670dcf58f29fd7de8",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        true,
+        "격식체",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "90a550243badaaf42fff3356c08b9cd5792c1b9f71a2eafc2e6e9ebf9d814ce6",
+      "afterSha256": "90a550243badaaf42fff3356c08b9cd5792c1b9f71a2eafc2e6e9ebf9d814ce6",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        true,
+        "비즈니스",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "01444b349cd268f2e389a9d9a68f5ed7fab2bfa0fd76477cfac3f0750c35b7e4",
+      "afterSha256": "01444b349cd268f2e389a9d9a68f5ed7fab2bfa0fd76477cfac3f0750c35b7e4",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        true,
+        "고객 안내",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "9f34ea2830ec825266886bd62c38460049eeb66ba3116f208d80db5ecf5ad624",
+      "afterSha256": "9f34ea2830ec825266886bd62c38460049eeb66ba3116f208d80db5ecf5ad624",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        true,
+        "학부모 안내",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "c66e0eaea7f1868a05a22e7791f628471f02a60a8e5aefdef4a008fb083a9d5e",
+      "afterSha256": "c66e0eaea7f1868a05a22e7791f628471f02a60a8e5aefdef4a008fb083a9d5e",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        true,
+        "소개팅체",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "2b93c6ca4697a9666bc8c347e6bd38b0c58204324993a53c250295649fb3ccd0",
+      "afterSha256": "2b93c6ca4697a9666bc8c347e6bd38b0c58204324993a53c250295649fb3ccd0",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        true,
+        "커스텀",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "6e459be26885fdbaa60d1c79f4cf8c21b5eee4c8a689b758cba6772206d24c2b",
+      "afterSha256": "6e459be26885fdbaa60d1c79f4cf8c21b5eee4c8a689b758cba6772206d24c2b",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "스마트 교정",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "b756e3a8174f0ec73a3f2922277460f763579d9e6fa19c4058f70b48d4b5c2c3",
+      "afterSha256": "b756e3a8174f0ec73a3f2922277460f763579d9e6fa19c4058f70b48d4b5c2c3",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "존댓말",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "84d86d3d4e07c1ee6f4cb1198a1928ef490caca130960833c9c2b98365cfc9fc",
+      "afterSha256": "84d86d3d4e07c1ee6f4cb1198a1928ef490caca130960833c9c2b98365cfc9fc",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "격식체",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "813a2d76e4bb2fa20ffa40c42560a8bf8dee5653c2d55edf2c75fe1371830d4b",
+      "afterSha256": "813a2d76e4bb2fa20ffa40c42560a8bf8dee5653c2d55edf2c75fe1371830d4b",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "비즈니스",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "e48e9086243e01dffc9978184fc0eeaff8a3308bec505bb7b98187336e78d892",
+      "afterSha256": "e48e9086243e01dffc9978184fc0eeaff8a3308bec505bb7b98187336e78d892",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "고객 안내",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "31072259ee651d082896a084845703f1e0cabaa438909dfbd93de2848fc3f03e",
+      "afterSha256": "31072259ee651d082896a084845703f1e0cabaa438909dfbd93de2848fc3f03e",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "학부모 안내",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "724d66786f3390b0dc699e1eed66fbc70b1f5b646d81ca7c18c0316d1245ff54",
+      "afterSha256": "724d66786f3390b0dc699e1eed66fbc70b1f5b646d81ca7c18c0316d1245ff54",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "소개팅체",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "caa159f59ec31c3571c144632436441bce161747be92aad1f5fc8eede708cdac",
+      "afterSha256": "caa159f59ec31c3571c144632436441bce161747be92aad1f5fc8eede708cdac",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        false,
+        "커스텀",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "7605511aa14f1779f4ef586f5bf0ce5cf89a8313b2b33a4df8c641f713991da3",
+      "afterSha256": "7605511aa14f1779f4ef586f5bf0ce5cf89a8313b2b33a4df8c641f713991da3",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        true,
+        "스마트 교정",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "b756e3a8174f0ec73a3f2922277460f763579d9e6fa19c4058f70b48d4b5c2c3",
+      "afterSha256": "b756e3a8174f0ec73a3f2922277460f763579d9e6fa19c4058f70b48d4b5c2c3",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        true,
+        "존댓말",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "84d86d3d4e07c1ee6f4cb1198a1928ef490caca130960833c9c2b98365cfc9fc",
+      "afterSha256": "84d86d3d4e07c1ee6f4cb1198a1928ef490caca130960833c9c2b98365cfc9fc",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        true,
+        "격식체",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "813a2d76e4bb2fa20ffa40c42560a8bf8dee5653c2d55edf2c75fe1371830d4b",
+      "afterSha256": "813a2d76e4bb2fa20ffa40c42560a8bf8dee5653c2d55edf2c75fe1371830d4b",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        true,
+        "비즈니스",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "e48e9086243e01dffc9978184fc0eeaff8a3308bec505bb7b98187336e78d892",
+      "afterSha256": "e48e9086243e01dffc9978184fc0eeaff8a3308bec505bb7b98187336e78d892",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        true,
+        "고객 안내",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "31072259ee651d082896a084845703f1e0cabaa438909dfbd93de2848fc3f03e",
+      "afterSha256": "31072259ee651d082896a084845703f1e0cabaa438909dfbd93de2848fc3f03e",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        true,
+        "학부모 안내",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "724d66786f3390b0dc699e1eed66fbc70b1f5b646d81ca7c18c0316d1245ff54",
+      "afterSha256": "724d66786f3390b0dc699e1eed66fbc70b1f5b646d81ca7c18c0316d1245ff54",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        true,
+        "소개팅체",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "caa159f59ec31c3571c144632436441bce161747be92aad1f5fc8eede708cdac",
+      "afterSha256": "caa159f59ec31c3571c144632436441bce161747be92aad1f5fc8eede708cdac",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        false,
+        true,
+        "커스텀",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "7605511aa14f1779f4ef586f5bf0ce5cf89a8313b2b33a4df8c641f713991da3",
+      "afterSha256": "7605511aa14f1779f4ef586f5bf0ce5cf89a8313b2b33a4df8c641f713991da3",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "스마트 교정",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "0539e1886b2fb26b540bae6af7142dec182c0ac6b495b104b94bf76e9f54b77a",
+      "afterSha256": "0539e1886b2fb26b540bae6af7142dec182c0ac6b495b104b94bf76e9f54b77a",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "존댓말",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "75d2b32138f915cc3a5710cdd37346e0f73da307f5b9628670dcf58f29fd7de8",
+      "afterSha256": "75d2b32138f915cc3a5710cdd37346e0f73da307f5b9628670dcf58f29fd7de8",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "격식체",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "90a550243badaaf42fff3356c08b9cd5792c1b9f71a2eafc2e6e9ebf9d814ce6",
+      "afterSha256": "90a550243badaaf42fff3356c08b9cd5792c1b9f71a2eafc2e6e9ebf9d814ce6",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "비즈니스",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "01444b349cd268f2e389a9d9a68f5ed7fab2bfa0fd76477cfac3f0750c35b7e4",
+      "afterSha256": "01444b349cd268f2e389a9d9a68f5ed7fab2bfa0fd76477cfac3f0750c35b7e4",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "고객 안내",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "9f34ea2830ec825266886bd62c38460049eeb66ba3116f208d80db5ecf5ad624",
+      "afterSha256": "9f34ea2830ec825266886bd62c38460049eeb66ba3116f208d80db5ecf5ad624",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "학부모 안내",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "c66e0eaea7f1868a05a22e7791f628471f02a60a8e5aefdef4a008fb083a9d5e",
+      "afterSha256": "c66e0eaea7f1868a05a22e7791f628471f02a60a8e5aefdef4a008fb083a9d5e",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "소개팅체",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "2b93c6ca4697a9666bc8c347e6bd38b0c58204324993a53c250295649fb3ccd0",
+      "afterSha256": "2b93c6ca4697a9666bc8c347e6bd38b0c58204324993a53c250295649fb3ccd0",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "커스텀",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "6e459be26885fdbaa60d1c79f4cf8c21b5eee4c8a689b758cba6772206d24c2b",
+      "afterSha256": "6e459be26885fdbaa60d1c79f4cf8c21b5eee4c8a689b758cba6772206d24c2b",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        true,
+        "스마트 교정",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "0539e1886b2fb26b540bae6af7142dec182c0ac6b495b104b94bf76e9f54b77a",
+      "afterSha256": "0539e1886b2fb26b540bae6af7142dec182c0ac6b495b104b94bf76e9f54b77a",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        true,
+        "존댓말",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "75d2b32138f915cc3a5710cdd37346e0f73da307f5b9628670dcf58f29fd7de8",
+      "afterSha256": "75d2b32138f915cc3a5710cdd37346e0f73da307f5b9628670dcf58f29fd7de8",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        true,
+        "격식체",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "90a550243badaaf42fff3356c08b9cd5792c1b9f71a2eafc2e6e9ebf9d814ce6",
+      "afterSha256": "90a550243badaaf42fff3356c08b9cd5792c1b9f71a2eafc2e6e9ebf9d814ce6",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        true,
+        "비즈니스",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "01444b349cd268f2e389a9d9a68f5ed7fab2bfa0fd76477cfac3f0750c35b7e4",
+      "afterSha256": "01444b349cd268f2e389a9d9a68f5ed7fab2bfa0fd76477cfac3f0750c35b7e4",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        true,
+        "고객 안내",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "9f34ea2830ec825266886bd62c38460049eeb66ba3116f208d80db5ecf5ad624",
+      "afterSha256": "9f34ea2830ec825266886bd62c38460049eeb66ba3116f208d80db5ecf5ad624",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        true,
+        "학부모 안내",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "c66e0eaea7f1868a05a22e7791f628471f02a60a8e5aefdef4a008fb083a9d5e",
+      "afterSha256": "c66e0eaea7f1868a05a22e7791f628471f02a60a8e5aefdef4a008fb083a9d5e",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        true,
+        "소개팅체",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "2b93c6ca4697a9666bc8c347e6bd38b0c58204324993a53c250295649fb3ccd0",
+      "afterSha256": "2b93c6ca4697a9666bc8c347e6bd38b0c58204324993a53c250295649fb3ccd0",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        true,
+        "커스텀",
+        false,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "6e459be26885fdbaa60d1c79f4cf8c21b5eee4c8a689b758cba6772206d24c2b",
+      "afterSha256": "6e459be26885fdbaa60d1c79f4cf8c21b5eee4c8a689b758cba6772206d24c2b",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "스마트 교정",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "0539e1886b2fb26b540bae6af7142dec182c0ac6b495b104b94bf76e9f54b77a",
+      "afterSha256": "0539e1886b2fb26b540bae6af7142dec182c0ac6b495b104b94bf76e9f54b77a",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "존댓말",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "75d2b32138f915cc3a5710cdd37346e0f73da307f5b9628670dcf58f29fd7de8",
+      "afterSha256": "75d2b32138f915cc3a5710cdd37346e0f73da307f5b9628670dcf58f29fd7de8",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "격식체",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "90a550243badaaf42fff3356c08b9cd5792c1b9f71a2eafc2e6e9ebf9d814ce6",
+      "afterSha256": "90a550243badaaf42fff3356c08b9cd5792c1b9f71a2eafc2e6e9ebf9d814ce6",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "비즈니스",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "01444b349cd268f2e389a9d9a68f5ed7fab2bfa0fd76477cfac3f0750c35b7e4",
+      "afterSha256": "01444b349cd268f2e389a9d9a68f5ed7fab2bfa0fd76477cfac3f0750c35b7e4",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "고객 안내",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "9f34ea2830ec825266886bd62c38460049eeb66ba3116f208d80db5ecf5ad624",
+      "afterSha256": "9f34ea2830ec825266886bd62c38460049eeb66ba3116f208d80db5ecf5ad624",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "학부모 안내",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "c66e0eaea7f1868a05a22e7791f628471f02a60a8e5aefdef4a008fb083a9d5e",
+      "afterSha256": "c66e0eaea7f1868a05a22e7791f628471f02a60a8e5aefdef4a008fb083a9d5e",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "소개팅체",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "2b93c6ca4697a9666bc8c347e6bd38b0c58204324993a53c250295649fb3ccd0",
+      "afterSha256": "2b93c6ca4697a9666bc8c347e6bd38b0c58204324993a53c250295649fb3ccd0",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        false,
+        "커스텀",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "6e459be26885fdbaa60d1c79f4cf8c21b5eee4c8a689b758cba6772206d24c2b",
+      "afterSha256": "6e459be26885fdbaa60d1c79f4cf8c21b5eee4c8a689b758cba6772206d24c2b",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        true,
+        "스마트 교정",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "0539e1886b2fb26b540bae6af7142dec182c0ac6b495b104b94bf76e9f54b77a",
+      "afterSha256": "0539e1886b2fb26b540bae6af7142dec182c0ac6b495b104b94bf76e9f54b77a",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        true,
+        "존댓말",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "75d2b32138f915cc3a5710cdd37346e0f73da307f5b9628670dcf58f29fd7de8",
+      "afterSha256": "75d2b32138f915cc3a5710cdd37346e0f73da307f5b9628670dcf58f29fd7de8",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        true,
+        "격식체",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "90a550243badaaf42fff3356c08b9cd5792c1b9f71a2eafc2e6e9ebf9d814ce6",
+      "afterSha256": "90a550243badaaf42fff3356c08b9cd5792c1b9f71a2eafc2e6e9ebf9d814ce6",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        true,
+        "비즈니스",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "01444b349cd268f2e389a9d9a68f5ed7fab2bfa0fd76477cfac3f0750c35b7e4",
+      "afterSha256": "01444b349cd268f2e389a9d9a68f5ed7fab2bfa0fd76477cfac3f0750c35b7e4",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        true,
+        "고객 안내",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "9f34ea2830ec825266886bd62c38460049eeb66ba3116f208d80db5ecf5ad624",
+      "afterSha256": "9f34ea2830ec825266886bd62c38460049eeb66ba3116f208d80db5ecf5ad624",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        true,
+        "학부모 안내",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "c66e0eaea7f1868a05a22e7791f628471f02a60a8e5aefdef4a008fb083a9d5e",
+      "afterSha256": "c66e0eaea7f1868a05a22e7791f628471f02a60a8e5aefdef4a008fb083a9d5e",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        true,
+        "소개팅체",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "2b93c6ca4697a9666bc8c347e6bd38b0c58204324993a53c250295649fb3ccd0",
+      "afterSha256": "2b93c6ca4697a9666bc8c347e6bd38b0c58204324993a53c250295649fb3ccd0",
+      "identical": true
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        true,
+        true,
+        true,
+        "커스텀",
+        true,
+        "친구에게 다정한 말투로 바꿔 주세요."
+      ],
+      "beforeSha256": "6e459be26885fdbaa60d1c79f4cf8c21b5eee4c8a689b758cba6772206d24c2b",
+      "afterSha256": "6e459be26885fdbaa60d1c79f4cf8c21b5eee4c8a689b758cba6772206d24c2b",
+      "identical": true
+    }
+  ],
+  "spellingOn": [
+    {
+      "builder": "buildLowCostProofingPrompt",
+      "args": [
+        true,
+        true
+      ],
+      "before": "너는 한국어 맞춤법 교정기다.\n한국어 맞춤법, 띄어쓰기, 문법 오류만 교정하라.\n원문의 의미, 말투, 시제, 높임 정도, 종결 어미를 유지하고 필요한 부분만 최소 수정하라.\n축약하거나 풀어 쓰지 마라. 예: 뵈었어를 뵀어로 바꾸지 마라.\n숫자, 영어, URL, 이모지, ㅋㅋ, ㅎㅎ, ㅠㅠ는 보존하라. 단, 2틀은 이틀로 고쳐라.\n문맥상 차이를 뜻하면 틀리다가 아니라 다르다를 사용하라. 정답이 잘못됐다는 뜻일 때만 틀리다를 유지하라.\n뺐다는 빼다의 과거형이고, 뺏다는 빼앗다의 준말이다. 원래 활용형과 종결 어미를 유지해 구분하라.\n안되다는 일이 잘 이루어지지 않는 뜻으로 잘되다의 반대이면 붙인다. 금지·불가능의 안 되다는 띄어 쓴다.\n명사에 하다가 결합한 말은 붙여 쓰고, 본용언 뒤의 주다는 원칙적으로 띄어 쓴다.\n한 문장에 오류가 여러 개 있으면 처음부터 끝까지 다시 확인하여 모두 교정하라.\n교정된 문장만 출력하고 설명, 따옴표, 머리말을 붙이지 마라.\n원문의 구두점은 그대로 유지하고 새 구두점을 추가하지 마라.",
+      "after": "너는 한국어 사투리 표준어 교정기다.\n먼저 한국어 원문 전체의 문맥을 파악하여 문장 전체를 자연스러운 표준어로 정리하고, 그 다음 맞춤법·띄어쓰기·문법 오류를 처음부터 끝까지 교정하라.\n사투리 단어·표현·어순·종결 어미는 표준어 문장에 필요한 만큼 바꿔라. 사투리의 원래 단어·말투·종결 어미 자체를 유지하라는 제한은 적용하지 마라.\n단, 원문의 모든 뜻·사실·주체·대상·시제·인칭·부정·추측·전달·질문·요청 의도와 감정은 보존하라. 요약하거나 내용을 생략하거나 새로운 사실·이유·약속을 추가하지 마라.\n이미 표준어인 구어체는 불필요하게 바꾸지 마라. 뜻이 모호한 표현은 추측하지 말고 원문대로 두라. 거시기·그 뭐냐처럼 대상을 특정하지 않은 지시 표현은 그대로 두라.\n한국어가 아닌 입력의 언어는 바꾸지 마라. 숫자, 영어, URL, 이모지, ㅋㅋ, ㅎㅎ, ㅠㅠ는 보존하라. 단, 2틀은 이틀로 고쳐라.\n문맥상 차이는 다르다, 오답은 틀리다로 구분하고, 빼다의 과거형 뺐다와 빼앗다의 준말 뺏다를 구분하라.\n안되다는 잘되다의 반대이면 붙이고, 금지·불가능의 안 되다는 띄어 써라. 명사와 하다는 붙이고 본용언 뒤 주다는 원칙적으로 띄어 써라.\n원문의 의도와 상황에 맞는 자연스러운 표준어로 정리하라. 모든 문장을 일괄 존댓말로 만들 필요는 없다.\n원문의 구두점은 그대로 유지하고 새 구두점을 추가하지 마라.\n교정된 전체 문장만 출력하고 설명, 따옴표, 머리말을 붙이지 마라."
+    },
+    {
+      "builder": "buildEditFallbackPrompt",
+      "args": [
+        true
+      ],
+      "before": "너는 한국어 맞춤법 교정기다.\n맞춤법, 띄어쓰기, 문법 오류만 찾아 JSON 수정 목록으로 출력하라.\n형식: {\"edits\":[{\"find\":\"원문에 정확히 있는 문자열\",\"replace\":\"교정 문자열\"}]}\n수정이 없으면 {\"edits\":[]}만 출력하라.\n원문의 의미, 단어 선택, 어순, 말투, 시제, 종결 어미를 바꾸지 마라.\n같은 문자열이 반복되면 위치를 구별하는 최소 앞뒤 문맥을 find에 포함하라.\n숫자, 영어, URL, 이모지, 감정 표현, 구두점은 수정하지 마라.\n설명과 마크다운 없이 완전한 JSON만 출력하라.",
+      "after": "너는 한국어 사투리 표준어 교정기다.\n먼저 한국어 원문 전체의 문맥을 파악하여 문장 전체를 자연스러운 표준어로 정리하고, 그 다음 맞춤법·띄어쓰기·문법 오류를 처음부터 끝까지 교정하라.\n사투리 단어·표현·어순·종결 어미는 표준어 문장에 필요한 만큼 바꿔라. 사투리의 원래 단어·말투·종결 어미 자체를 유지하라는 제한은 적용하지 마라.\n단, 원문의 모든 뜻·사실·주체·대상·시제·인칭·부정·추측·전달·질문·요청 의도와 감정은 보존하라. 요약하거나 내용을 생략하거나 새로운 사실·이유·약속을 추가하지 마라.\n이미 표준어인 구어체는 불필요하게 바꾸지 마라. 뜻이 모호한 표현은 추측하지 말고 원문대로 두라. 거시기·그 뭐냐처럼 대상을 특정하지 않은 지시 표현은 그대로 두라.\n한국어가 아닌 입력의 언어는 바꾸지 마라. 숫자, 영어, URL, 이모지, ㅋㅋ, ㅎㅎ, ㅠㅠ는 보존하라. 단, 2틀은 이틀로 고쳐라.\n문맥상 차이는 다르다, 오답은 틀리다로 구분하고, 빼다의 과거형 뺐다와 빼앗다의 준말 뺏다를 구분하라.\n안되다는 잘되다의 반대이면 붙이고, 금지·불가능의 안 되다는 띄어 써라. 명사와 하다는 붙이고 본용언 뒤 주다는 원칙적으로 띄어 써라.\n원문의 의도와 상황에 맞는 자연스러운 표준어로 정리하라. 모든 문장을 일괄 존댓말로 만들 필요는 없다.\n원문의 구두점은 그대로 유지하고 새 구두점을 추가하지 마라.\n표준어로 정리한 문장을 원문에 적용할 JSON 수정 목록으로 출력하라. 형식: {\"edits\":[{\"find\":\"원문에 정확히 있는 문자열\",\"replace\":\"교정 문자열\"}]}. 각 find는 중간 결과가 아닌 원문에 정확히 한 번 존재하도록 앞뒤 문맥을 포함하고, 수정 구간끼리 겹치지 않게 하라. 수정이 없으면 {\"edits\":[]}만 출력하라. 설명과 마크다운 없이 완전한 JSON만 출력하라."
+    },
+    {
+      "builder": "buildSystemPrompt",
+      "args": [
+        false,
+        true,
+        true,
+        "",
+        true
+      ],
+      "before": "너는 한국어 맞춤법 교정기다.\n먼저 원문의 의미를 문맥상 정확히 파악하라.\n원문 전체를 다시 작성하지 말고 맞춤법, 띄어쓰기, 문법상 확실한 오타의 수정 목록만 만들어라.\n각 find는 원문에 정확히 존재하는 연속 문자열이어야 하며, 바뀌는 위치를 유일하게 찾을 수 있는 최소 구절로 작성하라.\n같은 오타가 여러 번 나오면 각 find에 서로 다른 앞뒤 문맥을 포함하여 원문에서 정확히 한 번만 나타나게 하라. 예: \"하면 안돼\"와 \"만지면 안돼\".\n수정 구간끼리 겹치지 않게 하고, 수정이 없으면 edits를 빈 배열로 반환하라.\n단어, 어순, 말투, 표현은 유지하라.\n표면적인 철자나 발음이 비슷하다는 이유로 다른 단어로 바꾸지 마라.\n문맥상 의미가 확실하지 않으면 고치지 말고 원문을 유지하라.\n관용 표현, 구어체, 비속어, 감정 표현(ㅋㅋ, ㅠㅠ 등)은 의미가 분명하면 유지하라.\n숫자, 영어, URL, 이모지, 감정 표현은 바꾸거나 삭제하지 마라.\n반드시 지정된 JSON 형식만 출력하라. 마침표, 쉼표, 물음표 같은 구두점을 새로 추가하지 마세요. 원문에 있는 구두점은 그대로 유지하세요.",
+      "after": "너는 한국어 사투리 표준어 교정기다.\n먼저 한국어 원문 전체의 문맥을 파악하여 문장 전체를 자연스러운 표준어로 정리하고, 그 다음 맞춤법·띄어쓰기·문법 오류를 처음부터 끝까지 교정하라.\n사투리 단어·표현·어순·종결 어미는 표준어 문장에 필요한 만큼 바꿔라. 사투리의 원래 단어·말투·종결 어미 자체를 유지하라는 제한은 적용하지 마라.\n단, 원문의 모든 뜻·사실·주체·대상·시제·인칭·부정·추측·전달·질문·요청 의도와 감정은 보존하라. 요약하거나 내용을 생략하거나 새로운 사실·이유·약속을 추가하지 마라.\n이미 표준어인 구어체는 불필요하게 바꾸지 마라. 뜻이 모호한 표현은 추측하지 말고 원문대로 두라. 거시기·그 뭐냐처럼 대상을 특정하지 않은 지시 표현은 그대로 두라.\n한국어가 아닌 입력의 언어는 바꾸지 마라. 숫자, 영어, URL, 이모지, ㅋㅋ, ㅎㅎ, ㅠㅠ는 보존하라. 단, 2틀은 이틀로 고쳐라.\n문맥상 차이는 다르다, 오답은 틀리다로 구분하고, 빼다의 과거형 뺐다와 빼앗다의 준말 뺏다를 구분하라.\n안되다는 잘되다의 반대이면 붙이고, 금지·불가능의 안 되다는 띄어 써라. 명사와 하다는 붙이고 본용언 뒤 주다는 원칙적으로 띄어 써라.\n원문의 의도와 상황에 맞는 자연스러운 표준어로 정리하라. 모든 문장을 일괄 존댓말로 만들 필요는 없다.\n원문의 구두점은 그대로 유지하고 새 구두점을 추가하지 마라.\n표준어로 정리한 문장을 원문에 적용할 JSON 수정 목록으로 출력하라. 형식: {\"edits\":[{\"find\":\"원문에 정확히 있는 문자열\",\"replace\":\"교정 문자열\"}]}. 각 find는 중간 결과가 아닌 원문에 정확히 한 번 존재하도록 앞뒤 문맥을 포함하고, 수정 구간끼리 겹치지 않게 하라. 수정이 없으면 {\"edits\":[]}만 출력하라. 설명과 마크다운 없이 완전한 JSON만 출력하라."
+    }
+  ]
+}
