@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // The only way to deploy an Edge Function from this repo.
-// Usage: node scripts/supabase/deploy-function.mjs <slug> [--yes]
+// Usage: node scripts/supabase/deploy-function.mjs <slug> [--yes] [--no-verify-jwt]  (the flag only matters for a new function)
 //  1. refuses when files the function uses have uncommitted changes
 //  2. shows what will change compared with what is live; needs --yes to go on
 //  3. deploys from supabase/functions with the live verify_jwt setting
@@ -11,6 +11,8 @@ import { accessToken, api, compare, DEPLOY_LOG, downloadLive, FUNCTIONS_DIR, pro
 
 const slug = process.argv[2]
 const confirmed = process.argv.includes('--yes')
+// New functions default to verify_jwt=true; scheduled/secret-protected ones need --no-verify-jwt on first deploy.
+const noJwtForNew = process.argv.includes('--no-verify-jwt')
 if (!slug || slug.startsWith('-')) {
   console.error('usage: node scripts/supabase/deploy-function.mjs <slug> [--yes]')
   process.exit(2)
@@ -48,7 +50,7 @@ if (!confirmed) {
 }
 
 // 3. Deploy with the same JWT setting as now (new functions default to verify_jwt=true).
-const verifyJwt = current ? current.verify_jwt : true
+const verifyJwt = current ? current.verify_jwt : !noJwtForNew
 run('npx', ['--yes', 'supabase', 'functions', 'deploy', slug, '--project-ref', projectRef(), '--use-api',
   ...(verifyJwt ? [] : ['--no-verify-jwt'])], { cwd: REPO, env: { ...process.env, SUPABASE_ACCESS_TOKEN: accessToken() } })
 

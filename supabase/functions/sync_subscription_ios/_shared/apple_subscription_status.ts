@@ -1,16 +1,17 @@
 import { Environment, SignedDataVerifier } from 'npm:@apple/app-store-server-library@3.1.0'
+import { Buffer } from 'node:buffer'
 import { importPKCS8, SignJWT } from 'https://esm.sh/jose@5.6.3'
 import { verifyAppleSignedTransactionPortable } from './apple_subscription_portable.ts'
 
 const APPLE_APP_ID = 6762074672
 
-function decodeBase64Certificate(value: string): Uint8Array {
+function decodeBase64Certificate(value: string): Buffer {
   const binary = atob(value)
   const bytes = new Uint8Array(binary.length)
   for (let index = 0; index < binary.length; index += 1) {
     bytes[index] = binary.charCodeAt(index)
   }
-  return bytes
+  return Buffer.from(bytes)
 }
 
 const APPLE_ROOT_CERTIFICATES = [

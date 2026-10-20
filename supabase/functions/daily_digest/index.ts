@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { sendTelegram } from './_shared/telegram.ts'
+import { readSubscriptionActivity, subscriptionActivityText } from '../_shared/subscription_audit.ts'
 
 // Daily usage digest, sent to Telegram at 12:00 KST for the *previous* full
 // calendar day (Asia/Seoul). Reports only metrics Supabase measures accurately
@@ -134,6 +135,14 @@ Deno.serve(async (req: Request) => {
     const subLine = sub.text
     const activeSubs = sub.active
     const subDelta = sub.delta
+    let subscriptionActivity = null
+    let subscriptionActivityLine = '구독 처리 집계 실패 · 실패 0건으로 해석하지 마세요.\n'
+    try {
+      subscriptionActivity = await readSubscriptionActivity(supabase, startIso, endIso)
+      subscriptionActivityLine = subscriptionActivityText(subscriptionActivity)
+    } catch {
+      console.error('[daily_digest] subscription activity counts unavailable')
+    }
 
     const msg =
       `📊 <b>킹보드 ${title}</b> (${yLabel})\n` +
@@ -145,6 +154,7 @@ Deno.serve(async (req: Request) => {
       `💰 예상 AI 비용: <b>₩${estCostKrw.toLocaleString('ko-KR')}</b> <i>(추정)</i>\n` +
       `📺 광고 시청: ${ssvCount}회 <i>(서버 기준·참고)</i>\n` +
       subLine +
+      subscriptionActivityLine +
       `━━━━━━━━━━━━━━\n` +
       `※ 구독자는 애플 실시간 조회 · 광고 수익은 AdMob 확인`
 
@@ -165,6 +175,7 @@ Deno.serve(async (req: Request) => {
         newSubs,
         activeSubs,
         subDelta,
+        subscriptionActivity,
       }),
       { headers: { 'Content-Type': 'application/json' } }
     )
