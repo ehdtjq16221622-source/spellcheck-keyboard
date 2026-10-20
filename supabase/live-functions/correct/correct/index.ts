@@ -30,9 +30,11 @@ async function walletFingerprint(walletId: string): Promise<string | undefined> 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
 
-  const diagnosticId = crypto.randomUUID()
+  let diagnosticId: string = crypto.randomUUID()
   let failureStage = 'request_parse'
   let causeStage: string | undefined
+  let responseTrace: ToneResponseTrace | undefined
+  let responseStatus = 500
 
   try {
     const {
@@ -47,8 +49,14 @@ Deno.serve(async (req: Request) => {
       deviceId,
       requestId,
       preview,
+      diagnosticId: requestedDiagnosticId,
+      diagnosticTrace,
     } = await req.json()
 
+    if (typeof requestedDiagnosticId === 'string' &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestedDiagnosticId)) {
+      diagnosticId = requestedDiagnosticId
+    }
     const source = typeof text === 'string' ? text : ''
     const normalizedLevel = normalizeFormalLevelKey(formalLevel)
     const isLegacyPreview = !preview && formalMode === true && normalizedLevel === '커스텀' &&
@@ -86,6 +94,20 @@ Deno.serve(async (req: Request) => {
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
     failureStage = 'wallet_resolution'
     const wallet = isPreviewRequest ? null : await resolveCreditWallet(req, supabase, deviceId)
+    // Opt-in counts only, and only after wallet authorization. Never retain text.
+    if (formalMode && diagnosticTrace === true && wallet) {
+      responseTrace = {
+        source_utf16_units: source.length,
+        source_utf8_bytes: new TextEncoder().encode(source).length,
+        provider_utf16_units: null,
+        provider_utf8_bytes: null,
+        result_utf16_units: 0,
+        result_utf8_bytes: 0,
+        provider_http_status: null,
+        provider_status: 'not_called',
+        max_output_tokens: normalizedLevel === '커스텀' ? 4000 : 4096,
+      }
+    }
     failureStage = 'credit_precharge'
     const credits = !isPreviewRequest && serverManagedCredit && wallet
       ? await consumeAIUsage(supabase, wallet.walletId, requestId, creditKind)
@@ -98,6 +120,7 @@ Deno.serve(async (req: Request) => {
         free_credits_remaining: credits.freeCredits,
         paid_credits_remaining: credits.paidCredits,
       })
+      responseStatus = 429
       return noCredits(credits, diagnosticId, failureStage)
     }
 
@@ -125,8 +148,8 @@ Deno.serve(async (req: Request) => {
           customPrompt
         )
         const toneResult = normalizedLevel === '커스텀'
-          ? await callLuna(source, system)
-          : await callGemini(source, true, shouldRemovePunct, includeDialect, normalizedLevel, shouldIncludeFormalPunct, customPrompt)
+          ? await callLuna(source, system, responseTrace)
+          : await callGemini(source, true, shouldRemovePunct, includeDialect, normalizedLevel, shouldIncludeFormalPunct, customPrompt, responseTrace)
         result = applyProofingFallbacks(toneResult, source)
       }
     } catch (error) {
@@ -142,6 +165,11 @@ Deno.serve(async (req: Request) => {
       throw error
     }
 
+    if (responseTrace) {
+      responseTrace.result_utf16_units = result.length
+      responseTrace.result_utf8_bytes = new TextEncoder().encode(result).length
+    }
+    responseStatus = 200
     return new Response(
       JSON.stringify({
         result,
@@ -151,14 +179,46 @@ Deno.serve(async (req: Request) => {
       { headers: diagnosticHeaders(diagnosticId) }
     )
   } catch (e) {
+    responseStatus = e instanceof WalletAccessError ? e.status : 500
     const code = e instanceof WalletAccessError ? 'WALLET_ACCESS_ERROR' : 'AI_REQUEST_FAILED'
     logDiagnostic('error', diagnosticId, failureStage, code, causeStage)
     if (e instanceof WalletAccessError) {
       return diagnosticError(diagnosticId, failureStage, e.status, { error: e.message }, causeStage)
     }
     return diagnosticError(diagnosticId, failureStage, 500, { error: genericAiErrorMessage }, causeStage)
+  } finally {
+    if (responseTrace) {
+      console.log('[correct] response_trace', {
+        event: 'tone_response_trace',
+        diagnostic_id: diagnosticId,
+        ...responseTrace,
+        http_status: responseStatus,
+        status: responseStatus === 200 ? 'ok' : 'error',
+        ...(responseStatus === 200 ? {} : { failure_stage: failureStage }),
+      })
+    }
   }
 })
+
+type ToneResponseTrace = {
+  source_utf16_units: number
+  source_utf8_bytes: number
+  provider_utf16_units: number | null
+  provider_utf8_bytes: number | null
+  result_utf16_units: number
+  result_utf8_bytes: number
+  provider_http_status: number | null
+  provider_status: 'not_called' | 'awaiting_response' | 'network_error' | 'invalid_response' | 'http_error' | 'completed' | 'incomplete' | 'missing_status' | 'empty'
+  max_output_tokens: number
+  finish_reason?: 'STOP' | 'MAX_TOKENS' | 'SAFETY' | 'RECITATION' | 'MISSING' | 'OTHER'
+  code?: 'AI_INCOMPLETE_RESPONSE'
+}
+
+function recordProviderText(trace: ToneResponseTrace | undefined, text: string) {
+  if (!trace) return
+  trace.provider_utf16_units = text.length
+  trace.provider_utf8_bytes = new TextEncoder().encode(text).length
+}
 
 // Spelling requests slower than this are logged for the service monitor's
 // Telegram alert. Best-effort and off the response path: never throws.
@@ -276,6 +336,26 @@ function normalizeFormalLevelKey(formalLevel: unknown): string {
   return aliases[raw] ?? raw
 }
 
+function buildDialectProofingPrompt(removePunct: boolean, structuredEdits: boolean): string {
+  let prompt =
+    '너는 한국어 사투리 표준어 교정기다.\n' +
+    '먼저 한국어 원문 전체의 문맥을 파악하여 문장 전체를 자연스러운 표준어로 정리하고, 그 다음 맞춤법·띄어쓰기·문법 오류를 처음부터 끝까지 교정하라.\n' +
+    '사투리 단어·표현·어순·종결 어미는 표준어 문장에 필요한 만큼 바꿔라. 사투리의 원래 단어·말투·종결 어미 자체를 유지하라는 제한은 적용하지 마라.\n' +
+    '단, 원문의 모든 뜻·사실·주체·대상·시제·인칭·부정·추측·전달·질문·요청 의도와 감정은 보존하라. 요약하거나 내용을 생략하거나 새로운 사실·이유·약속을 추가하지 마라.\n' +
+    '이미 표준어인 구어체는 불필요하게 바꾸지 마라. 뜻이 모호한 표현은 추측하지 말고 원문대로 두라. 거시기·그 뭐냐처럼 대상을 특정하지 않은 지시 표현은 그대로 두라.\n' +
+    '한국어가 아닌 입력의 언어는 바꾸지 마라. 숫자, 영어, URL, 이모지, ㅋㅋ, ㅎㅎ, ㅠㅠ는 보존하라. 단, 2틀은 이틀로 고쳐라.\n' +
+    '문맥상 차이는 다르다, 오답은 틀리다로 구분하고, 빼다의 과거형 뺐다와 빼앗다의 준말 뺏다를 구분하라.\n' +
+    '안되다는 잘되다의 반대이면 붙이고, 금지·불가능의 안 되다는 띄어 써라. 명사와 하다는 붙이고 본용언 뒤 주다는 원칙적으로 띄어 써라.\n' +
+    '원문의 의도와 상황에 맞는 자연스러운 표준어로 정리하라. 모든 문장을 일괄 존댓말로 만들 필요는 없다.'
+  prompt += removePunct
+    ? '\n원문의 구두점은 그대로 유지하고 새 구두점을 추가하지 마라.'
+    : '\n원문의 구두점은 유지하고, 문맥상 필요한 구두점은 자연스럽게 보완하라.'
+  prompt += structuredEdits
+    ? '\n표준어로 정리한 문장을 원문에 적용할 JSON 수정 목록으로 출력하라. 형식: {"edits":[{"find":"원문에 정확히 있는 문자열","replace":"교정 문자열"}]}. 각 find는 중간 결과가 아닌 원문에 정확히 한 번 존재하도록 앞뒤 문맥을 포함하고, 수정 구간끼리 겹치지 않게 하라. 수정이 없으면 {"edits":[]}만 출력하라. 설명과 마크다운 없이 완전한 JSON만 출력하라.'
+    : '\n교정된 전체 문장만 출력하고 설명, 따옴표, 머리말을 붙이지 마라.'
+  return prompt
+}
+
 function buildSystemPrompt(
   formalMode: boolean,
   removePunct: boolean,
@@ -335,6 +415,7 @@ function buildSystemPrompt(
   }
 
   // 맞춤법 교정 모드
+  if (includeDialect) return buildDialectProofingPrompt(removePunct, true)
   let system =
     '너는 한국어 맞춤법 교정기다.\n' +
     '먼저 원문의 의미를 문맥상 정확히 파악하라.\n' +
@@ -403,6 +484,7 @@ async function correctSpellingLowCost(
 }
 
 function buildLowCostProofingPrompt(removePunct: boolean, includeDialect: boolean): string {
+  if (includeDialect) return buildDialectProofingPrompt(removePunct, false)
   let prompt =
     '너는 한국어 맞춤법 교정기다.\n' +
     '한국어 맞춤법, 띄어쓰기, 문법 오류만 교정하라.\n' +
@@ -425,6 +507,7 @@ function buildLowCostProofingPrompt(removePunct: boolean, includeDialect: boolea
 }
 
 function buildEditFallbackPrompt(includeDialect: boolean): string {
+  if (includeDialect) return buildDialectProofingPrompt(true, true)
   let prompt =
     '너는 한국어 맞춤법 교정기다.\n' +
     '맞춤법, 띄어쓰기, 문법 오류만 찾아 JSON 수정 목록으로 출력하라.\n' +
@@ -573,7 +656,8 @@ async function callGemini(
   includeDialect: boolean,
   formalLevel: string,
   formalIncludePunct: boolean,
-  customPrompt?: string
+  customPrompt?: string,
+  trace?: ToneResponseTrace
 ): Promise<string> {
   const system = buildSystemPrompt(
     formalMode,
@@ -593,7 +677,7 @@ async function callGemini(
       contents: [{ role: 'user', parts: [{ text }] }],
       generationConfig: {
         temperature: formalMode ? 0.3 : 0.1,
-        maxOutputTokens: 1000,
+        maxOutputTokens: formalMode ? 4096 : 1000,
         ...(formalMode ? { thinkingConfig: { thinkingLevel: 'medium' } } : {}),
         ...(!formalMode ? {
           responseMimeType: 'application/json',
@@ -619,28 +703,60 @@ async function callGemini(
       },
     })
 
-  const res = await fetchWithTransientRetry(url, apiKey, requestBody)
-
+  if (trace) trace.provider_status = 'awaiting_response'
+  const res = await fetchWithTransientRetry(url, apiKey, requestBody, trace)
+  if (trace) {
+    trace.provider_http_status = res.status
+    trace.provider_status = res.ok ? 'invalid_response' : 'http_error'
+  }
   const data = await res.json()
-  if (!res.ok) throw new Error(data.error?.message ?? '교정 실패')
-  const content = data.candidates?.[0]?.content?.parts?.[0]?.text
-  if (!content) throw new Error(`빈 응답: ${JSON.stringify(data.candidates?.[0])}`)
+  if (!res.ok) throw new Error('AI provider request failed')
+  const candidate = data.candidates?.[0]
+  const parts = Array.isArray(candidate?.content?.parts) ? candidate.content.parts : []
+  const content = parts
+    .filter((part: { text?: unknown; thought?: boolean } | null) => part && typeof part.text === 'string' && part.thought !== true)
+    .map((part: { text: string }) => part.text)
+    .join('')
+  recordProviderText(trace, content)
+  if (trace) {
+    trace.finish_reason = candidate?.finishReason === undefined ? 'MISSING'
+      : ['STOP', 'MAX_TOKENS', 'SAFETY', 'RECITATION'].includes(candidate.finishReason) ? candidate.finishReason : 'OTHER'
+    trace.provider_status = candidate?.finishReason === 'STOP' ? 'completed'
+      : candidate?.finishReason === undefined ? 'missing_status' : 'incomplete'
+  }
+  if (candidate?.finishReason !== 'STOP') {
+    if (trace) trace.code = 'AI_INCOMPLETE_RESPONSE'
+    throw new Error('AI response did not complete')
+  }
+  if (!content.trim()) {
+    if (trace) trace.provider_status = 'empty'
+    throw new Error('AI returned an empty visible response')
+  }
   return content.trim()
 }
 
-async function fetchWithTransientRetry(url: string, apiKey: string, body: string): Promise<Response> {
+async function fetchWithTransientRetry(url: string, apiKey: string, body: string, trace?: ToneResponseTrace): Promise<Response> {
   let lastError: unknown
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
+      if (trace) {
+        trace.provider_http_status = null
+        trace.provider_status = 'awaiting_response'
+      }
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body,
       })
+      if (trace) {
+        trace.provider_http_status = response.status
+        trace.provider_status = response.ok ? 'invalid_response' : 'http_error'
+      }
       if (response.status < 500 && response.status !== 429) return response
       await response.body?.cancel()
       lastError = new Error(`AI provider HTTP ${response.status}`)
     } catch (error) {
+      if (trace) trace.provider_status = 'network_error'
       lastError = error
     }
     if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 250))
@@ -648,10 +764,11 @@ async function fetchWithTransientRetry(url: string, apiKey: string, body: string
   throw lastError instanceof Error ? lastError : new Error('AI provider request failed')
 }
 
-async function callLuna(text: string, system: string): Promise<string> {
+async function callLuna(text: string, system: string, trace?: ToneResponseTrace): Promise<string> {
   const apiKey = Deno.env.get('OPENAI_API_KEY')
   if (!apiKey) throw new Error('OPENAI_API_KEY is not configured')
 
+  if (trace) trace.provider_status = 'awaiting_response'
   const res = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: {
@@ -666,13 +783,17 @@ async function callLuna(text: string, system: string): Promise<string> {
       instructions: system,
       input: text,
     }),
+  }).catch((error: unknown) => {
+    if (trace) trace.provider_status = 'network_error'
+    throw error
   })
 
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.error?.message ?? 'Luna correction failed')
-  if (data.status && data.status !== 'completed') {
-    throw new Error(`Luna response incomplete: ${data.incomplete_details?.reason ?? data.status}`)
+  if (trace) {
+    trace.provider_http_status = res.status
+    trace.provider_status = res.ok ? 'invalid_response' : 'http_error'
   }
+  const data = await res.json()
+  if (!res.ok) throw new Error('Luna correction failed')
 
   const content = typeof data.output_text === 'string'
     ? data.output_text
@@ -683,7 +804,16 @@ async function callLuna(text: string, system: string): Promise<string> {
       .map((item: { text?: string }) => item.text ?? '')
       .join('')
 
-  if (!content.trim()) throw new Error('Luna returned an empty response')
+  recordProviderText(trace, content)
+  if (trace) trace.provider_status = data.status === 'completed' ? 'completed' : data.status ? 'incomplete' : 'missing_status'
+  if (data.status !== 'completed') {
+    if (trace) trace.code = 'AI_INCOMPLETE_RESPONSE'
+    throw new Error('Luna response incomplete')
+  }
+  if (!content.trim()) {
+    if (trace) trace.provider_status = 'empty'
+    throw new Error('Luna returned an empty response')
+  }
   return content.trim()
 }
 

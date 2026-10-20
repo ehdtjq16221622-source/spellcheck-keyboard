@@ -1,11 +1,11 @@
 {
   "functions": {
     "correct": {
-      "version": 163,
+      "version": 173,
       "verify_jwt": false,
-      "updated_at": 1791910412489,
+      "updated_at": 1792405128543,
       "files": {
-        "correct/index.ts": "5def43dc16aec1df",
+        "correct/index.ts": "5cdb42fcdc7bee51",
         "correct/proofing_edits.ts": "12deac4c152276fb",
         "correct/_shared/credits.ts": "efbc3a7f6c9a006c",
         "correct/_shared/wallet_auth.ts": "92072cf8d93e3b55"
@@ -51,18 +51,19 @@
       }
     },
     "sync_subscription_ios": {
-      "version": 50,
+      "version": 59,
       "verify_jwt": false,
-      "updated_at": 1792238825630,
+      "updated_at": 1792514365163,
       "files": {
-        "sync_subscription_ios/index.ts": "bd262c58a03fd2c1",
-        "_shared/apple_receipt.ts": "b19ff55ec3cd1fbc",
-        "_shared/apple_subscription_portable.ts": "4adaf6808394efd4",
-        "_shared/apple_subscription_status.ts": "3e4635dffcafe41e",
-        "_shared/credits.ts": "efbc3a7f6c9a006c",
-        "_shared/subscription_alerts.ts": "c7d42ee3f3af1b36",
-        "_shared/subscription_audit.ts": "609166e46167ee53",
-        "_shared/wallet_auth.ts": "e6ece4f32cd5d7d5"
+        "sync_subscription_ios/index.ts": "26d0a74789fc3658",
+        "sync_subscription_ios/_shared/apple_receipt.ts": "b19ff55ec3cd1fbc",
+        "sync_subscription_ios/_shared/apple_subscription_portable.ts": "4adaf6808394efd4",
+        "sync_subscription_ios/_shared/apple_subscription_status.ts": "c7482dbd63e3e200",
+        "sync_subscription_ios/_shared/credits.ts": "efbc3a7f6c9a006c",
+        "sync_subscription_ios/_shared/subscription_alerts.ts": "4462a0162595a7b8",
+        "sync_subscription_ios/_shared/subscription_audit.ts": "609166e46167ee53",
+        "sync_subscription_ios/_shared/wallet_auth.ts": "e6ece4f32cd5d7d5",
+        "_shared/subscription_audit.ts": "957cc9094a0feb12"
       }
     },
     "daily_checkin": {
@@ -129,12 +130,13 @@
       }
     },
     "daily_digest": {
-      "version": 27,
+      "version": 36,
       "verify_jwt": false,
-      "updated_at": 1791181609511,
+      "updated_at": 1792514283958,
       "files": {
-        "daily_digest/index.ts": "2e27a7df76fb50f1",
-        "_shared/telegram.ts": "18357c5d834edc3a"
+        "daily_digest/index.ts": "0106553128294e11",
+        "daily_digest/_shared/telegram.ts": "18357c5d834edc3a",
+        "_shared/subscription_audit.ts": "957cc9094a0feb12"
       }
     },
     "admin_stats": {
@@ -248,7 +250,38 @@
         "service_monitor/index.ts": "60b510e8306637ec",
         "_shared/telegram.ts": "932ca4944375a8bf"
       }
+    },
+    "subscription_apple_reconcile": {
+      "version": 1,
+      "verify_jwt": false,
+      "updated_at": 1792513778657,
+      "files": {
+        "subscription_apple_reconcile/index.ts": "21ba221c4b30d380",
+        "subscription_apple_reconcile/_shared/subscription_alerts.ts": "c7d42ee3f3af1b36"
+      }
+    },
+    "tone_completion_probe": {
+      "version": 9,
+      "verify_jwt": true,
+      "updated_at": 1792396543197,
+      "files": {
+        "tone_completion_probe/cases.ts": "16c2a0e3b54fff8c",
+        "tone_completion_probe/generated-after.ts": "d13bbb741328d75a",
+        "tone_completion_probe/generated-before.ts": "0b39c3eec9e7661d",
+        "tone_completion_probe/index.ts": "2912a3e29ee2d85c"
+      }
+    },
+    "dialect_standardization_experiment": {
+      "version": 6,
+      "verify_jwt": true,
+      "updated_at": 1792403476376,
+      "files": {
+        "dialect_standardization_experiment/generated-after.ts": "d6e55d809735da7d",
+        "dialect_standardization_experiment/generated-before.ts": "504afa2a1ea368f2",
+        "dialect_standardization_experiment/generated-cases.ts": "af1dfeba191b7539",
+        "dialect_standardization_experiment/index.ts": "01f5678a55a836e5"
+      }
     }
   },
-  "recorded_at": "2026-10-17T19:37:17.441Z"
+  "recorded_at": "2026-10-20T16:43:46.579Z"
 }

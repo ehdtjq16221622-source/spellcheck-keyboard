@@ -3,20 +3,20 @@ import {
   getCredits,
   setMonthlySubscriptionCredits,
   subscriptionCreditsForProduct,
-} from '../_shared/credits.ts'
-import { verifyAppleSubscription } from '../_shared/apple_receipt.ts'
+} from './_shared/credits.ts'
+import { verifyAppleSubscription } from './_shared/apple_receipt.ts'
 import {
   verifyAppleSubscriptionRecordWithReason,
   verifyAppleTransactionJws,
-} from '../_shared/apple_subscription_status.ts'
-import { resolveCreditWallet, WalletAccessError } from '../_shared/wallet_auth.ts'
+} from './_shared/apple_subscription_status.ts'
+import { resolveCreditWallet, WalletAccessError } from './_shared/wallet_auth.ts'
 import {
   logSubscriptionAudit as writeSubscriptionAudit,
   safeSubscriptionFailureCode,
   subscriptionFailureHttpStatus,
   subscriptionWalletFingerprint,
-} from '../_shared/subscription_audit.ts'
-import { deferDiagnostic, reportFailure, summarizeFailure } from '../_shared/subscription_alerts.ts'
+} from './_shared/subscription_audit.ts'
+import { deferDiagnostic, reportFailure, summarizeFailure } from './_shared/subscription_alerts.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -72,6 +72,7 @@ Deno.serve(async (req: Request) => {
   let auditWalletFingerprint: string | undefined
   let auditRequestedWalletId: string | undefined
   let auditResolvedWalletId: string | undefined
+  let auditVerifiedGrantKey: string | undefined
   let auditDetail: Record<string, unknown> | undefined
   let auditClientDiag: unknown
   let auditSyncOrigin: string | undefined
@@ -111,7 +112,6 @@ Deno.serve(async (req: Request) => {
       .maybeSingle()
     if (aliasError) throw aliasError
     const resolvedWalletId = walletAlias?.canonical_wallet_id ?? requestedDeviceId
-    auditResolvedWalletId = String(resolvedWalletId).slice(0, 200)
     const canaryWallets = (Deno.env.get('IOS_SUBSCRIPTION_ATOMIC_CANARY_WALLETS') ?? '')
       .split(',').map((id) => id.trim()).filter(Boolean)
     auditStage = 'canary_classification'
@@ -125,6 +125,7 @@ Deno.serve(async (req: Request) => {
     // Enabling rollout admits authenticated new clients, not every old request.
     const wallet = await resolveCreditWallet(req, supabase, requestedDeviceId,
       isCanary || Boolean(walletAlias))
+    auditResolvedWalletId = wallet.walletId
     const useAtomicSync = isCanary || (atomicAllUsersRequested && wallet.authenticated)
     if (wallet.authenticated) events.push({ event: 'wallet_authenticated' })
     auditIsCanary = isCanary
@@ -232,6 +233,7 @@ Deno.serve(async (req: Request) => {
       logSubscriptionAudit('warn', auditId, 'verification_rejected', {
         stage: 'apple_verification', product: auditProduct, source: auditSource,
         canary: isCanary, state: verified.state, active: verified.active,
+        environment: verified.environment,
         failureCode: 'subscription_not_found',
       })
       return new Response(JSON.stringify({ error: 'Subscription purchase was not found.', audit_id: auditId, diagnostic_id: auditId, failure_stage: auditStage }), {
@@ -243,6 +245,9 @@ Deno.serve(async (req: Request) => {
       environment: verified.environment, state: verified.state, active: verified.active,
       canary: isCanary,
     })
+    auditVerifiedGrantKey = verified.active && verified.cycleKey
+      ? [verified.originalTransactionId ?? verified.orderId ?? deviceId, productId, verified.cycleKey].join(':')
+      : undefined
 
     auditStage = 'subscription_lookup'
     const { data: existing, error: existingError } = await supabase
@@ -326,6 +331,14 @@ Deno.serve(async (req: Request) => {
           environment: verified.environment,
           apple_current_product_verified: appleCurrentProductVerified,
           audit_id: auditId,
+          // Stored with the existing atomic grant, never a separate success write.
+          subscription_audit: {
+            version: 1,
+            event: appleCurrentProductVerified ? 'plan_change_applied' : 'subscription_grant',
+            previous_product_id: existing?.product_id ?? null,
+            product_id: productId,
+            environment: verified.environment,
+          },
         },
       })
       if (error) throw error
@@ -472,10 +485,11 @@ Deno.serve(async (req: Request) => {
     if (events.some(e => ['rejected', 'verification_rejected', 'sync_failed'].includes(String(e.event)))) {
       deferDiagnostic(async () => {
         const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+        let failureRecorded = false
         try {
           const failure = summarizeFailure(events)
           if (failure) {
-            await db.from('subscription_sync_failures').insert({
+            const saved = await db.from('subscription_sync_failures').insert({
               audit_id: failure.auditId,
               environment: failure.environment,
               stage: failure.stage,
@@ -492,11 +506,15 @@ Deno.serve(async (req: Request) => {
                 events: events.map((e) => `${e.event}${e.failureCode ? ':' + e.failureCode : ''}`).slice(0, 20),
               },
             })
+            if (saved.error) throw new Error('subscription_failure_record_failed')
+            failureRecorded = true
           }
         } catch {
-          // The failure log must never affect the sync response or the alert.
+          console.error(JSON.stringify({ category: 'subscription_alert', event: 'failure_record_failed' }))
         }
-        await reportFailure(db, events)
+        await reportFailure(db, events, failureRecorded,
+          auditResolvedWalletId && auditVerifiedGrantKey
+            ? { walletId: auditResolvedWalletId, grantKey: auditVerifiedGrantKey } : undefined)
       })
     }
   }
