@@ -225,12 +225,12 @@
       }
     },
     "language_study_generate": {
-      "version": 7,
+      "version": 16,
       "verify_jwt": false,
-      "updated_at": 1791793305364,
+      "updated_at": 1792831830307,
       "files": {
-        "language_study_generate/index.ts": "7421aa957ec6c6b9",
-        "_shared/wallet_auth.ts": "3b570464fd3bcc3d"
+        "language_study_generate/index.ts": "53229df795730846",
+        "language_study_generate/_shared/wallet_auth.ts": "56852f745367a17c"
       }
     },
     "subscription_monitor": {
@@ -283,5 +283,5 @@
       }
     }
   },
-  "recorded_at": "2026-10-24T08:50:16.411Z"
+  "recorded_at": "2026-10-24T08:50:37.978Z"
 }
