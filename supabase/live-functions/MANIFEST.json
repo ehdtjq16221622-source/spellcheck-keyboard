@@ -42,12 +42,12 @@
       }
     },
     "redeem_coupon": {
-      "version": 24,
+      "version": 33,
       "verify_jwt": false,
-      "updated_at": 1791793179651,
+      "updated_at": 1792831849846,
       "files": {
-        "redeem_coupon/index.ts": "6e405015ece52dd4",
-        "_shared/wallet_auth.ts": "3b570464fd3bcc3d"
+        "redeem_coupon/index.ts": "beb38f62ac7a6ad1",
+        "redeem_coupon/_shared/wallet_auth.ts": "56852f745367a17c"
       }
     },
     "sync_subscription_ios": {
@@ -283,5 +283,5 @@
       }
     }
   },
-  "recorded_at": "2026-10-24T08:50:37.978Z"
+  "recorded_at": "2026-10-24T08:50:56.878Z"
 }
