@@ -1,17 +1,17 @@
 // Feature-flagged guest registration and canary-only Apple linking.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { verifyAppleIdentityToken } from '../_shared/apple_auth.ts'
+import { verifyAppleIdentityToken } from './_shared/apple_auth.ts'
 import {
   verifyAppleSubscriptionRecord,
   verifyAppleSubscriptionRecordDetailed,
-} from '../_shared/apple_subscription_status.ts'
-import { walletTokenHash } from '../_shared/wallet_auth.ts'
-import { enrollBonusCanaryDevice, isBonusCanaryDevice } from '../_shared/devicecheck.ts'
+} from './_shared/apple_subscription_status.ts'
+import { walletTokenHash } from './_shared/wallet_auth.ts'
+import { enrollBonusCanaryDevice, isBonusCanaryDevice } from './_shared/devicecheck.ts'
 import {
   logSubscriptionAudit,
   subscriptionTransactionFingerprint,
   subscriptionWalletFingerprint,
-} from '../_shared/subscription_audit.ts'
+} from './_shared/subscription_audit.ts'
 
 const BUNDLE_ID = 'com.kingboard.app'
 
@@ -573,7 +573,18 @@ Deno.serve(async (req: Request) => {
       })
       if (error?.code === 'P0001') return respond({ error: 'Wallet session must be renewed by Apple sign-in.' }, 401)
       if (error) throw error
-      return respond({ walletId, expiresInSeconds: 29 * 86400, state: 'active' })
+      // A retried rotation returns the existing token, not a fresh 29-day lease.
+      const { data: rotated, error: expiryError } = await supabase
+        .from('credit_wallet_sessions').select('expires_at')
+        .eq('token_hash', await walletTokenHash(body.nextSessionToken)).maybeSingle()
+      if (expiryError) throw expiryError
+      if (!rotated?.expires_at) throw new Error('Rotated session expiry unavailable')
+      const expiresAt = new Date(rotated.expires_at).toISOString()
+      return respond({
+        walletId, expiresAt,
+        expiresInSeconds: Math.max(0, Math.floor((Date.parse(expiresAt) - Date.now()) / 1000)),
+        state: 'active',
+      })
     }
 
     if (body.action === 'resume_guest_merge') {
