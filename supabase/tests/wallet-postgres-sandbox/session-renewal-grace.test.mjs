@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import { PGlite } from '@electric-sql/pglite';
 
 const read = path => readFile(new URL(path, import.meta.url), 'utf8');
-const migration = await read('../../migrations/20261023210927_apple_wallet_session_30_day_grace.sql');
+const migration = await read('../../migrations/20261024115300_apple_wallet_session_30_day_grace.sql');
 const rollback = await read('../../sql/rollback_apple_wallet_session_30_day_grace.sql').catch(() => '');
 const signature = "'public.rotate_apple_wallet_session(text,text,timestamptz)'::regprocedure";
 const oldHash = '1'.repeat(64), nextHash = '2'.repeat(64);
