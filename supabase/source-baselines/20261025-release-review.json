@@ -1,0 +1,14 @@
+{
+  "reviewedCommit": "2228b6a",
+  "note": "Pending code is pinned separately from the current deployment manifest. This file does not approve deployment.",
+  "reviewOnlyChanges": {
+    "correct/index.ts": {
+      "sha256": "cd94caa5475c5fa937be78523189328de2dd5c842dfc2051d7f182587087a6d7",
+      "reason": "7c23fc3: reviewed 25-second provider deadline and request correlation; not deployed. Covered by ai_deadline and ai-correlation tests."
+    },
+    "translate/index.ts": {
+      "sha256": "aeb36fdac035fe02fa71e4e6575e714f86880478d4feac7dffaf332667596a07",
+      "reason": "7c23fc3: reviewed 25-second provider deadline and request correlation; not deployed. Covered by ai_deadline and ai-correlation tests."
+    }
+  }
+}

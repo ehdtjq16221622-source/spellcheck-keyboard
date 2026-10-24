@@ -9,18 +9,31 @@ import { test } from 'node:test';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const baseline = JSON.parse(readFileSync(path.join(root, 'source-baselines/20261018-live-recovery.json'), 'utf8'));
+const manifest = JSON.parse(readFileSync(path.join(root, 'live-functions/MANIFEST.json'), 'utf8'));
+const review = JSON.parse(readFileSync(path.join(root, 'source-baselines/20261025-release-review.json'), 'utf8'));
 const normalize = (text) => text.replace(/\r\n/g, '\n');
 
 for (const [slug, entry] of Object.entries(baseline.functions)) {
   test(`${slug}: recorded live code and relative dependencies are preserved`, () => {
+    const deployed = manifest.functions[slug];
+    assert.ok(deployed?.files, `Missing deployment record for ${slug}`);
+    // The October 18 recovery list remains the scope, not a permanent freeze on live code.
+    // Verify every current bundle file, including dependencies added by later deployments.
+    for (const [relative, hash] of Object.entries(deployed.files)) {
+      const snapshot = normalize(readFileSync(path.join(root, 'live-functions', slug, relative), 'utf8'));
+      assert.equal(createHash('sha256').update(snapshot).digest('hex').slice(0, 16), hash, `${slug}/${relative}`);
+    }
     for (const file of entry.files) {
-      const snapshot = normalize(readFileSync(path.join(root, 'live-functions', file.snapshot), 'utf8'));
-      assert.equal(createHash('sha256').update(snapshot).digest('hex'), file.sha256);
+      const relative = file.source in deployed.files ? file.source : file.source.slice(slug.length + 1);
+      assert.ok(relative in deployed.files, `Missing recovered dependency: ${file.source}`);
+      const snapshot = normalize(readFileSync(path.join(root, 'live-functions', slug, relative), 'utf8'));
       const actualPath = path.join(root, 'functions', file.source);
       const actual = normalize(readFileSync(actualPath, 'utf8'));
       const expected = file.source === `${slug}/index.ts`
-        ? snapshot.replace(/(['"])\.\.\/_shared\//g, '$1./_shared/') : snapshot;
-      const intentional = baseline.reviewOnlyChanges?.[file.source];
+        ? snapshot.replace(/(['"])\.\.\/_shared\/([^'"]+)/g, (match, quote, dependency) =>
+          entry.files.some(f => f.source === `${slug}/_shared/${dependency}`)
+            ? `${quote}./_shared/${dependency}` : match) : snapshot;
+      const intentional = review.reviewOnlyChanges[file.source];
       if (intentional) {
         assert.ok(intentional.reason);
         assert.equal(createHash('sha256').update(actual).digest('hex'), intentional.sha256);
