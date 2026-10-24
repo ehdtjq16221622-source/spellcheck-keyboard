@@ -4,7 +4,9 @@ import { stripTypeScriptTypes } from 'node:module';
 import { test } from 'node:test';
 
 const source = readFileSync(new URL('../functions/correct/index.ts', import.meta.url), 'utf8');
-const runnable = stripTypeScriptTypes(source
+const deadlineSource = readFileSync(new URL('../functions/correct/_shared/ai_deadline.ts', import.meta.url),'utf8').replace(/^export /gm,'');
+const runnable = stripTypeScriptTypes(deadlineSource + '\n' + source
+  .replace(/^import \{ AIRequestDeadline.*$/m,'')
   .replace(/^import \{ applyValidatedProofingEdits, parseProofingEdits \} from .*;?$/m,
     'const applyValidatedProofingEdits = globalThis.__applyValidatedProofingEdits; const parseProofingEdits = globalThis.__parseProofingEdits;')
   .replace(/^import \{ createClient \} from .*;?$/m,
@@ -36,7 +38,7 @@ async function createHandler({ consumeResult = { accepted: true, alreadyProcesse
     calls.push(request);
     const body = request.url.includes('api.openai.com')
       ? { status: 'completed', output_text: 'luna result' }
-      : { candidates: [{ content: { parts: [{ text: 'gemini result' }] } }] };
+      : { candidates: [{ finishReason: 'STOP', content: { parts: [{ text: 'gemini result' }] } }] };
     return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
   };
   await import(`data:text/javascript,${encodeURIComponent(runnable)}#${crypto.randomUUID()}`);

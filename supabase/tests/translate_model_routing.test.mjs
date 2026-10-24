@@ -4,7 +4,9 @@ import { stripTypeScriptTypes } from 'node:module';
 import { test } from 'node:test';
 
 const source = readFileSync(new URL('../functions/translate/index.ts', import.meta.url), 'utf8');
-const runnable = stripTypeScriptTypes(source
+const deadlineSource = readFileSync(new URL('../functions/translate/_shared/ai_deadline.ts', import.meta.url),'utf8').replace(/^export /gm,'');
+const runnable = stripTypeScriptTypes(deadlineSource + '\n' + source
+  .replace(/^import \{ AIRequestDeadline.*$/m,'')
   .replace(/^import \{ createClient \} from .*;?$/m, 'const createClient = globalThis.__createClient;')
   .replace(/^import \{ consumeAIUsage, refundAIUsage \} from .*;?$/m,
     'const consumeAIUsage = globalThis.__consumeAIUsage; const refundAIUsage = globalThis.__refundAIUsage;')
