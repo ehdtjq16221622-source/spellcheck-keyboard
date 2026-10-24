@@ -816,5 +816,3 @@ async function callLuna(text: string, system: string, trace?: ToneResponseTrace)
   }
   return content.trim()
 }
-
-
