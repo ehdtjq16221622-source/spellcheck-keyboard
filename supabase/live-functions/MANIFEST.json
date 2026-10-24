@@ -112,13 +112,13 @@
       }
     },
     "sync_credit_usage": {
-      "version": 20,
+      "version": 29,
       "verify_jwt": false,
-      "updated_at": 1791793268790,
+      "updated_at": 1792831871050,
       "files": {
-        "sync_credit_usage/index.ts": "9ebe2c091607b32c",
-        "_shared/credits.ts": "b45ea99450b2cc6b",
-        "_shared/wallet_auth.ts": "3b570464fd3bcc3d"
+        "sync_credit_usage/index.ts": "cbacdb405dd419d2",
+        "sync_credit_usage/_shared/credits.ts": "b45ea99450b2cc6b",
+        "sync_credit_usage/_shared/wallet_auth.ts": "56852f745367a17c"
       }
     },
     "get_active_notice": {
@@ -283,5 +283,5 @@
       }
     }
   },
-  "recorded_at": "2026-10-24T08:50:56.878Z"
+  "recorded_at": "2026-10-24T08:51:18.074Z"
 }
