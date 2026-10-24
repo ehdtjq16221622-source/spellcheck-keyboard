@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { applyUsageEventOnce, getCredits } from '../_shared/credits.ts'
-import { resolveCreditWallet, WalletAccessError } from '../_shared/wallet_auth.ts'
+import { applyUsageEventOnce, getCredits } from './_shared/credits.ts'
+import { resolveCreditWallet, WalletAccessError } from './_shared/wallet_auth.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
