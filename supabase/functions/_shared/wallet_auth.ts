@@ -101,7 +101,7 @@ export async function resolveCreditWallet(
       }
     }
     if (!session || session.revoked_at || Date.parse(session.expires_at) <= Date.now()) {
-      throw new WalletAccessError('Wallet session expired.', 401)
+      throw new WalletAccessError("킹보드 앱을 열고 '지갑 연결'에서 [연결]을 눌러 주세요.", 401)
     }
     const { data: owner, error: ownerError } = await supabase
       .from('device_credits')
@@ -110,7 +110,7 @@ export async function resolveCreditWallet(
       .maybeSingle()
     if (ownerError) throw ownerError
     if (!owner || owner.apple_user_id !== session.apple_sub) {
-      throw new WalletAccessError('Wallet session no longer matches the account.', 401)
+      throw new WalletAccessError("킹보드 앱을 열고 '지갑 연결'에서 [연결]을 눌러 주세요.", 401)
     }
     if (requestedId && requestedId !== session.wallet_id) {
       const { data: alias, error: aliasError } = await supabase
