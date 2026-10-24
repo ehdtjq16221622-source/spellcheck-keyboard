@@ -15,3 +15,4 @@
 | 2026-10-24 08:50 | redeem_coupon | v33 | 217f361 |
 | 2026-10-24 08:51 | sync_credit_usage | v29 | b4bbbc0 |
 | 2026-10-24 08:51 | sync_subscription | v31 | d73e3f4 |
+| 2026-10-24 08:52 | sync_subscription_ios | v60 | c73bd6f |
