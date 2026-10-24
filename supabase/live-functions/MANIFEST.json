@@ -67,12 +67,12 @@
       }
     },
     "daily_checkin": {
-      "version": 23,
+      "version": 32,
       "verify_jwt": false,
-      "updated_at": 1791793081335,
+      "updated_at": 1792831809792,
       "files": {
-        "daily_checkin/index.ts": "e43e8bee17f840b6",
-        "_shared/wallet_auth.ts": "3b570464fd3bcc3d"
+        "daily_checkin/index.ts": "3781fed8a8e5a73c",
+        "daily_checkin/_shared/wallet_auth.ts": "56852f745367a17c"
       }
     },
     "admob_ssv_callback": {
@@ -283,5 +283,5 @@
       }
     }
   },
-  "recorded_at": "2026-10-24T08:49:58.895Z"
+  "recorded_at": "2026-10-24T08:50:16.411Z"
 }
