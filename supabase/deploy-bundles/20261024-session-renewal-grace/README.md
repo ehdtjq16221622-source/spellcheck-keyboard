@@ -23,7 +23,8 @@ The SQL replay branch ordering is preserved, not redesigned.
 
 ## SQL and rollback
 
-- Candidate: ../../migrations/20261023210927_apple_wallet_session_30_day_grace.sql
+- Candidate: ../../migrations/20261024115300_apple_wallet_session_30_day_grace.sql
+- Migration history version is the production apply_migration version, not the draft file timestamp.
 - Previous definition: ../../sql/rollback_apple_wallet_session_30_day_grace.sql
 - Live definition was read on 2026-10-24 KST: only postgres/service_role execute, SECURITY DEFINER, empty search_path.
 - CREATE OR REPLACE preserves ACL/owner. Local PostgreSQL tests compare the complete body (only one predicate differs), ACL and rollback.
