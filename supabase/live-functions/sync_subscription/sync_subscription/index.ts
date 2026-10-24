@@ -3,16 +3,16 @@ import {
   getCredits,
   googleSubscriptionCreditsForProduct,
   setMonthlySubscriptionCredits,
-} from '../_shared/credits.ts'
-import { verifySubscription } from '../_shared/google_play.ts'
-import { resolveCreditWallet, WalletAccessError } from '../_shared/wallet_auth.ts'
+} from './_shared/credits.ts'
+import { verifySubscription } from './_shared/google_play.ts'
+import { resolveCreditWallet, WalletAccessError } from './_shared/wallet_auth.ts'
 import {
   logSubscriptionAudit,
   safeSubscriptionFailureCode,
   subscriptionFailureHttpStatus,
   subscriptionTransactionFingerprint,
   subscriptionWalletFingerprint,
-} from '../_shared/subscription_audit.ts'
+} from './_shared/subscription_audit.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',

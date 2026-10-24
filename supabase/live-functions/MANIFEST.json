@@ -30,15 +30,15 @@
       }
     },
     "sync_subscription": {
-      "version": 22,
+      "version": 31,
       "verify_jwt": false,
-      "updated_at": 1791793113505,
+      "updated_at": 1792831890480,
       "files": {
-        "sync_subscription/index.ts": "f0d81260ed953170",
-        "_shared/credits.ts": "b45ea99450b2cc6b",
-        "_shared/google_play.ts": "51ed0c5f90703fbf",
-        "_shared/subscription_audit.ts": "e7be06fcc05bd5e0",
-        "_shared/wallet_auth.ts": "3b570464fd3bcc3d"
+        "sync_subscription/index.ts": "bdcb4ab9f1c6734e",
+        "sync_subscription/_shared/credits.ts": "b45ea99450b2cc6b",
+        "sync_subscription/_shared/google_play.ts": "51ed0c5f90703fbf",
+        "sync_subscription/_shared/subscription_audit.ts": "e7be06fcc05bd5e0",
+        "sync_subscription/_shared/wallet_auth.ts": "56852f745367a17c"
       }
     },
     "redeem_coupon": {
@@ -283,5 +283,5 @@
       }
     }
   },
-  "recorded_at": "2026-10-24T08:51:18.074Z"
+  "recorded_at": "2026-10-24T08:51:37.033Z"
 }
