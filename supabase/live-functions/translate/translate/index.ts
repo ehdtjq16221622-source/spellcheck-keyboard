@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { consumeAIUsage, refundAIUsage } from '../_shared/credits.ts'
-import { resolveCreditWallet, WalletAccessError } from '../_shared/wallet_auth.ts'
+import { consumeAIUsage, refundAIUsage } from './_shared/credits.ts'
+import { resolveCreditWallet, WalletAccessError } from './_shared/wallet_auth.ts'
 type TranslationModelResult = {
   translation: string
   pronunciationKo: string | null

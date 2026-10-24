@@ -12,13 +12,13 @@
       }
     },
     "translate": {
-      "version": 50,
+      "version": 59,
       "verify_jwt": false,
-      "updated_at": 1791910418506,
+      "updated_at": 1792831775729,
       "files": {
-        "translate/index.ts": "3089de6f02d005fc",
-        "_shared/credits.ts": "b45ea99450b2cc6b",
-        "_shared/wallet_auth.ts": "22f29ed721d95783"
+        "translate/index.ts": "3869126c6d9e20ac",
+        "translate/_shared/credits.ts": "b45ea99450b2cc6b",
+        "translate/_shared/wallet_auth.ts": "a5a6dfd1cabb33f5"
       }
     },
     "reward_ad": {
@@ -283,5 +283,5 @@
       }
     }
   },
-  "recorded_at": "2026-10-24T08:49:02.215Z"
+  "recorded_at": "2026-10-24T08:49:42.213Z"
 }
