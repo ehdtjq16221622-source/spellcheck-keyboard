@@ -85,12 +85,12 @@
       }
     },
     "get_credits": {
-      "version": 27,
+      "version": 36,
       "verify_jwt": false,
-      "updated_at": 1791793334076,
+      "updated_at": 1792831792464,
       "files": {
-        "get_credits/index.ts": "6264071f8c80e9f6",
-        "_shared/wallet_auth.ts": "c85f95c44a33bf9b"
+        "get_credits/index.ts": "d417a5ad6c2ad091",
+        "get_credits/_shared/wallet_auth.ts": "0e1666e463384d35"
       }
     },
     "link_apple_user": {
@@ -283,5 +283,5 @@
       }
     }
   },
-  "recorded_at": "2026-10-24T08:49:42.213Z"
+  "recorded_at": "2026-10-24T08:49:58.895Z"
 }

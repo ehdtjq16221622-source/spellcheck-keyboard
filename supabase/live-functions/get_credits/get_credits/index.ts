@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { resolveCreditWallet, WalletAccessError } from "../_shared/wallet_auth.ts";
+import { resolveCreditWallet, WalletAccessError } from "./_shared/wallet_auth.ts";
 
 const NEW_REWARDED_AD_CREDITS = 100;
 const LEGACY_REWARDED_AD_CREDITS = 200;
