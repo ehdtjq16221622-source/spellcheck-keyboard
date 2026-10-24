@@ -1,6 +1,6 @@
 # Apple wallet session renewal candidate
 
-Status: Owner approved the server rollout on 2026-10-24 KST. Production verification is pending.
+Status: Owner-approved server rollout completed on 2026-10-24 KST. Initial production verification passed; longer observation and iOS release/device verification remain pending.
 Server work continues on codex/ai-deadline-wallet-guidance; iOS renewal continues on codex/keyboard-session-renewal. Unrelated dirty files are preserved.
 
 ## Scope and security review
@@ -63,3 +63,26 @@ If Edge rollback is needed, restore its reviewed pre-change response code and us
 5. Device checks still required: seven-day proactive renewal, expired one-day recovery, force-quit after request, offline retry, logout during request.
 
 The 16 server checks passed again before this rollout. All runnable fixture tests use isolated local PostgreSQL or injected Swift doubles, never live customer credentials.
+
+## Production verification (2026-10-24 KST)
+
+- Applied only migration 20261024115300 at 20:53 KST using apply_migration. No customer fixtures or session rotations were performed.
+- Read the deployed function definition back: its sole body difference from rollback is the approved expiry predicate. Definition MD5: c6e83b16ee9a2045e2bd62f34eebf400.
+- Owner postgres, SECURITY DEFINER, empty search_path and ACL postgres/service_role are unchanged. anon/authenticated still cannot execute.
+- Deployed wallet_link_v2 v63 at approximately 20:56 KST through deploy-function.mjs from b4b22ad, preserving verify_jwt=false. check-live reports source matches and zero unrecorded deploys for this function.
+- Full helper/previous-route comparison matched live after import-path relocation normalization. Only the reviewed actual-expiry response changed.
+- A random nonexistent session probe returned 404 Not found with diagnostic ID; it did not use customer credentials or create a session. Successful expired rotation was tested only in isolated PostgreSQL, not on production customer sessions.
+- Re-ran the 16 focused server tests after deployment: 16 passed, 0 failed, 0 timeout, 0 skipped.
+- Security advisors have no new categories/counts: the existing 22 no-policy INFO findings and one pg_net public-schema WARN remain unchanged.
+- correct v174, translate v59 and get_credits v36 are unchanged. The separate AI deadline migration is absent from production history; no AI deadline rollout occurred.
+
+Equal five-minute windows around the DB change, excluding diagnostic probes:
+
+| Endpoint | Before 20:48-20:53 requests | After 20:53-20:58 requests | Before / after 401, 409, 5xx |
+| --- | ---: | ---: | --- |
+| correct | 118 | 116 | 0 / 0 in each category |
+| translate | 0 | 2 | 0 / 0 in each category |
+| get_credits | 11 | 36 | 0 / 0 in each category |
+| wallet_link_v2 | 2 | 3 | 0 / 0 in each category |
+
+This is an initial observation, not a completed 30-minute comparison. The window includes the DB-first, Edge-second rollout. Low traffic and log ingestion delay limit conclusions; no successful real-customer automatic renewal or end-to-end iOS result is claimed.
