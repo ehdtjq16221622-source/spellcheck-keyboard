@@ -211,17 +211,17 @@
       }
     },
     "wallet_link_v2": {
-      "version": 54,
+      "version": 63,
       "verify_jwt": false,
-      "updated_at": 1791879966506,
+      "updated_at": 1792842967300,
       "files": {
-        "wallet_link_v2/index.ts": "9d7299f2b3ec977a",
-        "_shared/apple_auth.ts": "055bd2a8e05d6aa0",
-        "_shared/apple_subscription_portable.ts": "4adaf6808394efd4",
-        "_shared/apple_subscription_status.ts": "f8eaed6cfa72c6a6",
-        "_shared/devicecheck.ts": "0817dcfd6ef4b19f",
-        "_shared/subscription_audit.ts": "300a5315f509b49e",
-        "_shared/wallet_auth.ts": "47348a452be75a1d"
+        "wallet_link_v2/index.ts": "8c3c55fe928d28e0",
+        "wallet_link_v2/_shared/apple_auth.ts": "055bd2a8e05d6aa0",
+        "wallet_link_v2/_shared/apple_subscription_portable.ts": "4adaf6808394efd4",
+        "wallet_link_v2/_shared/apple_subscription_status.ts": "f8eaed6cfa72c6a6",
+        "wallet_link_v2/_shared/devicecheck.ts": "0817dcfd6ef4b19f",
+        "wallet_link_v2/_shared/subscription_audit.ts": "300a5315f509b49e",
+        "wallet_link_v2/_shared/wallet_auth.ts": "47348a452be75a1d"
       }
     },
     "language_study_generate": {
@@ -283,5 +283,5 @@
       }
     }
   },
-  "recorded_at": "2026-10-24T08:52:01.247Z"
+  "recorded_at": "2026-10-24T11:56:15.518Z"
 }
