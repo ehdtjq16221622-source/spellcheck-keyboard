@@ -1,7 +1,8 @@
 import { applyValidatedProofingEdits, parseProofingEdits } from './proofing_edits.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { consumeAIUsage, refundAIUsage } from './_shared/credits.ts'
+import { consumeAIUsage, refundAIUsage, completeAIUsage } from './_shared/credits.ts'
 import { resolveCreditWallet, WalletAccessError } from './_shared/wallet_auth.ts'
+import { AIRequestDeadline, AIRequestTimeout, recordSlowAIRequest } from './_shared/ai_deadline.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -53,6 +54,7 @@ Deno.serve(async (req: Request) => {
       diagnosticTrace,
     } = await req.json()
 
+    if (typeof requestId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId)) diagnosticId = requestId
     if (typeof requestedDiagnosticId === 'string' &&
         /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestedDiagnosticId)) {
       diagnosticId = requestedDiagnosticId
@@ -127,17 +129,13 @@ Deno.serve(async (req: Request) => {
     const shouldRemovePunct = removePunct ?? (includePunct === undefined ? false : !includePunct)
     const shouldIncludeFormalPunct = formalIncludePunct ?? !shouldRemovePunct
     let result: string
+    const aiStartedAt = Date.now()
+    const deadline = new AIRequestDeadline()
     try {
       failureStage = 'ai_provider'
+      result = await deadline.run(async () => {
       if (!formalMode) {
-        const startedAt = Date.now()
-        try {
-          result = await correctSpellingLowCost(source, shouldRemovePunct, includeDialect, diagnosticId)
-          recordSlowRequest(supabase, Date.now() - startedAt, 'ok')
-        } catch (error) {
-          recordSlowRequest(supabase, Date.now() - startedAt, 'error')
-          throw error
-        }
+        return await correctSpellingLowCost(source, shouldRemovePunct, includeDialect, diagnosticId, deadline)
       } else {
         const system = buildSystemPrompt(
           true,
@@ -148,18 +146,27 @@ Deno.serve(async (req: Request) => {
           customPrompt
         )
         const toneResult = normalizedLevel === '커스텀'
-          ? await callLuna(source, system, responseTrace)
-          : await callGemini(source, true, shouldRemovePunct, includeDialect, normalizedLevel, shouldIncludeFormalPunct, customPrompt, responseTrace)
-        result = applyProofingFallbacks(toneResult, source)
+          ? await callLuna(source, system, responseTrace, deadline)
+          : await callGemini(source, true, shouldRemovePunct, includeDialect, normalizedLevel, shouldIncludeFormalPunct, customPrompt, responseTrace, deadline)
+        return applyProofingFallbacks(toneResult, source)
       }
+      })
+      if (credits?.usageTransactionId && wallet) {
+        await completeAIUsage(supabase, wallet.walletId, credits.usageTransactionId)
+      }
+      recordSlowAIRequest(supabase, 'correct', Date.now() - aiStartedAt, 'ok', requestId, diagnosticId)
     } catch (error) {
+      recordSlowAIRequest(supabase, 'correct', Date.now() - aiStartedAt, 'error', requestId, diagnosticId)
       if (credits && !credits.alreadyProcessed) {
         try {
           failureStage = 'credit_refund'
-          if (wallet) await refundAIUsage(supabase, wallet.walletId, requestId)
+          if (wallet && credits.usageTransactionId) {
+            const refund = await refundAIUsage(supabase, wallet.walletId, credits.usageTransactionId)
+            console.log(JSON.stringify({ event: refund.refunded ? 'ai_credit_refunded' : 'ai_credit_refund_skipped_completed', request_id: /^[0-9a-f-]{36}$/i.test(requestId) ? requestId : undefined, diagnostic_id: diagnosticId }))
+          }
         } catch (refundError) {
           causeStage = 'ai_provider'
-          logDiagnostic('error', diagnosticId, failureStage, 'AI_CREDIT_REFUND_FAILED')
+          logDiagnostic('error', diagnosticId, failureStage, 'AI_CREDIT_REFUND_FAILED', undefined, { request_id: /^[0-9a-f-]{36}$/i.test(requestId) ? requestId : undefined })
         }
       }
       throw error
@@ -173,19 +180,20 @@ Deno.serve(async (req: Request) => {
     return new Response(
       JSON.stringify({
         result,
+        request_id: requestId,
         diagnostic_id: diagnosticId,
         ...(credits ? creditSnapshot(credits) : {}),
       }),
       { headers: diagnosticHeaders(diagnosticId) }
     )
   } catch (e) {
-    responseStatus = e instanceof WalletAccessError ? e.status : 500
+    responseStatus = e instanceof WalletAccessError ? e.status : e instanceof AIRequestTimeout ? 504 : 500
     const code = e instanceof WalletAccessError ? 'WALLET_ACCESS_ERROR' : 'AI_REQUEST_FAILED'
     logDiagnostic('error', diagnosticId, failureStage, code, causeStage)
     if (e instanceof WalletAccessError) {
       return diagnosticError(diagnosticId, failureStage, e.status, { error: e.message }, causeStage)
     }
-    return diagnosticError(diagnosticId, failureStage, 500, { error: genericAiErrorMessage }, causeStage)
+    return diagnosticError(diagnosticId, failureStage, responseStatus, { error: genericAiErrorMessage }, causeStage)
   } finally {
     if (responseTrace) {
       console.log('[correct] response_trace', {
@@ -218,23 +226,6 @@ function recordProviderText(trace: ToneResponseTrace | undefined, text: string) 
   if (!trace) return
   trace.provider_utf16_units = text.length
   trace.provider_utf8_bytes = new TextEncoder().encode(text).length
-}
-
-// Spelling requests slower than this are logged for the service monitor's
-// Telegram alert. Best-effort and off the response path: never throws.
-const slowSpellingThresholdMs = 10_000
-
-// deno-lint-ignore no-explicit-any
-function recordSlowRequest(supabase: any, durationMs: number, outcome: 'ok' | 'error') {
-  if (durationMs < slowSpellingThresholdMs) return
-  const task = Promise.resolve(
-    supabase.from('ai_slow_requests').insert({ kind: 'correct', duration_ms: durationMs, outcome }),
-  ).then(({ error }: { error: unknown }) => {
-    if (error) console.warn('[correct] slow request log failed')
-  }).catch(() => console.warn('[correct] slow request log failed'))
-  // deno-lint-ignore no-explicit-any
-  const runtime = (globalThis as any).EdgeRuntime
-  if (runtime?.waitUntil) runtime.waitUntil(task)
 }
 
 function diagnosticHeaders(diagnosticId: string) {
@@ -456,12 +447,13 @@ async function correctSpellingLowCost(
   source: string,
   removePunct: boolean,
   includeDialect: boolean,
-  diagnosticId: string
+  diagnosticId: string,
+  deadline?: AIRequestDeadline
 ): Promise<string> {
   const primaryRaw = await callProofingGemini(
     source,
     buildLowCostProofingPrompt(removePunct, includeDialect),
-    false
+    false, deadline
   )
   let primary = removePunct ? restoreTerminalPunctuation(source, primaryRaw) : primaryRaw
   primary = applyProofingFallbacks(primary, source)
@@ -474,10 +466,11 @@ async function correctSpellingLowCost(
     const fallbackRaw = await callProofingGemini(
       source,
       buildEditFallbackPrompt(includeDialect),
-      true
+      true, deadline
     )
     return applyNarrowProofingRules(applyProofingEditsSafely(fallbackRaw, source))
   } catch (error) {
+    deadline?.check()
     console.error('[correct] edit-list fallback failed', error)
     return source
   }
@@ -590,7 +583,8 @@ function hasSuspiciousDeletion(source: string, result: string): boolean {
 async function callProofingGemini(
   text: string,
   system: string,
-  structuredEdits: boolean
+  structuredEdits: boolean,
+  deadline?: AIRequestDeadline
 ): Promise<string> {
   const apiKey = Deno.env.get('GEMINI_API_KEY')!
   const model = 'gemini-3.1-flash-lite'
@@ -624,14 +618,13 @@ async function callProofingGemini(
         } : {}),
       },
     })
-  const res = await fetchWithTransientRetry(url, apiKey, requestBody)
+  const res = await fetchWithTransientRetry(url, apiKey, requestBody, undefined, deadline)
   const data = await res.json()
   if (!res.ok) throw new Error(data.error?.message ?? '교정 실패')
   const content = data.candidates?.[0]?.content?.parts?.[0]?.text
   if (!content) throw new Error(`빈 응답: ${JSON.stringify(data.candidates?.[0])}`)
   return content.trim()
 }
-
 function applyProofingFallbacks(result: string, source: string): string {
   let output = result
 
@@ -657,7 +650,8 @@ async function callGemini(
   formalLevel: string,
   formalIncludePunct: boolean,
   customPrompt?: string,
-  trace?: ToneResponseTrace
+  trace?: ToneResponseTrace,
+  deadline?: AIRequestDeadline
 ): Promise<string> {
   const system = buildSystemPrompt(
     formalMode,
@@ -704,7 +698,7 @@ async function callGemini(
     })
 
   if (trace) trace.provider_status = 'awaiting_response'
-  const res = await fetchWithTransientRetry(url, apiKey, requestBody, trace)
+  const res = await fetchWithTransientRetry(url, apiKey, requestBody, trace, deadline)
   if (trace) {
     trace.provider_http_status = res.status
     trace.provider_status = res.ok ? 'invalid_response' : 'http_error'
@@ -735,7 +729,7 @@ async function callGemini(
   return content.trim()
 }
 
-async function fetchWithTransientRetry(url: string, apiKey: string, body: string, trace?: ToneResponseTrace): Promise<Response> {
+async function fetchWithTransientRetry(url: string, apiKey: string, body: string, trace?: ToneResponseTrace, deadline?: AIRequestDeadline): Promise<Response> {
   let lastError: unknown
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
@@ -743,7 +737,7 @@ async function fetchWithTransientRetry(url: string, apiKey: string, body: string
         trace.provider_http_status = null
         trace.provider_status = 'awaiting_response'
       }
-      const response = await fetch(url, {
+      const response = await (deadline ? deadline.fetch.bind(deadline) : fetch)(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body,
@@ -756,20 +750,24 @@ async function fetchWithTransientRetry(url: string, apiKey: string, body: string
       await response.body?.cancel()
       lastError = new Error(`AI provider HTTP ${response.status}`)
     } catch (error) {
+      deadline?.check()
       if (trace) trace.provider_status = 'network_error'
       lastError = error
     }
-    if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 250))
+    if (attempt === 0) {
+      if (deadline) await deadline.sleep(250)
+      else await new Promise((resolve) => setTimeout(resolve, 250))
+    }
   }
   throw lastError instanceof Error ? lastError : new Error('AI provider request failed')
 }
 
-async function callLuna(text: string, system: string, trace?: ToneResponseTrace): Promise<string> {
+async function callLuna(text: string, system: string, trace?: ToneResponseTrace, deadline?: AIRequestDeadline): Promise<string> {
   const apiKey = Deno.env.get('OPENAI_API_KEY')
   if (!apiKey) throw new Error('OPENAI_API_KEY is not configured')
 
   if (trace) trace.provider_status = 'awaiting_response'
-  const res = await fetch('https://api.openai.com/v1/responses', {
+  const res = await (deadline ? deadline.fetch.bind(deadline) : fetch)('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -787,6 +785,7 @@ async function callLuna(text: string, system: string, trace?: ToneResponseTrace)
     if (trace) trace.provider_status = 'network_error'
     throw error
   })
+
 
   if (trace) {
     trace.provider_http_status = res.status

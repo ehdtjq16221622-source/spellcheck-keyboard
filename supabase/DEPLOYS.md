@@ -17,3 +17,4 @@
 | 2026-10-24 08:51 | sync_subscription | v31 | d73e3f4 |
 | 2026-10-24 08:52 | sync_subscription_ios | v60 | c73bd6f |
 | 2026-10-24 11:56 | wallet_link_v2 | v63 | b4b22ad |
+| 2026-10-25 12:28 | correct | v175 | d1df0f0 |

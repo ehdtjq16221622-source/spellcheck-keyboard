@@ -1,13 +1,14 @@
 {
   "functions": {
     "correct": {
-      "version": 174,
+      "version": 175,
       "verify_jwt": false,
-      "updated_at": 1792831734202,
+      "updated_at": 1792931273464,
       "files": {
-        "correct/index.ts": "35914830605dc3fc",
+        "correct/index.ts": "841e504a8ba98eb2",
         "correct/proofing_edits.ts": "12deac4c152276fb",
-        "correct/_shared/credits.ts": "efbc3a7f6c9a006c",
+        "correct/_shared/ai_deadline.ts": "b2ff7a21aa0ceae0",
+        "correct/_shared/credits.ts": "66009b6087917a76",
         "correct/_shared/wallet_auth.ts": "8d1219e6fcbafbb7"
       }
     },
@@ -283,5 +284,5 @@
       }
     }
   },
-  "recorded_at": "2026-10-24T11:56:15.518Z"
+  "recorded_at": "2026-10-25T12:28:01.363Z"
 }
