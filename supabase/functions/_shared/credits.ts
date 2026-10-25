@@ -28,6 +28,7 @@ export type DeductedCredits = {
 export type AIUsageResult = CreditSnapshot & {
   accepted: boolean
   alreadyProcessed: boolean
+  usageTransactionId?: string
 }
 
 type CreditRow = {
@@ -129,7 +130,7 @@ export async function consumeAIUsage(
   requestId: string,
   kind: 'correct' | 'formal' | 'translate'
 ): Promise<AIUsageResult> {
-  const { data, error } = await supabase.rpc('consume_ai_credits', {
+  const { data, error } = await supabase.rpc('consume_ai_credit_attempt', {
     p_device_id: deviceId,
     p_request_id: requestId,
     p_kind: kind,
@@ -138,11 +139,15 @@ export async function consumeAIUsage(
 
   const row = Array.isArray(data) ? data[0] : data
   if (!row) throw new Error('Credit usage response was empty.')
+  if (row.accepted === true && typeof row.usage_transaction_id !== 'string') {
+    throw new Error('Credit usage attempt identifier was missing.')
+  }
   const freeCredits = Number(row.free_credits_remaining ?? 0)
   const paidCredits = Number(row.paid_credits_remaining ?? 0)
   return {
     accepted: row.accepted === true,
     alreadyProcessed: row.already_processed === true,
+    usageTransactionId: typeof row.usage_transaction_id === 'string' ? row.usage_transaction_id : undefined,
     freeCredits,
     paidCredits,
     remaining: freeCredits + paidCredits,
@@ -152,23 +157,54 @@ export async function consumeAIUsage(
 export async function refundAIUsage(
   supabase: SupabaseClient,
   deviceId: string,
-  requestId: string
-): Promise<CreditSnapshot> {
-  const { data, error } = await supabase.rpc('refund_ai_credits', {
+  usageTransactionId: string
+): Promise<CreditSnapshot & { refunded: boolean }> {
+  const data = await retryCreditMutation(() => supabase.rpc('refund_ai_credit_attempt', {
     p_device_id: deviceId,
-    p_request_id: requestId,
-  })
-  if (error) throw error
+    p_usage_id: usageTransactionId,
+  }))
 
   const row = Array.isArray(data) ? data[0] : data
-  if (!row) throw new Error('AI credit refund response was empty.')
-  const freeCredits = Number(row.free_credits_remaining ?? 0)
-  const paidCredits = Number(row.paid_credits_remaining ?? 0)
+  if (!row || typeof row !== 'object') throw new Error('AI credit refund response was empty.')
+  const snapshot = row as Record<string, unknown>
+  const freeCredits = Number(snapshot.free_credits_remaining ?? 0)
+  const paidCredits = Number(snapshot.paid_credits_remaining ?? 0)
   return {
     freeCredits,
     paidCredits,
     remaining: freeCredits + paidCredits,
+    refunded: snapshot.refunded === true,
   }
+}
+
+export async function completeAIUsage(
+  supabase: SupabaseClient,
+  deviceId: string,
+  usageTransactionId: string
+): Promise<void> {
+  const completed = await retryCreditMutation(() => supabase.rpc('complete_ai_credit_attempt', {
+    p_device_id: deviceId,
+    p_usage_id: usageTransactionId,
+  }))
+  if (completed !== true) throw new Error('AI usage attempt was already refunded.')
+}
+
+async function retryCreditMutation(
+  operation: () => PromiseLike<{ data: unknown; error: unknown }>
+): Promise<unknown> {
+  let lastError: unknown
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const { data, error } = await operation()
+      if (!error && data !== null) return data
+      lastError = error ?? new Error('Credit mutation response was empty.')
+    } catch (error) {
+      lastError = error
+    }
+    if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 100 * (attempt + 1)))
+  }
+  // The debit's recovery row survives even when all three attempts fail.
+  throw lastError
 }
 
 export async function checkAndDeduct(

@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { consumeAIUsage, refundAIUsage } from './_shared/credits.ts'
+import { consumeAIUsage, refundAIUsage, completeAIUsage } from './_shared/credits.ts'
 import { resolveCreditWallet, WalletAccessError } from './_shared/wallet_auth.ts'
 import { AIRequestDeadline, AIRequestTimeout, recordSlowAIRequest } from './_shared/ai_deadline.ts'
 type TranslationModelResult = {
@@ -56,13 +56,18 @@ Deno.serve(async (req: Request) => {
     const deadline = new AIRequestDeadline()
     try {
       result = await deadline.run(() => callLunaTranslation(text, targetLang, deadline))
+      if (credits?.usageTransactionId) {
+        await completeAIUsage(supabase, wallet.walletId, credits.usageTransactionId)
+      }
       recordSlowAIRequest(supabase, 'translate', Date.now() - aiStartedAt, 'ok', requestId, diagnosticId)
     } catch (error) {
       recordSlowAIRequest(supabase, 'translate', Date.now() - aiStartedAt, 'error', requestId, diagnosticId)
       if (credits && !credits.alreadyProcessed) {
         try {
-          await refundAIUsage(supabase, wallet.walletId, requestId)
-          console.log(JSON.stringify({ event: 'ai_credit_refunded', request_id: /^[0-9a-f-]{36}$/i.test(requestId) ? requestId : undefined, diagnostic_id: diagnosticId }))
+          if (credits.usageTransactionId) {
+            const refund = await refundAIUsage(supabase, wallet.walletId, credits.usageTransactionId)
+            console.log(JSON.stringify({ event: refund.refunded ? 'ai_credit_refunded' : 'ai_credit_refund_skipped_completed', request_id: /^[0-9a-f-]{36}$/i.test(requestId) ? requestId : undefined, diagnostic_id: diagnosticId }))
+          }
         } catch (refundError) {
           console.error(JSON.stringify({ event: 'ai_credit_refund_failed', request_id: /^[0-9a-f-]{36}$/i.test(requestId) ? requestId : undefined, diagnostic_id: diagnosticId }))
         }

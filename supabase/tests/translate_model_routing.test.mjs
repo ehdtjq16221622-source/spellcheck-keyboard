@@ -8,8 +8,8 @@ const deadlineSource = readFileSync(new URL('../functions/translate/_shared/ai_d
 const runnable = stripTypeScriptTypes(deadlineSource + '\n' + source
   .replace(/^import \{ AIRequestDeadline.*$/m,'')
   .replace(/^import \{ createClient \} from .*;?$/m, 'const createClient = globalThis.__createClient;')
-  .replace(/^import \{ consumeAIUsage, refundAIUsage \} from .*;?$/m,
-    'const consumeAIUsage = globalThis.__consumeAIUsage; const refundAIUsage = globalThis.__refundAIUsage;')
+  .replace(/^import \{ consumeAIUsage, refundAIUsage, completeAIUsage \} from .*;?$/m,
+    'const consumeAIUsage = globalThis.__consumeAIUsage; const refundAIUsage = globalThis.__refundAIUsage; const completeAIUsage = async () => {};')
   .replace(/^import \{ resolveCreditWallet, WalletAccessError \} from .*;?$/m,
     'const resolveCreditWallet = globalThis.__resolveCreditWallet; class WalletAccessError extends Error {}')
   .replace(/^import \{ parseTranslationModelResult, type TranslationModelResult \} from .*;?$/m,

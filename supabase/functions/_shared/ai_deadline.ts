@@ -5,7 +5,7 @@ export class AIRequestTimeout extends Error {
 export class AIRequestDeadline {
   readonly controller = new AbortController()
   readonly timeoutMs: number
-  constructor(timeoutMs = 25_000) { this.timeoutMs = timeoutMs }
+  constructor(timeoutMs = 10_000) { this.timeoutMs = timeoutMs }
   get signal(): AbortSignal { return this.controller.signal }
   check() { if (this.signal.aborted) throw new AIRequestTimeout() }
 
