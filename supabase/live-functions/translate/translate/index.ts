@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { consumeAIUsage, refundAIUsage } from './_shared/credits.ts'
+import { consumeAIUsage, refundAIUsage, completeAIUsage } from './_shared/credits.ts'
 import { resolveCreditWallet, WalletAccessError } from './_shared/wallet_auth.ts'
+import { AIRequestDeadline, AIRequestTimeout, recordSlowAIRequest } from './_shared/ai_deadline.ts'
 type TranslationModelResult = {
   translation: string
   pronunciationKo: string | null
@@ -16,8 +17,10 @@ const genericAiErrorMessage = 'AI 응답이 잠시 지연되고 있어요. 조�
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
 
+  let diagnosticId: string = crypto.randomUUID()
   try {
     const { text, targetLang, deviceId, requestId } = await req.json()
+    if (typeof requestId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId)) diagnosticId = requestId
     const serverManagedCredit = typeof deviceId === 'string' && deviceId.length > 0 &&
       typeof requestId === 'string' && requestId.length > 0
     if (!serverManagedCredit) {
@@ -49,14 +52,24 @@ Deno.serve(async (req: Request) => {
     if (credits && !credits.accepted) return noCredits(credits)
 
     let result: TranslationModelResult
+    const aiStartedAt = Date.now()
+    const deadline = new AIRequestDeadline()
     try {
-      result = await callLunaTranslation(text, targetLang)
+      result = await deadline.run(() => callLunaTranslation(text, targetLang, deadline))
+      if (credits?.usageTransactionId) {
+        await completeAIUsage(supabase, wallet.walletId, credits.usageTransactionId)
+      }
+      recordSlowAIRequest(supabase, 'translate', Date.now() - aiStartedAt, 'ok', requestId, diagnosticId)
     } catch (error) {
+      recordSlowAIRequest(supabase, 'translate', Date.now() - aiStartedAt, 'error', requestId, diagnosticId)
       if (credits && !credits.alreadyProcessed) {
         try {
-          await refundAIUsage(supabase, wallet.walletId, requestId)
+          if (credits.usageTransactionId) {
+            const refund = await refundAIUsage(supabase, wallet.walletId, credits.usageTransactionId)
+            console.log(JSON.stringify({ event: refund.refunded ? 'ai_credit_refunded' : 'ai_credit_refund_skipped_completed', request_id: /^[0-9a-f-]{36}$/i.test(requestId) ? requestId : undefined, diagnostic_id: diagnosticId }))
+          }
         } catch (refundError) {
-          console.error('[translate] AI credit refund failed', refundError)
+          console.error(JSON.stringify({ event: 'ai_credit_refund_failed', request_id: /^[0-9a-f-]{36}$/i.test(requestId) ? requestId : undefined, diagnostic_id: diagnosticId }))
         }
       }
       throw error
@@ -65,10 +78,12 @@ Deno.serve(async (req: Request) => {
     return new Response(
       JSON.stringify({
         result: result.translation,
+        request_id: requestId,
+        diagnostic_id: diagnosticId,
         ...(result.pronunciationKo ? { pronunciation_ko: result.pronunciationKo } : {}),
         ...(credits ? creditSnapshot(credits) : {}),
       }),
-      { headers: { ...cors, 'Content-Type': 'application/json' } }
+      { headers: { ...cors, 'Content-Type': 'application/json', 'X-Kingboard-Diagnostic-ID': diagnosticId } }
     )
   } catch (e) {
     console.error('[translate]', e)
@@ -78,8 +93,8 @@ Deno.serve(async (req: Request) => {
       })
     }
     return new Response(
-      JSON.stringify({ error: genericAiErrorMessage }),
-      { status: 500, headers: { ...cors, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: genericAiErrorMessage, diagnostic_id: diagnosticId }),
+      { status: e instanceof AIRequestTimeout ? 504 : 500, headers: { ...cors, 'Content-Type': 'application/json', 'X-Kingboard-Diagnostic-ID': diagnosticId } }
     )
   }
 })
@@ -99,7 +114,7 @@ function noCredits(credits: { freeCredits: number; paidCredits: number; remainin
   )
 }
 
-async function callLunaTranslation(text: string, targetLang: string): Promise<TranslationModelResult> {
+async function callLunaTranslation(text: string, targetLang: string, deadline?: AIRequestDeadline): Promise<TranslationModelResult> {
   const langNames: Record<string, string> = {
     ko: '한국어', en: '영어', ja: '일본어', zh: '중국어(간체)', 'zh-Hant': '중국어(번체)',
     es: '스페인어', fr: '프랑스어', de: '독일어', it: '이탈리아어', pt: '포르투갈어',
@@ -111,7 +126,7 @@ async function callLunaTranslation(text: string, targetLang: string): Promise<Tr
   const lang = langNames[targetLang] ?? targetLang
   const instructions = `다음 텍스트를 ${lang}로 자연스럽게 번역하세요. translation에는 번역문만 적으세요. pronunciation_ko에는 번역문을 한국어 사용자가 소리 내어 읽는 그대로 한글로 적으세요(예: こんにちは → 곤니치와, Hello → 헬로). 대상 언어가 한국어일 때만 빈 문자열로 두고, 그 외 언어에서는 pronunciation_ko를 절대 비우지 마세요. 설명은 붙이지 마세요.`
 
-  const res = await fetch('https://api.openai.com/v1/responses', {
+  const res = await (deadline ? deadline.fetch.bind(deadline) : fetch)('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
