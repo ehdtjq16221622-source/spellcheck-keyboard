@@ -124,11 +124,11 @@
       }
     },
     "get_active_notice": {
-      "version": 17,
+      "version": 26,
       "verify_jwt": false,
-      "updated_at": 1791099022105,
+      "updated_at": 1792931513343,
       "files": {
-        "get_active_notice/index.ts": "808edf3ea87ccab2"
+        "get_active_notice/index.ts": "5fbbf2ddb0123862"
       }
     },
     "daily_digest": {
@@ -285,5 +285,5 @@
       }
     }
   },
-  "recorded_at": "2026-10-25T12:30:21.306Z"
+  "recorded_at": "2026-10-25T12:32:02.443Z"
 }
