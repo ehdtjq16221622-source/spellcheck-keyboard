@@ -20,3 +20,20 @@
 | 2026-10-25 12:28 | correct | v175 | d1df0f0 |
 | 2026-10-25 12:30 | translate | v60 | 7caf943 |
 | 2026-10-25 12:32 | get_active_notice | v26 | 5373675 |
+
+## 2026-10-25 AI recovery and optional benefit database rollout
+
+| committed migration | production migration version |
+|---|---|
+| 20261024080206_ai_request_deadline_correlation.sql | 20261025122620 |
+| 20261025091650_ai_refund_retry_ledger.sql | 20261025122621 |
+| 20261025093344_subscriber_benefit_campaigns.sql | 20261025122623 |
+
+Verified at 2026-10-25 12:35 UTC: 98 completed AI attempts, zero overdue recovery rows,
+zero negative wallets, nine successful recovery scheduler runs, zero active benefit campaigns.
+The production rollback-only debit/refund probe passed and left zero probe wallets.
+Correct/translate/notice live source matches the recorded commits. AI provider work is
+limited to 10 seconds; wallet lookup, ledger calls, and client delivery are outside that budget.
+Server tests: 230 passed. Isolated database tests: 44 passed. iOS source/Swift logic tests:
+494 passed, zero failed, one UIKit/ImageIO simulator test skipped. No new iOS archive or
+physical-device ad callback/benefit popup verification was performed in this rollout.

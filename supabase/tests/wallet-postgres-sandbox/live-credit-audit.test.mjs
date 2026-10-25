@@ -22,6 +22,10 @@ test('production credit definitions in an isolated database',async t=>{
     await db.exec(`create role anon; create role authenticated; create role service_role;
       create schema cron;
       create function cron.schedule(text,text,text) returns bigint language sql as 'select 1::bigint';`)
+    await db.exec(`revoke all on function public.consume_ai_credits(text,text,text) from public;
+      revoke all on function public.refund_ai_credits(text,text) from public;
+      grant execute on function public.consume_ai_credits(text,text,text) to service_role;
+      grant execute on function public.refund_ai_credits(text,text) to service_role;`)
     await db.exec(migration)
     const balance=async()=> (await db.query("select free_credits,subscription_credits,paid_credits from device_credits where device_id='wallet'")).rows[0]
     const consume=(kind='correct',id='request',wallet='wallet')=>db.query('select * from consume_ai_credits($1,$2,$3)',[wallet,id,kind])
@@ -178,7 +182,7 @@ test('production credit definitions in an isolated database',async t=>{
       assert.equal(r.relrowsecurity,true)
       for(const role of ['anon','authenticated']) {
         assert.equal((await db.query("select has_table_privilege($1,'ai_credit_recovery','SELECT') as allowed",[role])).rows[0].allowed,false)
-        for(const fn of ['consume_ai_credit_attempt(text,text,text)','complete_ai_credit_attempt(text,uuid)','refund_ai_credit_attempt(text,uuid)','recover_pending_ai_credits()']) {
+        for(const fn of ['consume_ai_credits(text,text,text)','refund_ai_credits(text,text)','consume_ai_credit_attempt(text,text,text)','complete_ai_credit_attempt(text,uuid)','refund_ai_credit_attempt(text,uuid)','recover_pending_ai_credits()']) {
           assert.equal((await db.query('select has_function_privilege($1,$2,\'EXECUTE\') as allowed',[role,fn])).rows[0].allowed,false)
         }
       }
