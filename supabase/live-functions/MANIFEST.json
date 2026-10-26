@@ -150,15 +150,16 @@
       }
     },
     "apple_notifications": {
-      "version": 30,
+      "version": 39,
       "verify_jwt": false,
-      "updated_at": 1792169706311,
+      "updated_at": 1793030156703,
       "files": {
-        "apple_notifications/index.ts": "468d91cab313797c",
-        "_shared/apple_notification_verifier.ts": "5ebdb79d78031d55",
-        "_shared/apple_subscription_portable.ts": "7287457ae7d47218",
-        "_shared/credits.ts": "efbc3a7f6c9a006c",
-        "_shared/telegram.ts": "932ca4944375a8bf"
+        "apple_notifications/index.ts": "2819a20ff0b1f9ce",
+        "apple_notifications/_shared/apple_notification_verifier.ts": "5ebdb79d78031d55",
+        "apple_notifications/_shared/apple_subscription_portable.ts": "7287457ae7d47218",
+        "apple_notifications/_shared/credits.ts": "efbc3a7f6c9a006c",
+        "apple_notifications/_shared/telegram.ts": "932ca4944375a8bf",
+        "_shared/subscription_reporting.ts": "d144a9abc13eee10"
       }
     },
     "trigger_test_notification": {
@@ -286,5 +287,5 @@
       }
     }
   },
-  "recorded_at": "2026-10-26T15:55:09.725Z"
+  "recorded_at": "2026-10-26T15:56:08.465Z"
 }

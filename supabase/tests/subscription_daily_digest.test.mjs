@@ -14,7 +14,7 @@ const runnable = stripTypeScriptTypes(source
   .replace("'../_shared/subscription_audit.ts'", JSON.stringify(auditUrl))
   .replace("'../_shared/subscription_reporting.ts'", JSON.stringify(reportingUrl)));
 
-async function run({ countError = false, range = '' } = {}) {
+async function run({ countError = false, range = '', subscriberError = false, deliveryKey } = {}) {
   const queries = [];
   const messages = [];
   const previousFetch = globalThis.fetch;
@@ -43,12 +43,14 @@ async function run({ countError = false, range = '' } = {}) {
   } });
   globalThis.fetch = async url => {
     assert.equal(url, 'https://example.invalid/functions/v1/subscriber_status?include_history=1');
+    if (subscriberError) return Response.json({ error: 'unavailable' }, { status: 503 });
     return Response.json({ active_subscribers_now: 2 });
   };
   try {
     await import(`data:text/javascript,${encodeURIComponent(runnable)}#${crypto.randomUUID()}`);
     const response = await handler(new Request(`https://example.invalid/digest${range}`, {
-      method: 'POST', headers: { 'x-cron-secret': 'fixture-cron' },
+      method: 'POST', headers: { 'x-cron-secret': 'fixture-cron',
+        ...(deliveryKey ? { 'x-report-idempotency-key': deliveryKey } : {}) },
     }));
     return { status: response.status, body: await response.json(), queries, messages };
   } finally { globalThis.fetch = previousFetch; }
@@ -80,4 +82,11 @@ test('today digest preserves the same time window and exposes unknown failure co
   const grants = result.queries.find(q => q.columns === 'id,metadata');
   assert.equal(failures.start, grants.start);
   assert.equal(failures.end, grants.end);
+});
+
+test('one-time current report is not sent when the internal subscriber lookup fails', async () => {
+  const result = await run({ range: '?view=subscriptions', deliveryKey: 'one-time-test', subscriberError: true });
+  assert.equal(result.status, 503);
+  assert.equal(result.body.sent, false);
+  assert.equal(result.messages.length, 0);
 });

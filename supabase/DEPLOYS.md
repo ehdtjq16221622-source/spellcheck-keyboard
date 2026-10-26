@@ -20,3 +20,4 @@
 | 2026-10-26 15:47 | subscriber_status | v29 | b3e5402 |
 | 2026-10-26 15:50 | subscriber_status | v30 | d52ebd5 |
 | 2026-10-26 15:55 | daily_digest | v38 | edd24f8 |
+| 2026-10-26 15:56 | apple_notifications | v39 | dde3f47 |

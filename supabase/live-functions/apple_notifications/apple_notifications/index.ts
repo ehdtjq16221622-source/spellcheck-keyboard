@@ -1,7 +1,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { verifyAppleNotificationJws, verifyAppleRenewalInfoJws, verifyAppleTransactionJws } from '../_shared/apple_notification_verifier.ts'
-import { sendTelegram } from '../_shared/telegram.ts'
-import { subscriptionCreditsForProduct } from '../_shared/credits.ts'
+import { verifyAppleNotificationJws, verifyAppleRenewalInfoJws, verifyAppleTransactionJws } from './_shared/apple_notification_verifier.ts'
+import { sendTelegram } from './_shared/telegram.ts'
+import { subscriptionCreditsForProduct } from './_shared/credits.ts'
+import { subscriptionStatusText } from '../_shared/subscription_reporting.ts'
 
 // App Store Server Notifications V2 receiver.
 // Apple POSTs { signedPayload: <JWS> } on subscription lifecycle events. We
@@ -206,7 +207,9 @@ Deno.serve(async (req: Request) => {
       REFUND: '💸 환불',
       DID_FAIL_TO_RENEW: '⚠️ 결제 실패',
       DID_CHANGE_RENEWAL_STATUS:
-        subtype === 'AUTO_RENEW_DISABLED' ? '🔕 자동갱신 해지' : '🔔 자동갱신 켬',
+        subtype === 'AUTO_RENEW_DISABLED' ? '자동갱신 중단 예정 (아직 만료 아님)' : '자동갱신 다시 켬',
+      DID_CHANGE_RENEWAL_PREF: subtype === 'UPGRADE' ? '상위 플랜으로 변경' :
+        subtype === 'DOWNGRADE' ? '다음 갱신 때 하위 플랜으로 변경 예정' : '예약된 플랜 변경 취소',
     }
     const label = labels[notificationType]
     if (label) {
@@ -233,6 +236,8 @@ Deno.serve(async (req: Request) => {
       const delivered = await sendTelegram(
         `${label}${subtype ? ` (${subtype})` : ''}${isDelayed ? '  🔁 지연 도착' : ''}\n` +
           `상품: ${productId ?? '-'}\n` +
+          (notificationType === 'DID_CHANGE_RENEWAL_PREF'
+            ? `변경 상품: ${renewal.autoRenewProductId ?? '-'}\n※ 플랜 변경은 실제 해지와 별도로 집계합니다.\n` : '') +
           `환경: ${environment || '-'}\n` +
           `연결 계정: ${deviceId ? '확인됨' : '미확인'}${whenLine}${cancellationNote}${delayedNote}`,
         {
@@ -246,6 +251,14 @@ Deno.serve(async (req: Request) => {
             environment,
             deviceLinked: Boolean(deviceId),
             delayedMinutes,
+            subscriptionFingerprint: originalTransactionId
+              ? Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(originalTransactionId))),
+                byte => byte.toString(16).padStart(2, '0')).join('') : null,
+            currentProductId: tx.productId ?? null,
+            renewalProductId: renewal.autoRenewProductId ?? null,
+            autoRenewStatus: renewal.autoRenewStatus === 0 || renewal.autoRenewStatus === 1 ? renewal.autoRenewStatus : null,
+            eventTimeMs: eventMs,
+            expiresTimeMs: expiresMs,
           },
         },
       )
@@ -304,15 +317,9 @@ async function sendSubscriptionStatus(supabase: any, idempotencyKey: string): Pr
     const j = await r.json()
     const active = j.active_subscribers_now
     if (typeof active !== 'number') throw new Error('subscriber_status_bad_response')
-    const off = typeof j.auto_renew_off_now === 'number' ? j.auto_renew_off_now : 0
-    const on = typeof j.auto_renew_on_now === 'number' ? j.auto_renew_on_now : active - off
-    const rate = active > 0 ? Math.round((off / active) * 100) : 0
     text =
       `👥 현재 구독자 <b>${active}</b>명\n` +
-      `　✅ 자동갱신 유지 <b>${on}</b>명 · 🔕 해지 <b>${off}</b>명 <i>(해지율 ${rate}%)</i>`
-    if (typeof j.failed_lookups === 'number' && j.failed_lookups > 0) {
-      text += `\n<i>⚠️ 애플 조회 ${j.failed_lookups}건 실패 — 실제보다 적게 집계됐을 수 있어요</i>`
-    }
+      subscriptionStatusText(j)
   } catch (e) {
     console.error('[apple_notifications] subscriber status lookup failed', {
       errorCode: safeErrorCode(e),
