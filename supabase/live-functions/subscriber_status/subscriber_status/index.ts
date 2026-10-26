@@ -1,211 +1,166 @@
 import { importPKCS8, SignJWT } from 'https://esm.sh/jose@5.6.3'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { buildRenewalOutcomes, decodeApplePayload, groupSubscriptionPeople, latestPersonSubscription,
+  renewalState, selectAppleSubscription, subscriptionTier, type SubscriptionObservation } from '../_shared/subscription_reporting.ts'
 
-// Real-time subscriber count: for every subscription we know about
-// (device_subscriptions.purchase_token = originalTransactionId), ask Apple's
-// App Store Server API for the CURRENT status. This reflects renewals/cancels
-// even if the user never reopened the app — the accurate live number.
-//
-// Apple status codes: 1=Active, 2=Expired, 3=Billing Retry, 4=Grace, 5=Revoked.
-
-const API = 'https://api.storekit.itunes.apple.com/inApps/v1/subscriptions'
+const API = 'https://api.storekit.apple.com/inApps'
+const PRICES: Record<string, number> = { monthly_basic: 1100, monthly_premium: 2200, monthly_pro: 6600 }
 
 async function makeJwt(): Promise<string> {
-  const pem = atob(Deno.env.get('APPLE_IAP_KEY_B64')!)
-  const key = await importPKCS8(pem, 'ES256')
+  const key = await importPKCS8(atob(Deno.env.get('APPLE_IAP_KEY_B64')!), 'ES256')
   const now = Math.floor(Date.now() / 1000)
-  return await new SignJWT({ bid: Deno.env.get('APPLE_APP_BUNDLE_ID') ?? 'com.kingboard.app' })
+  return new SignJWT({ bid: Deno.env.get('APPLE_APP_BUNDLE_ID') ?? 'com.kingboard.app' })
     .setProtectedHeader({ alg: 'ES256', kid: Deno.env.get('APPLE_IAP_KEY_ID')!, typ: 'JWT' })
-    .setIssuer(Deno.env.get('APPLE_IAP_ISSUER_ID')!)
-    .setIssuedAt(now)
-    .setExpirationTime(now + 600)
-    .setAudience('appstoreconnect-v1')
-    .sign(key)
+    .setIssuer(Deno.env.get('APPLE_IAP_ISSUER_ID')!).setIssuedAt(now).setExpirationTime(now + 600)
+    .setAudience('appstoreconnect-v1').sign(key)
 }
 
-const STATUS_LABEL: Record<number, string> = {
-  1: 'active', 2: 'expired', 3: 'billing_retry', 4: 'grace', 5: 'revoked',
-}
-
-// Monthly list price (KRW) per tier. Matched by product_id suffix so it works
-// whatever bundle prefix Apple sends. These are the current App Store prices;
-// the real charged amount + Apple's commission live in App Store Connect, so
-// the revenue figures here are gross estimates only.
-const TIER_PRICE_KRW: Record<string, number> = {
-  monthly_basic: 1100,
-  monthly_premium: 2200,
-  monthly_pro: 6600,
-}
-const TIER_LABEL: Record<string, string> = {
-  monthly_basic: '베이직',
-  monthly_premium: '프리미엄',
-  monthly_pro: '프로',
-}
-
-function tierKey(productId: string | null | undefined): string | null {
-  if (!productId) return null
-  for (const key of Object.keys(TIER_PRICE_KRW)) {
-    if (productId.endsWith(key)) return key
-  }
-  return null
-}
-
-// Decode a JWS payload (middle segment) without verifying the signature. Safe
-// for read-only telemetry: the JWS comes from Apple over an authenticated TLS
-// call, and we only read autoRenewStatus. Not used for security decisions.
-function decodeJwsPayload(jws: unknown): Record<string, unknown> | null {
-  if (typeof jws !== 'string') return null
-  const part = jws.split('.')[1]
-  if (!part) return null
-  try {
-    const b64 = part.replace(/-/g, '+').replace(/_/g, '/')
-    const pad = b64.length % 4 ? '='.repeat(4 - (b64.length % 4)) : ''
-    return JSON.parse(atob(b64 + pad)) as Record<string, unknown>
-  } catch {
-    return null
+async function readAll(db: any, table: string, columns: string, transactionType?: string) {
+  const rows: any[] = []
+  for (let from = 0; ; from += 1000) {
+    let query = db.from(table).select(columns)
+    if (transactionType) query = query.eq('transaction_type', transactionType)
+    const { data, error } = await query.order(columns.split(',')[0]).range(from, from + 999)
+    if (error || !Array.isArray(data)) throw new Error('reporting_database_read_failed')
+    rows.push(...data)
+    if (data.length < 1000) return rows
   }
 }
 
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
   const adminToken = Deno.env.get('SUBSCRIBER_STATUS_ADMIN_TOKEN')
-  const authorization = req.headers.get('Authorization')
-  const authorized = (serviceKey && authorization === `Bearer ${serviceKey}`) ||
-    (adminToken && authorization === `Bearer ${adminToken}`)
-  if (!authorized) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    })
+  const auth = req.headers.get('Authorization')
+  if (!(serviceKey && auth === `Bearer ${serviceKey}`) && !(adminToken && auth === `Bearer ${adminToken}`)) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    )
-    const { data: subs, error } = await supabase
-      .from('device_subscriptions')
-      .select('device_id, purchase_token, product_id')
-    if (error) throw error
-
-    // Unique originalTransactionIds (skip synthetic non-Apple tokens).
-    const seen = new Set<string>()
-    const ids: { otid: string; device_id: string; product_id: string | null }[] = []
-    for (const s of subs ?? []) {
-      const t = s.purchase_token as string | null
-      if (!t || t.startsWith('ios:') || seen.has(t)) continue
-      seen.add(t)
-      ids.push({ otid: t, device_id: s.device_id, product_id: (s.product_id as string | null) ?? null })
+    const includeHistory = new URL(req.url).searchParams.get('include_history') === '1'
+    const now = Date.now(), deadline = now + 75_000
+    const db = createClient(Deno.env.get('SUPABASE_URL')!, serviceKey!)
+    const subs = await readAll(db, 'device_subscriptions', 'device_id,purchase_token,product_id')
+    const grants = await readAll(db, 'credit_transactions', 'id,metadata', 'subscription_monthly_grant')
+    const environments = new Map<string, Set<string>>()
+    for (const grant of grants) {
+      const meta = grant.metadata
+      if (typeof meta?.originalTransactionId !== 'string') continue
+      if (!environments.has(meta.originalTransactionId)) environments.set(meta.originalTransactionId, new Set())
+      environments.get(meta.originalTransactionId)!.add(meta.environment)
     }
-
+    const seen = new Set<string>()
+    const ids = subs.filter(s => s.purchase_token && !s.purchase_token.startsWith('ios:') &&
+      !(environments.get(s.purchase_token)?.has('Sandbox') && !environments.get(s.purchase_token)?.has('Production')) &&
+      !seen.has(s.purchase_token) && seen.add(s.purchase_token))
+    const observations: SubscriptionObservation[] = ids.map(s => ({ chain: s.purchase_token,
+      owner: `wallet:${s.device_id}`, current: null, history: [], historyComplete: false, lookupFailed: false }))
+    let identityComplete = true
+    if (includeHistory) {
+      try {
+        const aliases = await readAll(db, 'credit_wallet_aliases', 'source_wallet_id,canonical_wallet_id')
+        const aliasMap = new Map(aliases.map(a => [a.source_wallet_id, a.canonical_wallet_id]))
+        const wallets = [...new Set([...ids.map(s => s.device_id), ...aliases.map(a => a.canonical_wallet_id)])] as string[]
+        const accounts = new Map<string, string>()
+        for (let from = 0; from < wallets.length; from += 100) {
+          const { data, error } = await db.from('device_credits').select('device_id,apple_user_id')
+            .in('device_id', wallets.slice(from, from + 100))
+          if (error || !Array.isArray(data)) throw new Error('identity_read_failed')
+          for (const row of data) if (row.apple_user_id) accounts.set(row.device_id, row.apple_user_id)
+        }
+        ids.forEach((s, i) => {
+          let wallet = s.device_id
+          const visited = new Set<string>()
+          while (aliasMap.has(wallet) && !visited.has(wallet)) { visited.add(wallet); wallet = aliasMap.get(wallet) as string }
+          observations[i].owner = accounts.has(wallet) ? `account:${accounts.get(wallet)}` : `wallet:${wallet}`
+        })
+      } catch { identityComplete = false }
+    }
     const jwt = await makeJwt()
     const counts: Record<string, number> = {}
-    let activeNow = 0
-    let autoRenewOffNow = 0 // active now but auto-renew turned off = will churn at expiry
-    let autoRenewOnNow = 0 // active now and auto-renew on = expected to renew
-    let failedLookups = 0 // Apple lookups that errored or timed out (counts may be low)
-    // Active subscribers grouped by tier (only status 1/4 counted).
-    const activeByTier: Record<string, number> = {}
-    // Subset that will actually renew (auto-renew ON) = next month's recurring base.
-    const renewingByTier: Record<string, number> = {}
-
-    // Look up subscriptions in small parallel batches with a per-call timeout so
-    // the digest and alert callers get an answer quickly even as the list grows.
-    const LOOKUP_CONCURRENCY = 8
-    const LOOKUP_TIMEOUT_MS = 10_000
-    const lookup = async ({ otid, product_id }: { otid: string; product_id: string | null }) => {
-      let res: Response
+    const apple = async (url: string) => {
+      if (Date.now() >= deadline) throw new Error('report_deadline')
+      return fetch(url, { headers: { Authorization: `Bearer ${jwt}` },
+        signal: AbortSignal.timeout(Math.max(1, Math.min(10_000, deadline - Date.now()))) })
+    }
+    const batch = async (fn: (row: SubscriptionObservation) => Promise<void>) => {
+      for (let i = 0; i < observations.length; i += 8) await Promise.all(observations.slice(i, i + 8).map(fn))
+    }
+    await batch(async row => {
       try {
-        res = await fetch(`${API}/${otid}`, {
-          headers: { Authorization: `Bearer ${jwt}` },
-          signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
-        })
-      } catch {
-        failedLookups++
-        counts.lookup_error = (counts.lookup_error ?? 0) + 1
-        return
-      }
-      if (res.status === 200) {
+        const res = await apple(`${API}/v1/subscriptions/${encodeURIComponent(row.chain)}`)
+        if (!res.ok) { await res.body?.cancel(); throw new Error(`http_${res.status}`) }
         const body = await res.json()
-        const lt = body?.data?.[0]?.lastTransactions?.[0]
-        const status: number | undefined = lt?.status
-        const label = status != null ? (STATUS_LABEL[status] ?? `code_${status}`) : 'unknown'
-        counts[label] = (counts[label] ?? 0) + 1
-        if (status === 1 || status === 4) {
-          activeNow++ // active or grace = has access
-          // Prefer the product_id Apple reports; fall back to our stored one.
-          const apiProduct = lt?.productId as string | undefined
-          const key = tierKey(apiProduct ?? product_id) ?? 'unknown'
-          activeByTier[key] = (activeByTier[key] ?? 0) + 1
-          // autoRenewStatus: 1 = on (will renew), 0 = off (cancelled, ends at expiry).
-          const renewal = decodeJwsPayload(lt?.signedRenewalInfo)
-          const autoOn = renewal?.autoRenewStatus === 1
-          if (autoOn) {
-            autoRenewOnNow++
-            renewingByTier[key] = (renewingByTier[key] ?? 0) + 1
-          } else {
-            autoRenewOffNow++
+        if (body.environment === 'Sandbox') { counts.sandbox = (counts.sandbox ?? 0) + 1; return }
+        row.current = selectAppleSubscription(body, row.chain)
+        if (!row.current || ![1, 2, 3, 4, 5].includes(row.current.status)) throw new Error('unknown_status')
+      } catch { row.lookupFailed = true }
+    })
+    if (includeHistory) await batch(async row => {
+      if (row.lookupFailed || !row.current) return
+      try {
+        const revisions = new Set<string>()
+        let revision: string | null = null
+        for (let page = 0; page < 25; page++) {
+          const url = new URL(`${API}/v2/history/${encodeURIComponent(row.chain)}`)
+          url.searchParams.set('productType', 'AUTO_RENEWABLE')
+          url.searchParams.set('sort', 'ASCENDING')
+          if (revision) url.searchParams.set('revision', revision)
+          const res = await apple(url.href)
+          if (!res.ok) { await res.body?.cancel(); throw new Error('history_http_error') }
+          const body = await res.json()
+          if (body.environment !== 'Production' || !Array.isArray(body.signedTransactions) || typeof body.hasMore !== 'boolean') {
+            throw new Error('history_bad_response')
           }
+          for (const signed of body.signedTransactions) {
+            const tx = decodeApplePayload(signed)
+            if (!tx) throw new Error('history_decode_failed')
+            if (subscriptionTier(tx.productId) && tx.environment === 'Production') {
+              if (typeof tx.transactionId !== 'string' || typeof tx.originalTransactionId !== 'string' ||
+                  typeof tx.purchaseDate !== 'number' || typeof tx.expiresDate !== 'number') throw new Error('history_missing_fields')
+              row.history.push(tx)
+            }
+          }
+          if (!body.hasMore) { row.historyComplete = true; break }
+          if (typeof body.revision !== 'string' || revisions.has(body.revision)) throw new Error('history_bad_revision')
+          const nextRevision: string = body.revision
+          revision = nextRevision; revisions.add(nextRevision)
         }
-      } else {
-        await res.body?.cancel()
-        if (res.status >= 500 || res.status === 429) failedLookups++
-        counts[`http_${res.status}`] = (counts[`http_${res.status}`] ?? 0) + 1
-      }
+      } catch { row.historyComplete = false }
+    })
+    const people = groupSubscriptionPeople(observations)
+    let active = 0, on = 0, off = 0, unknown = 0, pendingChanges = 0
+    const byTier: Record<string, number> = {}, renewing: Record<string, number> = {}
+    for (const person of people) {
+      const current = latestPersonSubscription(person)
+      if (!current) continue
+      const label = ({ 1: 'active', 2: 'expired', 3: 'billing_retry', 4: 'grace', 5: 'revoked' } as Record<number, string>)[current.status]
+      counts[label] = (counts[label] ?? 0) + 1
+      if (current.status !== 1 && current.status !== 4) continue
+      active++
+      const key = subscriptionTier(current.transaction?.productId) ?? 'unknown'
+      byTier[key] = (byTier[key] ?? 0) + 1
+      const state = renewalState(current.renewal)
+      if (state === 'on') {
+        on++
+        const nextKey = subscriptionTier(current.renewal?.autoRenewProductId) ?? 'unknown'
+        renewing[nextKey] = (renewing[nextKey] ?? 0) + 1
+        if (nextKey !== 'unknown' && key !== 'unknown' && nextKey !== key) pendingChanges++
+      } else if (state === 'off') off++
+      else unknown++
     }
-    for (let i = 0; i < ids.length; i += LOOKUP_CONCURRENCY) {
-      await Promise.all(ids.slice(i, i + LOOKUP_CONCURRENCY).map(lookup))
-    }
-
-    // Current gross monthly revenue = Σ (active in tier × list price). Includes
-    // auto-renew-off subscribers because they still have access this period.
-    let monthlyRevenueKrw = 0
-    const revenueByTier: Record<string, number> = {}
-    for (const [key, n] of Object.entries(activeByTier)) {
-      const price = TIER_PRICE_KRW[key] ?? 0
-      const rev = price * n
-      revenueByTier[key] = rev
-      monthlyRevenueKrw += rev
-    }
-    // Next-month projected revenue = only auto-renew-ON subscribers (the ones who
-    // will actually be charged again). Auto-renew-off subs drop out at expiry.
-    let nextMonthRevenueKrw = 0
-    for (const [key, n] of Object.entries(renewingByTier)) {
-      nextMonthRevenueKrw += (TIER_PRICE_KRW[key] ?? 0) * n
-    }
-    // Net after Apple commission: 30% standard, 15% Small Business Program.
-    const netRevenueKrw30 = Math.round(monthlyRevenueKrw * 0.7)
-    const netRevenueKrw15 = Math.round(monthlyRevenueKrw * 0.85)
-    const nextMonthNetKrw30 = Math.round(nextMonthRevenueKrw * 0.7)
-    const nextMonthNetKrw15 = Math.round(nextMonthRevenueKrw * 0.85)
-
-    return new Response(
-      JSON.stringify(
-        {
-          checked: ids.length,
-          active_subscribers_now: activeNow,
-          auto_renew_off_now: autoRenewOffNow,
-          auto_renew_on_now: autoRenewOnNow,
-          failed_lookups: failedLookups,
-          active_by_tier: activeByTier,
-          renewing_by_tier: renewingByTier,
-          revenue_by_tier_krw: revenueByTier,
-          monthly_revenue_krw: monthlyRevenueKrw,
-          net_revenue_krw_30: netRevenueKrw30,
-          net_revenue_krw_15: netRevenueKrw15,
-          next_month_revenue_krw: nextMonthRevenueKrw,
-          next_month_net_krw_30: nextMonthNetKrw30,
-          next_month_net_krw_15: nextMonthNetKrw15,
-          by_status: counts,
-          note: '애플 App Store Server API 실시간 조회 (active = status 1 or grace 4). auto_renew_off_now=현재 활성이나 자동갱신 해지(만료 시 이탈). 다음달 예상=자동갱신 ON만. 매출은 정가×인원 gross 추정, 실결제액·수수료는 ASC가 진실.',
-        },
-        null,
-        2
-      ),
-      { headers: { 'Content-Type': 'application/json' } }
-    )
-  } catch (e) {
-    return new Response(JSON.stringify({ error: String(e) }), { status: 500 })
-  }
+    const failed = observations.filter(row => row.lookupFailed).length
+    const revenue = Object.fromEntries(Object.entries(byTier).map(([k, n]) => [k, (PRICES[k] ?? 0) * n]))
+    const gross = Object.values(revenue).reduce((a, b) => a + b, 0)
+    const nextGross = Object.entries(renewing).reduce((s, [k, n]) => s + (PRICES[k] ?? 0) * n, 0)
+    return Response.json({ checked: ids.length, checked_people: people.length, active_subscribers_now: active,
+      auto_renew_on_now: on, auto_renew_off_now: off, auto_renew_unknown_now: unknown,
+      pending_plan_changes_now: pendingChanges, failed_lookups: failed,
+      active_by_tier: byTier, renewing_by_tier: renewing, revenue_by_tier_krw: revenue,
+      monthly_revenue_krw: gross, net_revenue_krw_30: Math.round(gross * .7), net_revenue_krw_15: Math.round(gross * .85),
+      next_month_revenue_krw: nextGross, next_month_net_krw_30: Math.round(nextGross * .7), next_month_net_krw_15: Math.round(nextGross * .85),
+      revenue_is_partial: Boolean(byTier.unknown || renewing.unknown || unknown || failed),
+      by_status: counts, identity_linking_complete: identityComplete,
+      renewal_outcomes: includeHistory && identityComplete ? buildRenewalOutcomes(people, now) : null,
+      note: '자동갱신 중단 예정과 실제 만료·재구독은 별도 집계합니다. 금액은 정가 추정이며 실제 결제액은 App Store Connect 기준입니다.',
+    })
+  } catch { return Response.json({ error: 'subscriber_status_failed' }, { status: 500 }) }
 })
-
