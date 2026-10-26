@@ -19,3 +19,4 @@
 | 2026-10-24 11:56 | wallet_link_v2 | v63 | b4b22ad |
 | 2026-10-26 15:47 | subscriber_status | v29 | b3e5402 |
 | 2026-10-26 15:50 | subscriber_status | v30 | d52ebd5 |
+| 2026-10-26 15:55 | daily_digest | v38 | edd24f8 |

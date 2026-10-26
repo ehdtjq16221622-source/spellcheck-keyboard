@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { sendTelegram } from './_shared/telegram.ts'
 import { readSubscriptionActivity, subscriptionActivityText } from '../_shared/subscription_audit.ts'
+import { subscriptionStatusText } from '../_shared/subscription_reporting.ts'
 
 // Daily usage digest, sent to Telegram at 12:00 KST for the *previous* full
 // calendar day (Asia/Seoul). Reports only metrics Supabase measures accurately
@@ -42,7 +43,9 @@ Deno.serve(async (req: Request) => {
   // Optional lock: if CRON_SECRET is set, require a matching header so the
   // endpoint can't be triggered by strangers.
   const cronSecret = Deno.env.get('CRON_SECRET')
-  if (cronSecret && req.headers.get('x-cron-secret') !== cronSecret) {
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  const internal = serviceKey && req.headers.get('Authorization') === `Bearer ${serviceKey}`
+  if (cronSecret && req.headers.get('x-cron-secret') !== cronSecret && !internal) {
     return new Response('unauthorized', { status: 401 })
   }
 
@@ -60,6 +63,10 @@ Deno.serve(async (req: Request) => {
     // /구독 (telegram_bot view=subscriptions): subscriber block only, no usage scan.
     if (params.get('view') === 'subscriptions') {
       const sub = await buildSubscriptionBlock(supabase)
+      const deliveryKey = req.headers.get('x-report-idempotency-key')
+      if (deliveryKey && sub.active == null) {
+        return Response.json({ ok: false, sent: false, error: 'subscription_report_unavailable' }, { status: 503 })
+      }
       const kn = new Date(Date.now() + KST_MS)
       const msg =
         `💳 <b>킹보드 구독 현황</b> (${kn.getUTCMonth() + 1}/${kn.getUTCDate()} ${kn.getUTCHours()}:${String(kn.getUTCMinutes()).padStart(2, '0')})\n` +
@@ -67,7 +74,9 @@ Deno.serve(async (req: Request) => {
         sub.text +
         `━━━━━━━━━━━━━━\n` +
         `※ 애플 실시간 조회 기준`
-      const sent = await sendTelegram(msg)
+      const sent = await sendTelegram(msg, deliveryKey ? {
+        supabase, alertType: 'subscription_status_report', idempotencyKey: deliveryKey.slice(0, 128),
+      } : undefined)
       return new Response(
         JSON.stringify({ ok: true, sent, view: 'subscriptions', activeSubs: sub.active, subDelta: sub.delta }),
         { headers: { 'Content-Type': 'application/json' } }
@@ -203,7 +212,7 @@ async function buildSubscriptionBlock(supabase: any): Promise<{
     delta: null,
   })
   try {
-    const r = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/subscriber_status`, {
+    const r = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/subscriber_status?include_history=1`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
       signal: AbortSignal.timeout(90_000),
@@ -242,15 +251,7 @@ async function buildSubscriptionBlock(supabase: any): Promise<{
     if (byTier.unknown) tierParts.push(`기타 ${byTier.unknown}`)
     if (tierParts.length) text += `　┗ ${tierParts.join(' · ')}\n`
 
-    // Auto-renew keep vs cancel, always shown (even when 0).
-    const off = typeof j.auto_renew_off_now === 'number' ? j.auto_renew_off_now : null
-    const on = typeof j.auto_renew_on_now === 'number'
-      ? j.auto_renew_on_now
-      : off != null ? active - off : null
-    if (on != null && off != null) {
-      const rate = active > 0 ? Math.round((off / active) * 100) : 0
-      text += `　✅ 자동갱신 유지 <b>${on}</b>명 · 🔕 해지 <b>${off}</b>명 <i>(해지율 ${rate}%)</i>\n`
-    }
+    text += subscriptionStatusText(j, true)
 
     const gross = j.monthly_revenue_krw
     const net15 = j.net_revenue_krw_15
@@ -264,11 +265,9 @@ async function buildSubscriptionBlock(supabase: any): Promise<{
       const nStr = typeof nextNet15 === 'number' ? ` (실수령 ~₩${nextNet15.toLocaleString('ko-KR')})` : ''
       text += `📉 다음달 예상 매출: <b>₩${nextGross.toLocaleString('ko-KR')}</b>${nStr} <i>(자동갱신 ON만)</i>\n`
     }
-    if (typeof j.failed_lookups === 'number' && j.failed_lookups > 0) {
-      text += `<i>⚠️ 애플 조회 ${j.failed_lookups}건 실패 — 실제보다 적게 집계됐을 수 있어요</i>\n`
-    }
+    if (j.revenue_is_partial) text += '※ 상품·갱신 상태 미확인분이 있어 매출 추정은 일부만 반영됐습니다.\n'
 
-    await supabase
+    if (!j.failed_lookups) await supabase
       .from('admin_daily_snapshot')
       .upsert({ day: todayStr, active_subscribers: active }, { onConflict: 'day' })
 
