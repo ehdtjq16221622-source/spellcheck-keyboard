@@ -168,11 +168,11 @@
       }
     },
     "subscriber_status": {
-      "version": 29,
+      "version": 30,
       "verify_jwt": false,
-      "updated_at": 1793029666775,
+      "updated_at": 1793029837464,
       "files": {
-        "subscriber_status/index.ts": "2d98254591f7e9f3",
+        "subscriber_status/index.ts": "230b85484d868ae6",
         "_shared/subscription_reporting.ts": "d144a9abc13eee10"
       }
     },
@@ -284,5 +284,5 @@
       }
     }
   },
-  "recorded_at": "2026-10-26T15:47:55.629Z"
+  "recorded_at": "2026-10-26T15:50:45.193Z"
 }
