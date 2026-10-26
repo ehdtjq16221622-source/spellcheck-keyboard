@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { sendTelegram } from './_shared/telegram.ts'
+import { sendTelegram } from '../_shared/telegram.ts'
 import { readSubscriptionActivity, subscriptionActivityText } from '../_shared/subscription_audit.ts'
 import { subscriptionStatusText } from '../_shared/subscription_reporting.ts'
 
