@@ -6,10 +6,13 @@ import { test } from 'node:test';
 const auditSource = readFileSync(new URL('../functions/_shared/subscription_audit.ts', import.meta.url), 'utf8');
 const auditUrl = `data:text/javascript,${encodeURIComponent(stripTypeScriptTypes(auditSource))}`;
 const source = readFileSync(new URL('../functions/daily_digest/index.ts', import.meta.url), 'utf8');
+const reporting = readFileSync(new URL('../functions/_shared/subscription_reporting.ts', import.meta.url), 'utf8');
+const reportingUrl = `data:text/javascript,${encodeURIComponent(stripTypeScriptTypes(reporting))}`;
 const runnable = stripTypeScriptTypes(source
   .replace(/^import \{ createClient \} from .*$/m, 'const createClient = globalThis.__digestClient;')
   .replace(/^import \{ sendTelegram \} from .*$/m, 'const sendTelegram = globalThis.__digestSender;')
-  .replace("'../_shared/subscription_audit.ts'", JSON.stringify(auditUrl)));
+  .replace("'../_shared/subscription_audit.ts'", JSON.stringify(auditUrl))
+  .replace("'../_shared/subscription_reporting.ts'", JSON.stringify(reportingUrl)));
 
 async function run({ countError = false, range = '' } = {}) {
   const queries = [];
@@ -39,7 +42,7 @@ async function run({ countError = false, range = '' } = {}) {
     };
   } });
   globalThis.fetch = async url => {
-    assert.equal(url, 'https://example.invalid/functions/v1/subscriber_status');
+    assert.equal(url, 'https://example.invalid/functions/v1/subscriber_status?include_history=1');
     return Response.json({ active_subscribers_now: 2 });
   };
   try {
