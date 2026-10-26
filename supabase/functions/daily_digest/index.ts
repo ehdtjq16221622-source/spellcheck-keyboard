@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { sendTelegram } from '../_shared/telegram.ts'
+import { sendTelegram } from './_shared/telegram.ts'
 import { readSubscriptionActivity, subscriptionActivityText } from '../_shared/subscription_audit.ts'
 import { subscriptionStatusText } from '../_shared/subscription_reporting.ts'
 
@@ -63,6 +63,10 @@ Deno.serve(async (req: Request) => {
     // /구독 (telegram_bot view=subscriptions): subscriber block only, no usage scan.
     if (params.get('view') === 'subscriptions') {
       const sub = await buildSubscriptionBlock(supabase)
+      const deliveryKey = req.headers.get('x-report-idempotency-key')
+      if (deliveryKey && sub.active == null) {
+        return Response.json({ ok: false, sent: false, error: 'subscription_report_unavailable' }, { status: 503 })
+      }
       const kn = new Date(Date.now() + KST_MS)
       const msg =
         `💳 <b>킹보드 구독 현황</b> (${kn.getUTCMonth() + 1}/${kn.getUTCDate()} ${kn.getUTCHours()}:${String(kn.getUTCMinutes()).padStart(2, '0')})\n` +
@@ -70,7 +74,6 @@ Deno.serve(async (req: Request) => {
         sub.text +
         `━━━━━━━━━━━━━━\n` +
         `※ 애플 실시간 조회 기준`
-      const deliveryKey = req.headers.get('x-report-idempotency-key')
       const sent = await sendTelegram(msg, deliveryKey ? {
         supabase, alertType: 'subscription_status_report', idempotencyKey: deliveryKey.slice(0, 128),
       } : undefined)
