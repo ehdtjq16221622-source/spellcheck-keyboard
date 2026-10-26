@@ -30,8 +30,10 @@ async function readAll(db: any, table: string, columns: string, transactionType?
 Deno.serve(async (req: Request) => {
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
   const adminToken = Deno.env.get('SUBSCRIBER_STATUS_ADMIN_TOKEN')
+  const ownerToken = Deno.env.get('ADMIN_API_TOKEN')
   const auth = req.headers.get('Authorization')
-  if (!(serviceKey && auth === `Bearer ${serviceKey}`) && !(adminToken && auth === `Bearer ${adminToken}`)) {
+  const ownerAuthorized = ownerToken && req.headers.get('x-admin-token') === ownerToken
+  if (!(serviceKey && auth === `Bearer ${serviceKey}`) && !(adminToken && auth === `Bearer ${adminToken}`) && !ownerAuthorized) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
   try {

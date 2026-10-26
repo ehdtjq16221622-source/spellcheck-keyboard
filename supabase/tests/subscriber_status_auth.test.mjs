@@ -22,6 +22,7 @@ function setup() {
     env: { get: (key) => ({
       SUPABASE_SERVICE_ROLE_KEY: 'server-only-secret',
       SUBSCRIBER_STATUS_ADMIN_TOKEN: 'admin-only-secret',
+      ADMIN_API_TOKEN: 'owner-only-secret',
       SUPABASE_URL: 'https://example.invalid',
       APPLE_IAP_KEY_B64: btoa('test-key'),
       APPLE_IAP_KEY_ID: 'key',
@@ -93,4 +94,13 @@ test('dedicated admin token is accepted without exposing subscriber data publicl
   assert.equal(response.status, 200);
   assert.equal((await response.json()).active_subscribers_now, 1);
   assert.deepEqual(calls(), { dbCalls: 2, appleCalls: 1 });
+});
+
+test('existing owner admin header can read the report without exposing its secret', async () => {
+  const { handler } = await setup();
+  const response = await handler(new Request('https://example.invalid/subscriber_status', {
+    headers: { 'x-admin-token': 'owner-only-secret' },
+  }));
+  assert.equal(response.status, 200);
+  assert.doesNotMatch(JSON.stringify(await response.json()), /owner-only-secret|private-wallet-id/);
 });
