@@ -1,7 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { sendTelegram } from './_shared/telegram.ts'
-import { readSubscriptionActivity, subscriptionActivityText } from '../_shared/subscription_audit.ts'
-import { subscriptionStatusText } from '../_shared/subscription_reporting.ts'
+import { readSubscriptionActivity } from '../_shared/subscription_audit.ts'
 
 // Daily usage digest, sent to Telegram at 12:00 KST for the *previous* full
 // calendar day (Asia/Seoul). Reports only metrics Supabase measures accurately
@@ -58,7 +57,6 @@ Deno.serve(async (req: Request) => {
     const params = new URL(req.url).searchParams
     const isToday = params.get('range') === 'today'
     const { startUtc, endUtc, yLabel } = isToday ? todayKstRange() : yesterdayKstRange()
-    const title = isToday ? '실시간 요약' : '일일 요약'
 
     // /구독 (telegram_bot view=subscriptions): subscriber block only, no usage scan.
     if (params.get('view') === 'subscriptions') {
@@ -69,11 +67,8 @@ Deno.serve(async (req: Request) => {
       }
       const kn = new Date(Date.now() + KST_MS)
       const msg =
-        `💳 <b>킹보드 구독 현황</b> (${kn.getUTCMonth() + 1}/${kn.getUTCDate()} ${kn.getUTCHours()}:${String(kn.getUTCMinutes()).padStart(2, '0')})\n` +
-        `━━━━━━━━━━━━━━\n` +
-        sub.text +
-        `━━━━━━━━━━━━━━\n` +
-        `※ 애플 실시간 조회 기준`
+        `💳 <b>구독 현황</b> · ${kn.getUTCMonth() + 1}/${kn.getUTCDate()} ${kn.getUTCHours()}:${String(kn.getUTCMinutes()).padStart(2, '0')}\n` +
+        sub.text
       const sent = await sendTelegram(msg, deliveryKey ? {
         supabase, alertType: 'subscription_status_report', idempotencyKey: deliveryKey.slice(0, 128),
       } : undefined)
@@ -144,28 +139,27 @@ Deno.serve(async (req: Request) => {
     const subLine = sub.text
     const activeSubs = sub.active
     const subDelta = sub.delta
+    // Only real (Production) subscription failures are worth a line, and only when there are any.
     let subscriptionActivity = null
-    let subscriptionActivityLine = '구독 처리 집계 실패 · 실패 0건으로 해석하지 마세요.\n'
+    let subscriptionActivityLine = '⚠️ 구독 처리 집계 실패\n'
     try {
       subscriptionActivity = await readSubscriptionActivity(supabase, startIso, endIso)
-      subscriptionActivityLine = subscriptionActivityText(subscriptionActivity)
+      const production = subscriptionActivity.groups.find((g) => g.environment === 'Production')
+      subscriptionActivityLine = production?.failures == null ? '⚠️ 구독 처리 실패 집계 불가\n'
+        : production.failures > 0 ? `⚠️ 구독 처리 실패 ${production.failures}건 (지갑 ${production.wallets ?? '?'}개)\n`
+        : ''
     } catch {
       console.error('[daily_digest] subscription activity counts unavailable')
     }
 
+    const won = (n: number) => `₩${n.toLocaleString('ko-KR')}`
     const msg =
-      `📊 <b>킹보드 ${title}</b> (${yLabel})\n` +
-      `━━━━━━━━━━━━━━\n` +
-      `🆕 신규 설치: <b>${newInstalls}</b>\n` +
-      `🎁 초대 유입: <b>${referralJoins}</b>명\n` +
-      `🤖 AI 사용자: <b>${aiUsers}</b>명\n` +
-      `✍️ AI 호출: <b>${aiCalls}</b>회\n` +
-      `💰 예상 AI 비용: <b>₩${estCostKrw.toLocaleString('ko-KR')}</b> <i>(추정)</i>\n` +
-      `📺 광고 시청: ${ssvCount}회 <i>(서버 기준·참고)</i>\n` +
+      `📊 <b>${isToday ? yLabel : `${yLabel} 요약`}</b>\n` +
+      `설치 ${newInstalls} · 초대 ${referralJoins}\n` +
+      `AI ${aiUsers}명 · ${aiCalls.toLocaleString('ko-KR')}회 · 비용 약 ${won(estCostKrw)}\n` +
+      `광고 ${ssvCount}회\n` +
       subLine +
-      subscriptionActivityLine +
-      `━━━━━━━━━━━━━━\n` +
-      `※ 구독자는 애플 실시간 조회 · 광고 수익은 AdMob 확인`
+      subscriptionActivityLine
 
     const sent = await sendTelegram(msg)
 
@@ -207,7 +201,7 @@ async function buildSubscriptionBlock(supabase: any): Promise<{
   delta: number | null
 }> {
   const failed = (reason: string) => ({
-    text: `💳 구독자 조회 실패 <i>(${reason}) · /구독 으로 재시도</i>\n`,
+    text: `💳 구독자 조회 실패 (${reason}) · /구독 으로 다시 확인\n`,
     active: null,
     delta: null,
   })
@@ -235,9 +229,7 @@ async function buildSubscriptionBlock(supabase: any): Promise<{
       .limit(1)
       .maybeSingle()
     const delta = prev ? active - (prev.active_subscribers ?? 0) : null
-    const dStr =
-      delta == null ? '' : delta > 0 ? ` (🔺+${delta})` : delta < 0 ? ` (🔻${delta})` : ' (±0)'
-    let text = `💳 현재 구독자: <b>${active}</b>명${dStr}\n`
+    const dStr = delta == null || delta === 0 ? '' : delta > 0 ? ` (▲${delta})` : ` (▼${-delta})`
 
     // Tier breakdown (from Apple-live active count).
     const TIER_ORDER = ['monthly_pro', 'monthly_premium', 'monthly_basic']
@@ -249,23 +241,31 @@ async function buildSubscriptionBlock(supabase: any): Promise<{
       .filter((k) => (byTier[k] ?? 0) > 0)
       .map((k) => `${TIER_NAME[k]} ${byTier[k]}`)
     if (byTier.unknown) tierParts.push(`기타 ${byTier.unknown}`)
-    if (tierParts.length) text += `　┗ ${tierParts.join(' · ')}\n`
+    let text = `💳 구독자 <b>${active}</b>명${dStr}${tierParts.length ? ` · ${tierParts.join(' / ')}` : ''}\n`
 
-    text += subscriptionStatusText(j, true)
+    const on = j.auto_renew_on_now, off = j.auto_renew_off_now
+    if (typeof on === 'number' && typeof off === 'number' && off > 0) {
+      text += `해지 예약 ${off}명 (${(off / Math.max(1, on + off) * 100).toFixed(0)}%)` +
+        (j.auto_renew_unknown_now > 0 ? ` · 확인 불가 ${j.auto_renew_unknown_now}명` : '') + '\n'
+    }
+    if (j.pending_plan_changes_now > 0) text += `플랜 변경 예약 ${j.pending_plan_changes_now}명\n`
 
+    const won = (n: number) => `₩${n.toLocaleString('ko-KR')}`
     const gross = j.monthly_revenue_krw
     const net15 = j.net_revenue_krw_15
-    if (typeof gross === 'number' && gross > 0) {
-      const netStr = typeof net15 === 'number' ? ` (실수령 ~₩${net15.toLocaleString('ko-KR')})` : ''
-      text += `💰 월 구독 매출: <b>₩${gross.toLocaleString('ko-KR')}</b>${netStr} <i>(정가 추정)</i>\n`
-    }
     const nextGross = j.next_month_revenue_krw
-    const nextNet15 = j.next_month_net_krw_15
-    if (typeof nextGross === 'number') {
-      const nStr = typeof nextNet15 === 'number' ? ` (실수령 ~₩${nextNet15.toLocaleString('ko-KR')})` : ''
-      text += `📉 다음달 예상 매출: <b>₩${nextGross.toLocaleString('ko-KR')}</b>${nStr} <i>(자동갱신 ON만)</i>\n`
+    const revenue: string[] = []
+    if (typeof gross === 'number' && gross > 0) {
+      revenue.push(`월 매출 ${won(gross)}${typeof net15 === 'number' ? ` (실수령 ${won(net15)})` : ''}`)
     }
-    if (j.revenue_is_partial) text += '※ 상품·갱신 상태 미확인분이 있어 매출 추정은 일부만 반영됐습니다.\n'
+    if (typeof nextGross === 'number') revenue.push(`다음 달 예상 ${won(nextGross)}`)
+    if (revenue.length) text += `💰 ${revenue.join(' · ')}${j.revenue_is_partial ? ' (일부 추정)' : ''}\n`
+
+    const o = j.renewal_outcomes
+    if (o && o.renewal_rate != null) {
+      text += `30일 갱신: 갱신 ${o.same_plan + o.changed_plan} · 만료 ${o.expired} (유지율 ${o.renewal_rate.toFixed(0)}%)\n`
+    }
+    if (j.failed_lookups > 0) text += `⚠️ 애플 조회 실패 ${j.failed_lookups}건 · 구독자 수가 적게 나올 수 있음\n`
 
     if (!j.failed_lookups) await supabase
       .from('admin_daily_snapshot')
