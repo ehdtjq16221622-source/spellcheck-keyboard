@@ -85,19 +85,20 @@ export function buildFailureMessage(
   const paid = failure.environment === 'Production' && failure.verifiedActive && PAID_STAGES.includes(failure.stage)
   const product = PRODUCT_NAME[failure.product] ?? '상품 미확인'
   if (test) {
-    return `🧪 테스트 결제 오류 · ${product} (무시해도 돼요)\n${time} · ${failureReason(failure.stage, failure.code)}\n진단 ID: ${failure.auditId}`
+    return `🧪 테스트 결제 오류 · ${product} (무시해도 돼요)\n- ${time} · ${failureReason(failure.stage, failure.code)}\n- 진단 ID: ${failure.auditId}`
   }
+  // First line: emoji title. Every following line starts with "- ".
   const lines = [paid ? `🔴 구독 반영 실패 · ${product} · 우선 확인` : `⚠️ 구독 처리 오류 · ${product}`,
-    `${time} · ${today ? `오늘 구독 오류 ${today.failures}건` : '오늘 오류 수 확인 실패'}`,
-    `이유: ${failureReason(failure.stage, failure.code)}`]
+    `- ${time} · ${today ? `오늘 구독 오류 ${today.failures}건` : '오늘 오류 수 확인 실패'}`,
+    `- 이유: ${failureReason(failure.stage, failure.code)}`]
   const evidenceText: Record<GrantEvidence, string | null> = {
     not_checked: null, lookup_failed: '확인 실패',
     same_cycle_grant_found: '있음',
     same_cycle_grant_missing: '없음',
     grant_record_other_wallet: '다른 지갑에 있음',
   }
-  if (evidenceText[grantEvidence]) lines.push(`이번 달 지급 기록: ${evidenceText[grantEvidence]}`)
-  lines.push(paid ? `할 일: Codex에 진단 ID ${failure.auditId} 전달` : `진단 ID: ${failure.auditId}`)
+  if (evidenceText[grantEvidence]) lines.push(`- 이번 달 지급 기록: ${evidenceText[grantEvidence]}`)
+  lines.push(paid ? `- 할 일: Codex에 진단 ID ${failure.auditId} 전달` : `- 진단 ID: ${failure.auditId}`)
   return lines.join('\n')
 }
 
