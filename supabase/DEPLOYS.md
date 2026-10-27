@@ -23,3 +23,4 @@
 | 2026-10-26 15:56 | apple_notifications | v39 | dde3f47 |
 | 2026-10-27 17:31 | apple_notifications | v40 | 3b40ed6 |
 | 2026-10-27 17:32 | daily_digest | v39 | d6eb2ce |
+| 2026-10-27 17:32 | subscription_apple_reconcile | v3 | f5912b1 |
