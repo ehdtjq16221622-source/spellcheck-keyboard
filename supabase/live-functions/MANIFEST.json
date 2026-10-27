@@ -51,16 +51,16 @@
       }
     },
     "sync_subscription_ios": {
-      "version": 60,
+      "version": 61,
       "verify_jwt": false,
-      "updated_at": 1792831913334,
+      "updated_at": 1793122406128,
       "files": {
         "sync_subscription_ios/index.ts": "26d0a74789fc3658",
         "sync_subscription_ios/_shared/apple_receipt.ts": "b19ff55ec3cd1fbc",
         "sync_subscription_ios/_shared/apple_subscription_portable.ts": "4adaf6808394efd4",
         "sync_subscription_ios/_shared/apple_subscription_status.ts": "c7482dbd63e3e200",
         "sync_subscription_ios/_shared/credits.ts": "efbc3a7f6c9a006c",
-        "sync_subscription_ios/_shared/subscription_alerts.ts": "4462a0162595a7b8",
+        "sync_subscription_ios/_shared/subscription_alerts.ts": "33898128095044f9",
         "sync_subscription_ios/_shared/subscription_audit.ts": "609166e46167ee53",
         "sync_subscription_ios/_shared/wallet_auth.ts": "44d791dfb481bbee",
         "_shared/subscription_audit.ts": "957cc9094a0feb12"
@@ -285,5 +285,5 @@
       }
     }
   },
-  "recorded_at": "2026-10-27T17:32:52.513Z"
+  "recorded_at": "2026-10-27T17:33:34.849Z"
 }
