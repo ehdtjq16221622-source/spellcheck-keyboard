@@ -50,19 +50,31 @@ test('upgrade and downgrade send separate plan-change notifications without cred
     const result = await run('DID_CHANGE_RENEWAL_PREF', subtype);
     assert.equal(result.status, 200);
     assert.equal(result.messages.length, 1);
-    assert.match(result.messages[0].text, /플랜으로 변경/);
-    assert.match(result.messages[0].text, /실제 해지와 별도로/);
+    assert.match(result.messages[0].text, subtype === 'UPGRADE' ? /^⬆️ 플랜 올림 · 베이직 → 프로$/m : /^⬇️ 플랜 내림 예약 · 베이직 → 프로$/m);
+    assert.doesNotMatch(result.messages[0].text, /com\.kingboard|Production|해지/);
     assert.match(result.messages[0].options.metadata.subscriptionFingerprint, /^[0-9a-f]{64}$/);
     assert.equal(result.messages[0].options.idempotencyKey, 'delivery-one');
     assert.doesNotMatch(JSON.stringify(result.messages), /private-purchase|private-wallet|private-service-secret/);
   }
 });
 
-test('turning renewal off sends intent and an unknown-aware status summary, not churn rate', async () => {
+test('turning renewal off sends one short message with an unknown-aware subscriber line, not churn rate', async () => {
   const result = await run('DID_CHANGE_RENEWAL_STATUS', 'AUTO_RENEW_DISABLED');
   assert.equal(result.status, 200);
-  assert.equal(result.messages.length, 2);
-  assert.match(result.messages[0].text, /아직 만료 아님/);
-  assert.match(result.messages[1].text, /확인 불가 1명/);
-  assert.doesNotMatch(result.messages[1].text, /해지율/);
+  assert.equal(result.messages.length, 1);
+  const lines = result.messages[0].text.split('\n');
+  assert.equal(lines.length, 3);
+  assert.equal(lines[0], '😢 해지 예약 · 베이직');
+  assert.match(lines[1], /^\d+\/\d+ \d\d:\d\d · 만료일까지 이용 가능$/);
+  assert.equal(lines[2], '👥 구독자 <b>10</b>명 (유지 7 · 해지 예약 2 · 확인 불가 1)');
+  assert.doesNotMatch(result.messages[0].text, /해지율|AUTO_RENEW/);
+});
+
+test('ordinary events are two lines with no product ID, environment or subscriber lookup', async () => {
+  const result = await run('DID_CHANGE_RENEWAL_STATUS', 'AUTO_RENEW_ENABLED');
+  assert.equal(result.messages.length, 1);
+  const lines = result.messages[0].text.split('\n');
+  assert.equal(lines.length, 2);
+  assert.equal(lines[0], '🙌 해지 취소 · 베이직');
+  assert.match(lines[1], /^\d+\/\d+ \d\d:\d\d$/);
 });

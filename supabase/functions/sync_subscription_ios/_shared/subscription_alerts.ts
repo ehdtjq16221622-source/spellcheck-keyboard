@@ -83,26 +83,54 @@ export function buildFailureMessage(
 ): string {
   const test = failure.environment === 'Sandbox'
   const paid = failure.environment === 'Production' && failure.verifiedActive && PAID_STAGES.includes(failure.stage)
-  const title = test ? '[킹보드 구독 동기화 · 테스트(TestFlight)]'
-    : paid ? '\u{1F534} [킹보드 구독 반영 실패 · 우선 확인]' : '[킹보드 구독 동기화 확인 필요]'
-  const lines = [title, `${time} KST`, `환경: ${test ? '테스트' : failure.environment}`,
-    `상품: ${PRODUCT_NAME[failure.product] ?? '알 수 없음'}`, `실패 단계: ${failure.stage}`, `실패 이유: ${failure.code}`]
-  if (today) lines.push(`오늘 이 환경 실패 요청: ${today.failures}건 · 중복 제외 확인 지갑 ${today.wallets}개 · 지갑 미확인 ${today.unresolved}건`)
-  else lines.push('오늘 실패 집계: 조회 실패 (0건이 아닙니다)')
-  lines.push(`진단 ID: ${failure.auditId}`)
-  const evidenceText: Record<GrantEvidence, string> = {
-    not_checked: '미확인', lookup_failed: '조회 실패 (없음으로 해석 금지)',
-    same_cycle_grant_found: '있음 (현재 잔액을 뜻하지 않음)',
-    same_cycle_grant_missing: '조회 시점 기록 없음 (미지급 확정 아님)',
-    grant_record_other_wallet: '다른 지갑 기록 있음 (소유권 대조 필요)',
+  const product = PRODUCT_NAME[failure.product] ?? '상품 미확인'
+  if (test) {
+    return `🧪 테스트 결제 오류 · ${product} (무시해도 돼요)\n${time} · ${failureReason(failure.stage, failure.code)}\n진단 ID: ${failure.auditId}`
   }
-  lines.push(`동일 주기 지급 기록: ${evidenceText[grantEvidence]}`, '새 청구 사실: 미확인 · 결제 후 미반영 확정: 불가')
-  lines.push(paid
-    ? 'Apple 활성 결제 검증 후 반영 단계가 실패했어요. 새 청구나 미지급 확정은 아니며 플랜·거래 기록 대조가 필요해요.'
-    : test ? '테스트 환경 오류이며 실제 매출·결제 피해로 집계하지 않아요.'
-      : '실제 결제·지급 성공 여부는 아직 확인되지 않았어요.')
-  lines.push('같은 지갑·환경·상품·실패 유형은 한국 날짜 기준 하루 한 번 알립니다.')
+  const lines = [paid ? `🔴 구독 반영 실패 · ${product} · 우선 확인` : `⚠️ 구독 처리 오류 · ${product}`,
+    `${time} · ${today ? `오늘 구독 오류 ${today.failures}건` : '오늘 오류 수 확인 실패'}`,
+    `이유: ${failureReason(failure.stage, failure.code)}`]
+  const evidenceText: Record<GrantEvidence, string | null> = {
+    not_checked: null, lookup_failed: '확인 실패',
+    same_cycle_grant_found: '있음',
+    same_cycle_grant_missing: '없음',
+    grant_record_other_wallet: '다른 지갑에 있음',
+  }
+  if (evidenceText[grantEvidence]) lines.push(`이번 달 지급 기록: ${evidenceText[grantEvidence]}`)
+  lines.push(paid ? `할 일: Codex에 진단 ID ${failure.auditId} 전달` : `진단 ID: ${failure.auditId}`)
   return lines.join('\n')
+}
+
+// Plain-Korean reason for the alert; unknown codes fall back to the raw code so nothing is hidden.
+function failureReason(stage: string, code: string): string {
+  const byCode: Array<[string, string]> = [
+    ['wallet_access_rejected', '지갑 로그인 확인 실패'],
+    ['apple_receipt_status_', '애플 영수증 확인 실패'],
+    ['subscription_owner_transfer_requires_review', '다른 지갑에 연결된 구독'],
+    ['subscription_token_change_requires_review', '구독 번호 변경 확인 필요'],
+    ['subscription_cycle_wallet_mismatch', '이번 달 지급이 다른 지갑에 있음'],
+    ['plan_change_unverified', '플랜 변경 확인 안 됨'],
+    ['apple_plan_not_confirmed', '플랜 변경 확인 안 됨'],
+    ['new_plan_not_active', '플랜 변경 확인 안 됨'],
+    ['stale_subscription_transaction', '지난 결제 정보로 요청'],
+    ['subscription_not_found', '애플에서 구독을 못 찾음'],
+    ['jws_verification_failed', '애플 결제 서명 확인 실패'],
+    ['receipt_required', '결제 정보 없이 요청'],
+    ['missing_required_fields', '요청 정보 누락'],
+    ['unknown_subscription_product', '알 수 없는 상품'],
+  ]
+  const known = byCode.find(([needle]) => code.includes(needle))
+  if (known) return known[1]
+  const byStage: Record<string, string> = {
+    atomic_subscription_and_grant: '구독 저장·크레딧 지급 중 오류',
+    subscription_record_write: '구독 저장 중 오류',
+    monthly_credit_grant: '크레딧 지급 중 오류',
+    subscription_lookup: '구독 조회 중 오류',
+    plan_change_verification: '플랜 변경 확인 중 오류',
+    apple_verification: '애플 확인 중 오류',
+    balance_readback: '잔액 확인 중 오류',
+  }
+  return byStage[stage] ?? `처리 중 오류 (${code})`
 }
 
 export async function reportFailure(db: any, events: any[], failureRecorded = true,
@@ -113,7 +141,8 @@ export async function reportFailure(db: any, events: any[], failureRecorded = tr
   const owner = events.some(e => e.event === 'wallet_authenticated') ? failure.wallet : 'pre_auth'
   const now = Date.now()
   const baseKey = `${owner}:${failure.environment}:${failure.product}:${failure.stage}:${failure.code}:${new Date(now + 9 * 3600_000).toISOString().slice(0, 10)}`
-  const time = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })
+  const kst = new Date(now + 9 * 3600_000)
+  const time = `${kst.getUTCMonth() + 1}/${kst.getUTCDate()} ${String(kst.getUTCHours()).padStart(2, '0')}:${String(kst.getUTCMinutes()).padStart(2, '0')}`
   let today: { failures: number; wallets: number; unresolved: number } | null = null
   try {
     if (!failureRecorded) throw new Error('failure_record_unavailable')

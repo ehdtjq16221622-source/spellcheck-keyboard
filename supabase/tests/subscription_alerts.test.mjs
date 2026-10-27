@@ -21,13 +21,12 @@ function events({ environment = 'Production', active = true, stage = 'atomic_sub
 
 test('only verified active Production failures before application get priority', () => {
   const text = buildFailureMessage(summarizeFailure(events()), { failures: 12, wallets: 3, unresolved: 2 }, 'fixture-time');
-  assert.match(text, /우선 확인/);
-  assert.match(text, /프로/);
-  assert.match(text, /실패 이유: apple_plan_not_confirmed:subscription_not_found/);
-  assert.match(text, /실패 요청: 12건/);
-  assert.match(text, /확인 지갑 3개/);
-  assert.match(text, /지갑 미확인 2건/);
-  assert.match(text, /미지급 확정은 아니며/);
+  assert.equal(text, [
+    '🔴 구독 반영 실패 · 프로 · 우선 확인',
+    'fixture-time · 오늘 구독 오류 12건',
+    '이유: 플랜 변경 확인 안 됨',
+    '할 일: Codex에 진단 ID fixture-audit 전달',
+  ].join('\n'));
   assert.doesNotMatch(text, /fixture-fingerprint/);
   for (const options of [{ environment: 'Unknown' }, { environment: 'Sandbox' }, { active: false },
     { verified: false }, { stage: 'balance_readback' }]) {
@@ -37,9 +36,11 @@ test('only verified active Production failures before application get priority',
 
 test('Sandbox is test-labeled and unknown counts are explicit', () => {
   const text = buildFailureMessage(summarizeFailure(events({ environment: 'Sandbox' })), null, 'time');
-  assert.match(text, /테스트\(TestFlight\)/);
-  assert.match(text, /실제 매출·결제 피해로 집계하지/);
-  assert.match(text, /조회 실패 \(0건이 아닙니다\)/);
+  assert.match(text, /^🧪 테스트 결제 오류 · 프로 \(무시해도 돼요\)$/m);
+  assert.equal(text.split('\n').length, 3);
+  const unknownCounts = buildFailureMessage(summarizeFailure(events()), null, 'time');
+  assert.match(unknownCounts, /오늘 오류 수 확인 실패/);
+  assert.doesNotMatch(unknownCounts, /0건/);
 });
 
 test('same-cycle evidence is authenticated, readonly, and does not claim a fresh charge', async () => {
@@ -64,8 +65,8 @@ test('same-cycle evidence is authenticated, readonly, and does not claim a fresh
   result = { data: null, error: { message: 'private upstream' } };
   assert.equal(await readFailureGrantEvidence(db, true, context), 'lookup_failed');
   const text = buildFailureMessage(summarizeFailure(events()), null, 'time', 'same_cycle_grant_missing');
-  assert.match(text, /새 청구 사실: 미확인/);
-  assert.match(text, /미지급 확정 아님/);
+  assert.match(text, /^이번 달 지급 기록: 없음$/m);
+  assert.doesNotMatch(buildFailureMessage(summarizeFailure(events()), null, 'time'), /지급 기록/);
   assert.doesNotMatch(text, /fixture-owner|fixture-cycle|private upstream/);
 });
 
@@ -107,7 +108,7 @@ test('failed count query or missing failure record renders unknown counts, with 
     await reportFailure(db, events(), false);
   } finally { globalThis.fetch = previousFetch; console.error = previousError; }
   assert.equal(messages.length, 2);
-  assert.ok(messages.every(message => message.includes('0건이 아닙니다')));
+  assert.ok(messages.every(message => message.includes('오늘 오류 수 확인 실패')));
   assert.ok(messages.every(message => !message.includes('secret upstream')));
   assert.equal(logs.filter(log => log.event === 'failure_counts_unavailable').length, 2);
 });

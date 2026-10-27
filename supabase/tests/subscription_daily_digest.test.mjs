@@ -62,9 +62,11 @@ test('daily digest includes subscription activity without calling the reconcile 
   // Only plan changes written with the versioned marker are counted, so it is 0 here and the text says what it covers.
   assert.equal(result.body.subscriptionActivity.planChangeSuccesses, 0);
   assert.equal(result.messages.length, 1);
-  assert.match(result.messages[0], /플랜 변경 지급 성공 0건/);
-  assert.match(result.messages[0], /미분류는 변경 0건으로 해석하지 않으며/);
-  assert.match(result.messages[0], /갱신 지급 0건/);
+  // A quiet day has no failure line and none of the old disclaimers.
+  assert.deepEqual(result.messages[0].split('\n').filter(Boolean), [
+    `📊 <b>${result.body.day} 요약</b>`, '설치 0 · 초대 0', 'AI 0명 · 0회 · 비용 약 ₩0', '광고 0회',
+    '💳 구독자 <b>2</b>명',
+  ]);
   const call = result.queries.find(q => q.table === 'subscription_sync_failures');
   assert.equal(Date.parse(call.end) - Date.parse(call.start), 86400_000);
   assert.equal(new Date(call.start).getUTCHours(), 15);
@@ -76,8 +78,8 @@ test('today digest preserves the same time window and exposes unknown failure co
   assert.equal(result.status, 200);
   assert.deepEqual(result.body.subscriptionActivity.errors, ['subscription_failure_counts_failed']);
   assert.equal(result.body.subscriptionActivity.groups[0].failures, null);
-  assert.match(result.messages[0], /실패 요청 집계 불가/);
-  assert.doesNotMatch(result.messages[0], /실패 요청 0건|sensitive upstream/);
+  assert.match(result.messages[0], /⚠️ 구독 처리 실패 집계 불가/);
+  assert.doesNotMatch(result.messages[0], /실패 0건|sensitive upstream/);
   const failures = result.queries.find(q => q.table === 'subscription_sync_failures');
   const grants = result.queries.find(q => q.columns === 'id,metadata');
   assert.equal(failures.start, grants.start);

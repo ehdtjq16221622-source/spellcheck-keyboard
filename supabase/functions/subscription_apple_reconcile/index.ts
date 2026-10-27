@@ -162,15 +162,20 @@ Deno.serve(async (req: Request) => {
     let delivered = false
     if (alertsEnabled && needsAlert) {
       stage = 'alert_delivery'
+      // Only the counts that are not zero; the reason codes stay for diagnosis.
+      const reasons = Object.entries(failureReasons).map(([reason, count]) => `${reason} ${count}`).join(', ')
+      const issues: Array<[number, string]> = [
+        [summary.planMismatch, '플랜 불일치'],
+        [summary.refundedButActive, '환불됐는데 서버는 구독 중'],
+        [summary.inactiveButActive, '만료됐는데 서버는 구독 중'],
+        [summary.expiryMismatch, '만료일 불일치'],
+        [summary.lookupFailures, `애플 조회 실패${reasons ? ` (${reasons})` : ''}`],
+        [summary.notChecked, '시간 부족으로 확인 못 함'],
+      ]
       const message = [
-        '[킹보드 구독 대조 확인 필요]', `${day} KST · 활성 Apple 기록 ${summary.active}건 중 조회 시도 ${summary.checked}건`,
-        `실제 활성 결제와 플랜 불일치 ${summary.planMismatch}건 (미지급 확정 아님)`,
-        `환불·회수 후 서버 활성 ${summary.refundedButActive}건`,
-        `만료·결제 재시도 후 서버 활성 ${summary.inactiveButActive}건 · 결제 유예 ${summary.gracePeriod}건`,
-        `만료일 불일치 ${summary.expiryMismatch}건 · 테스트 제외 ${summary.sandbox}건`,
-        `조회 실패 ${summary.lookupFailures}건 · 미확인 ${summary.notChecked}건`,
-        `조회 실패 분류: ${JSON.stringify(failureReasons)}`,
-        '구독·지갑·크레딧은 변경하지 않았습니다. 같은 집계는 한국 날짜 기준 하루 한 번 알립니다.',
+        '⚠️ 애플 구독 대조 · 확인 필요', `${day} · 확인 ${summary.checked}/${summary.active}건`,
+        ...issues.filter(([count]) => count > 0).map(([count, label]) => `· ${label} ${count}건`),
+        '자동으로 바꾼 건 없음 · Codex에 확인 요청',
       ].join('\n')
       const sortedReasons = Object.fromEntries(Object.entries(failureReasons).sort(([a], [b]) => a.localeCompare(b)))
       const key = await fingerprint(`reconcile:${day}:${JSON.stringify(summary)}:${JSON.stringify(sortedReasons)}`)
@@ -181,7 +186,7 @@ Deno.serve(async (req: Request) => {
   } catch {
     // Never echo exceptions: network/library errors can contain credentials or transaction IDs.
     if (alertsEnabled) {
-      try { await sendIncident(db, `reconcile-failed:${day}`, '[킹보드 구독 대조 감시 실패]\n대조가 완료되지 않았습니다. 오류 0건으로 해석하지 마세요.') }
+      try { await sendIncident(db, `reconcile-failed:${day}`, '⚠️ 애플 구독 대조 실패\n오늘 대조 결과 없음 · Codex에 확인 요청') }
       catch { /* The HTTP failure remains visible even if delivery fails. */ }
     }
     return Response.json({ error: { code: 'reconciliation_failed', stage }, counts: null, complete: false, alertsEnabled }, { status: 503 })

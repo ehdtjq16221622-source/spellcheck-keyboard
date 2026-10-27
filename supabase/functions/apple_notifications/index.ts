@@ -2,7 +2,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { verifyAppleNotificationJws, verifyAppleRenewalInfoJws, verifyAppleTransactionJws } from './_shared/apple_notification_verifier.ts'
 import { sendTelegram } from './_shared/telegram.ts'
 import { subscriptionCreditsForProduct } from './_shared/credits.ts'
-import { subscriptionStatusText } from '../_shared/subscription_reporting.ts'
 
 // App Store Server Notifications V2 receiver.
 // Apple POSTs { signedPayload: <JWS> } on subscription lifecycle events. We
@@ -198,26 +197,26 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Telegram alerts for meaningful events.
+    // Telegram alerts for meaningful events. Kept short: the first line says what
+    // happened and to which plan; extra lines appear only when something is off.
+    const plan = planName(productId)
+    const nextPlan = planName(renewal.autoRenewProductId)
+    const planChange = nextPlan !== plan ? `${plan} → ${nextPlan}` : nextPlan
     const labels: Record<string, string> = {
-      TEST: '✅ 테스트 알림 — 애플 웹훅 연결 정상!',
-      SUBSCRIBED: '🎉 새 구독',
-      DID_RENEW: '🔁 구독 갱신',
-      EXPIRED: '😢 구독 만료',
-      REFUND: '💸 환불',
-      DID_FAIL_TO_RENEW: '⚠️ 결제 실패',
+      TEST: '✅ 애플 알림 연결 정상',
+      SUBSCRIBED: `🎉 새 구독 · ${plan}`,
+      DID_RENEW: `🔁 구독 갱신 · ${plan}`,
+      EXPIRED: `👋 구독 만료 · ${plan}`,
+      REFUND: `💸 환불 · ${plan}`,
+      DID_FAIL_TO_RENEW: `⚠️ 결제 실패 · ${plan}${subtype === 'GRACE_PERIOD' ? ' (유예 기간 중)' : ''}`,
       DID_CHANGE_RENEWAL_STATUS:
-        subtype === 'AUTO_RENEW_DISABLED' ? '자동갱신 중단 예정 (아직 만료 아님)' : '자동갱신 다시 켬',
-      DID_CHANGE_RENEWAL_PREF: subtype === 'UPGRADE' ? '상위 플랜으로 변경' :
-        subtype === 'DOWNGRADE' ? '다음 갱신 때 하위 플랜으로 변경 예정' : '예약된 플랜 변경 취소',
+        subtype === 'AUTO_RENEW_DISABLED' ? `😢 해지 예약 · ${plan}` : `🙌 해지 취소 · ${plan}`,
+      DID_CHANGE_RENEWAL_PREF: subtype === 'UPGRADE' ? `⬆️ 플랜 올림 · ${planChange}` :
+        subtype === 'DOWNGRADE' ? `⬇️ 플랜 내림 예약 · ${planChange}` : `↩️ 플랜 변경 취소 · ${plan}`,
     }
     const label = labels[notificationType]
     if (label) {
       failureStage = 'telegram_delivery'
-      const cancellationNote = notificationType === 'DID_CHANGE_RENEWAL_STATUS' &&
-          subtype === 'AUTO_RENEW_DISABLED'
-        ? '\n현재 구독은 만료일까지 이용 가능합니다.'
-        : ''
       // Apple re-sends failed notifications for up to ~3 days with the original
       // signedDate, so flag late arrivals and show when it actually happened.
       const eventMs = typeof notif.signedDate === 'number' ? notif.signedDate as number : null
@@ -226,20 +225,23 @@ Deno.serve(async (req: Request) => {
       const isDelayed = delayedMinutes != null && delayedMinutes >= 10
       const isPurchase = notificationType === 'SUBSCRIBED' || notificationType === 'DID_RENEW'
       const whenMs = isPurchase ? (purchaseMs ?? eventMs) : eventMs
-      const whenLine = whenMs != null
-        ? `\n${isPurchase ? '결제 시각' : '발생 시각'}: ${formatKst(whenMs)}` +
-          (isDelayed ? ` (${formatAgo(Date.now() - whenMs)} 전)` : '')
-        : ''
-      const delayedNote = isDelayed
-        ? '\n<i>애플이 늦게 다시 보낸 알림이에요. 구독자 수에는 이미 반영돼 있을 수 있어요.</i>'
-        : ''
+      const details: string[] = []
+      if (whenMs != null) {
+        details.push(formatKst(whenMs) + (isDelayed ? ` (${formatAgo(Date.now() - whenMs)} 전 · 늦게 도착)` : ''))
+      }
+      if (notificationType === 'DID_CHANGE_RENEWAL_STATUS' && subtype === 'AUTO_RENEW_DISABLED') {
+        details.push('만료일까지 이용 가능')
+      }
+      const lines = [`${environment === 'Production' ? '' : '🧪 [테스트] '}${label}`]
+      if (details.length) lines.push(details.join(' · '))
+      if (!deviceId && notificationType !== 'TEST') lines.push('⚠️ 연결된 지갑 없음')
+      // Cancellations and refunds are rare, so they carry the current subscriber
+      // count in the same message. SUBSCRIBED/DID_RENEW skip it (noisy in spikes).
+      const wantsSummary = (notificationType === 'DID_CHANGE_RENEWAL_STATUS' &&
+          subtype === 'AUTO_RENEW_DISABLED') || notificationType === 'REFUND'
+      if (wantsSummary) lines.push(await subscriberSummaryLine())
       const delivered = await sendTelegram(
-        `${label}${subtype ? ` (${subtype})` : ''}${isDelayed ? '  🔁 지연 도착' : ''}\n` +
-          `상품: ${productId ?? '-'}\n` +
-          (notificationType === 'DID_CHANGE_RENEWAL_PREF'
-            ? `변경 상품: ${renewal.autoRenewProductId ?? '-'}\n※ 플랜 변경은 실제 해지와 별도로 집계합니다.\n` : '') +
-          `환경: ${environment || '-'}\n` +
-          `연결 계정: ${deviceId ? '확인됨' : '미확인'}${whenLine}${cancellationNote}${delayedNote}`,
+        lines.join('\n'),
         {
           supabase,
           alertType: 'apple_notification',
@@ -263,13 +265,6 @@ Deno.serve(async (req: Request) => {
         },
       )
       if (!delivered) throw new Error('telegram_delivery_failed')
-
-      // Per-event subscriber summary stays off for SUBSCRIBED/DID_RENEW (too
-      // noisy during purchase spikes). Cancellations and refunds are rare, so
-      // they still get the "현재 구독자 · 유지/해지" follow-up.
-      const wantsSummary = (notificationType === 'DID_CHANGE_RENEWAL_STATUS' &&
-          subtype === 'AUTO_RENEW_DISABLED') || notificationType === 'REFUND'
-      if (wantsSummary) await sendSubscriptionStatus(supabase, `${notificationUUID}:status`)
     }
 
     console.log('[apple_notifications] processed', {
@@ -298,17 +293,24 @@ Deno.serve(async (req: Request) => {
   }
 })
 
-// Sends "현재 구독자 N명 · 유지/해지" after a subscription alert. Best-effort:
-// never throws, and is idempotent per notification so Apple retries don't
-// produce duplicate status messages.
-// deno-lint-ignore no-explicit-any
-async function sendSubscriptionStatus(supabase: any, idempotencyKey: string): Promise<void> {
-  let text: string
+// "베이직" for com.kingboard.app.monthly_basic; unknown products keep their raw ID.
+function planName(productId: unknown): string {
+  const names: Record<string, string> = {
+    'com.kingboard.app.monthly_basic': '베이직',
+    'com.kingboard.app.monthly_premium': '프리미엄',
+    'com.kingboard.app.monthly_pro': '프로',
+  }
+  return typeof productId === 'string' ? names[productId] ?? productId : '상품 미확인'
+}
+
+// "👥 구독자 60명 (유지 45 · 해지 예약 15)". Best-effort: never throws, and a
+// failed lookup says so instead of dropping the line.
+async function subscriberSummaryLine(): Promise<string> {
   try {
     const r = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/subscriber_status`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
-      signal: AbortSignal.timeout(90_000),
+      signal: AbortSignal.timeout(20_000),
     })
     if (!r.ok) {
       await r.body?.cancel()
@@ -317,23 +319,17 @@ async function sendSubscriptionStatus(supabase: any, idempotencyKey: string): Pr
     const j = await r.json()
     const active = j.active_subscribers_now
     if (typeof active !== 'number') throw new Error('subscriber_status_bad_response')
-    text =
-      `👥 현재 구독자 <b>${active}</b>명\n` +
-      subscriptionStatusText(j)
+    const parts: string[] = []
+    if (typeof j.auto_renew_on_now === 'number') parts.push(`유지 ${j.auto_renew_on_now}`)
+    if (typeof j.auto_renew_off_now === 'number') parts.push(`해지 예약 ${j.auto_renew_off_now}`)
+    if (j.auto_renew_unknown_now > 0) parts.push(`확인 불가 ${j.auto_renew_unknown_now}`)
+    return `👥 구독자 <b>${active}</b>명${parts.length ? ` (${parts.join(' · ')})` : ''}` +
+      (j.failed_lookups > 0 ? ' · 일부 조회 실패' : '')
   } catch (e) {
     console.error('[apple_notifications] subscriber status lookup failed', {
       errorCode: safeErrorCode(e),
     })
-    text = '👥 구독 현황 조회 실패 <i>· 텔레그램에서 /구독 으로 확인</i>'
-  }
-  try {
-    await sendTelegram(text, {
-      supabase,
-      alertType: 'apple_notification_status',
-      idempotencyKey,
-    })
-  } catch {
-    console.error('[apple_notifications] subscriber status delivery failed')
+    return '👥 구독자 수 조회 실패 · /구독 으로 확인'
   }
 }
 
