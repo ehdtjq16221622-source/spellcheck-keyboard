@@ -23,9 +23,9 @@ test('only verified active Production failures before application get priority',
   const text = buildFailureMessage(summarizeFailure(events()), { failures: 12, wallets: 3, unresolved: 2 }, 'fixture-time');
   assert.equal(text, [
     '🔴 구독 반영 실패 · 프로 · 우선 확인',
-    'fixture-time · 오늘 구독 오류 12건',
-    '이유: 플랜 변경 확인 안 됨',
-    '할 일: Codex에 진단 ID fixture-audit 전달',
+    '- fixture-time · 오늘 구독 오류 12건',
+    '- 이유: 플랜 변경 확인 안 됨',
+    '- 할 일: Codex에 진단 ID fixture-audit 전달',
   ].join('\n'));
   assert.doesNotMatch(text, /fixture-fingerprint/);
   for (const options of [{ environment: 'Unknown' }, { environment: 'Sandbox' }, { active: false },
@@ -65,7 +65,7 @@ test('same-cycle evidence is authenticated, readonly, and does not claim a fresh
   result = { data: null, error: { message: 'private upstream' } };
   assert.equal(await readFailureGrantEvidence(db, true, context), 'lookup_failed');
   const text = buildFailureMessage(summarizeFailure(events()), null, 'time', 'same_cycle_grant_missing');
-  assert.match(text, /^이번 달 지급 기록: 없음$/m);
+  assert.match(text, /^- 이번 달 지급 기록: 없음$/m);
   assert.doesNotMatch(buildFailureMessage(summarizeFailure(events()), null, 'time'), /지급 기록/);
   assert.doesNotMatch(text, /fixture-owner|fixture-cycle|private upstream/);
 });

@@ -232,9 +232,10 @@ Deno.serve(async (req: Request) => {
       if (notificationType === 'DID_CHANGE_RENEWAL_STATUS' && subtype === 'AUTO_RENEW_DISABLED') {
         details.push('만료일까지 이용 가능')
       }
+      // First line: emoji title. Every following line starts with "- ".
       const lines = [`${environment === 'Production' ? '' : '🧪 [테스트] '}${label}`]
-      if (details.length) lines.push(details.join(' · '))
-      if (!deviceId && notificationType !== 'TEST') lines.push('⚠️ 연결된 지갑 없음')
+      if (details.length) lines.push(`- ${details.join(' · ')}`)
+      if (!deviceId && notificationType !== 'TEST') lines.push('- ⚠️ 연결된 지갑 없음')
       // Cancellations and refunds are rare, so they carry the current subscriber
       // count in the same message. SUBSCRIBED/DID_RENEW skip it (noisy in spikes).
       const wantsSummary = (notificationType === 'DID_CHANGE_RENEWAL_STATUS' &&
@@ -303,7 +304,7 @@ function planName(productId: unknown): string {
   return typeof productId === 'string' ? names[productId] ?? productId : '상품 미확인'
 }
 
-// "👥 구독자 60명 (유지 45 · 해지 예약 15)". Best-effort: never throws, and a
+// "- 구독자 60명 (유지 45 · 해지 예약 15)". Best-effort: never throws, and a
 // failed lookup says so instead of dropping the line.
 async function subscriberSummaryLine(): Promise<string> {
   try {
@@ -323,13 +324,13 @@ async function subscriberSummaryLine(): Promise<string> {
     if (typeof j.auto_renew_on_now === 'number') parts.push(`유지 ${j.auto_renew_on_now}`)
     if (typeof j.auto_renew_off_now === 'number') parts.push(`해지 예약 ${j.auto_renew_off_now}`)
     if (j.auto_renew_unknown_now > 0) parts.push(`확인 불가 ${j.auto_renew_unknown_now}`)
-    return `👥 구독자 <b>${active}</b>명${parts.length ? ` (${parts.join(' · ')})` : ''}` +
+    return `- 구독자 <b>${active}</b>명${parts.length ? ` (${parts.join(' · ')})` : ''}` +
       (j.failed_lookups > 0 ? ' · 일부 조회 실패' : '')
   } catch (e) {
     console.error('[apple_notifications] subscriber status lookup failed', {
       errorCode: safeErrorCode(e),
     })
-    return '👥 구독자 수 조회 실패 · /구독 으로 확인'
+    return '- ⚠️ 구독자 수 조회 실패 · /구독 으로 확인'
   }
 }
 

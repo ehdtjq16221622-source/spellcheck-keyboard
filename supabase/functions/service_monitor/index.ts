@@ -50,9 +50,9 @@ Deno.serve(async (req) => {
         ? ` / 전체 ${total}건 (${Math.round((n / total) * 100)}%)` : ''
       await sendTelegram(
         `🐢 <b>맞춤법 교정 지연</b>\n` +
-          `최근 ${WINDOW_MIN}분 10초 초과: <b>${n}건</b>${totalStr}\n` +
-          `최대 ${maxSec}초${failed ? ` · 그중 실패 ${failed}건` : ''}\n` +
-          `<i>Gemini 응답 지연 가능성 · 30분 동안 같은 알림은 묶습니다</i>`,
+          `- 최근 ${WINDOW_MIN}분 10초 초과: <b>${n}건</b>${totalStr}\n` +
+          `- 최대 ${maxSec}초${failed ? ` · 그중 실패 ${failed}건` : ''}\n` +
+          `- Gemini 응답 지연 가능성 · 30분간 같은 알림은 묶음`,
         { supabase, alertType: 'service_monitor_slow_correct', idempotencyKey: `b${bucket}` },
       )
     }
@@ -78,8 +78,8 @@ Deno.serve(async (req) => {
     if (p >= WALLET_ALERT_MIN_PENDING && t > 0 && p / t >= WALLET_ALERT_MIN_RATE) {
       await sendTelegram(
         `🚨 <b>신규 가입 지갑 활성화 실패 증가</b>\n` +
-          `최근 10분 가입 ${t}건 중 활성화 안 됨 <b>${p}건</b> (${Math.round((p / t) * 100)}%)\n` +
-          `<i>가입 폭주 시 기기 확인 대기 가능성 · 30분 동안 같은 알림은 묶습니다</i>`,
+          `- 최근 10분 가입 ${t}건 중 활성화 안 됨 <b>${p}건</b> (${Math.round((p / t) * 100)}%)\n` +
+          `- 가입 폭주 시 기기 확인 대기 가능성 · 30분간 같은 알림은 묶음`,
         { supabase, alertType: 'service_monitor_wallet_pending', idempotencyKey: `b${bucket}` },
       )
     }

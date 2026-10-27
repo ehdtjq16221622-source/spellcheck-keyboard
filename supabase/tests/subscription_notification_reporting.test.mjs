@@ -65,8 +65,8 @@ test('turning renewal off sends one short message with an unknown-aware subscrib
   const lines = result.messages[0].text.split('\n');
   assert.equal(lines.length, 3);
   assert.equal(lines[0], '😢 해지 예약 · 베이직');
-  assert.match(lines[1], /^\d+\/\d+ \d\d:\d\d · 만료일까지 이용 가능$/);
-  assert.equal(lines[2], '👥 구독자 <b>10</b>명 (유지 7 · 해지 예약 2 · 확인 불가 1)');
+  assert.match(lines[1], /^- \d+\/\d+ \d\d:\d\d · 만료일까지 이용 가능$/);
+  assert.equal(lines[2], '- 구독자 <b>10</b>명 (유지 7 · 해지 예약 2 · 확인 불가 1)');
   assert.doesNotMatch(result.messages[0].text, /해지율|AUTO_RENEW/);
 });
 
@@ -76,5 +76,5 @@ test('ordinary events are two lines with no product ID, environment or subscribe
   const lines = result.messages[0].text.split('\n');
   assert.equal(lines.length, 2);
   assert.equal(lines[0], '🙌 해지 취소 · 베이직');
-  assert.match(lines[1], /^\d+\/\d+ \d\d:\d\d$/);
+  assert.match(lines[1], /^- \d+\/\d+ \d\d:\d\d$/);
 });

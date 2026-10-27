@@ -173,9 +173,9 @@ Deno.serve(async (req: Request) => {
         [summary.notChecked, '시간 부족으로 확인 못 함'],
       ]
       const message = [
-        '⚠️ 애플 구독 대조 · 확인 필요', `${day} · 확인 ${summary.checked}/${summary.active}건`,
-        ...issues.filter(([count]) => count > 0).map(([count, label]) => `· ${label} ${count}건`),
-        '자동으로 바꾼 건 없음 · Codex에 확인 요청',
+        '⚠️ 애플 구독 대조 · 확인 필요', `- ${day} · 확인 ${summary.checked}/${summary.active}건`,
+        ...issues.filter(([count]) => count > 0).map(([count, label]) => `- ${label} ${count}건`),
+        '- 자동으로 바꾼 건 없음 · Codex에 확인 요청',
       ].join('\n')
       const sortedReasons = Object.fromEntries(Object.entries(failureReasons).sort(([a], [b]) => a.localeCompare(b)))
       const key = await fingerprint(`reconcile:${day}:${JSON.stringify(summary)}:${JSON.stringify(sortedReasons)}`)
@@ -186,7 +186,7 @@ Deno.serve(async (req: Request) => {
   } catch {
     // Never echo exceptions: network/library errors can contain credentials or transaction IDs.
     if (alertsEnabled) {
-      try { await sendIncident(db, `reconcile-failed:${day}`, '⚠️ 애플 구독 대조 실패\n오늘 대조 결과 없음 · Codex에 확인 요청') }
+      try { await sendIncident(db, `reconcile-failed:${day}`, '⚠️ 애플 구독 대조 실패\n- 오늘 대조 결과 없음 · Codex에 확인 요청') }
       catch { /* The HTTP failure remains visible even if delivery fails. */ }
     }
     return Response.json({ error: { code: 'reconciliation_failed', stage }, counts: null, complete: false, alertsEnabled }, { status: 503 })
