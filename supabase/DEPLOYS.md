@@ -27,3 +27,4 @@
 | 2026-10-27 17:33 | sync_subscription_ios | v61 | 0f3d307 |
 | 2026-10-27 19:58 | apple_notifications | v41 | f178f14 |
 | 2026-10-27 19:59 | daily_digest | v40 | 667711c |
+| 2026-10-27 20:00 | subscription_apple_reconcile | v4 | 4b4c613 |
