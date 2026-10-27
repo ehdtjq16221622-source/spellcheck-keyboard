@@ -149,11 +149,11 @@
       }
     },
     "apple_notifications": {
-      "version": 40,
+      "version": 41,
       "verify_jwt": false,
-      "updated_at": 1793122282128,
+      "updated_at": 1793131108813,
       "files": {
-        "apple_notifications/index.ts": "f274860f9d09fb7e",
+        "apple_notifications/index.ts": "122809c940d87345",
         "apple_notifications/_shared/apple_notification_verifier.ts": "5ebdb79d78031d55",
         "apple_notifications/_shared/apple_subscription_portable.ts": "7287457ae7d47218",
         "apple_notifications/_shared/credits.ts": "efbc3a7f6c9a006c",
@@ -285,5 +285,5 @@
       }
     }
   },
-  "recorded_at": "2026-10-27T17:33:34.849Z"
+  "recorded_at": "2026-10-27T19:58:43.755Z"
 }
