@@ -141,12 +141,12 @@ Deno.serve(async (req: Request) => {
     const subDelta = sub.delta
     // Only real (Production) subscription failures are worth a line, and only when there are any.
     let subscriptionActivity = null
-    let subscriptionActivityLine = '⚠️ 구독 처리 집계 실패\n'
+    let subscriptionActivityLine = '- ⚠️ 구독 처리 집계 실패\n'
     try {
       subscriptionActivity = await readSubscriptionActivity(supabase, startIso, endIso)
       const production = subscriptionActivity.groups.find((g) => g.environment === 'Production')
-      subscriptionActivityLine = production?.failures == null ? '⚠️ 구독 처리 실패 집계 불가\n'
-        : production.failures > 0 ? `⚠️ 구독 처리 실패 ${production.failures}건 (지갑 ${production.wallets ?? '?'}개)\n`
+      subscriptionActivityLine = production?.failures == null ? '- ⚠️ 구독 처리 실패 집계 불가\n'
+        : production.failures > 0 ? `- ⚠️ 구독 처리 실패 ${production.failures}건 (지갑 ${production.wallets ?? '?'}개)\n`
         : ''
     } catch {
       console.error('[daily_digest] subscription activity counts unavailable')
@@ -155,9 +155,9 @@ Deno.serve(async (req: Request) => {
     const won = (n: number) => `₩${n.toLocaleString('ko-KR')}`
     const msg =
       `📊 <b>${isToday ? yLabel : `${yLabel} 요약`}</b>\n` +
-      `설치 ${newInstalls} · 초대 ${referralJoins}\n` +
-      `AI ${aiUsers}명 · ${aiCalls.toLocaleString('ko-KR')}회 · 비용 약 ${won(estCostKrw)}\n` +
-      `광고 ${ssvCount}회\n` +
+      `- 설치 ${newInstalls} · 초대 ${referralJoins}\n` +
+      `- AI ${aiUsers}명 · ${aiCalls.toLocaleString('ko-KR')}회 · 비용 약 ${won(estCostKrw)}\n` +
+      `- 광고 ${ssvCount}회\n` +
       subLine +
       subscriptionActivityLine
 
@@ -201,7 +201,7 @@ async function buildSubscriptionBlock(supabase: any): Promise<{
   delta: number | null
 }> {
   const failed = (reason: string) => ({
-    text: `💳 구독자 조회 실패 (${reason}) · /구독 으로 다시 확인\n`,
+    text: `- ⚠️ 구독자 조회 실패 (${reason}) · /구독 으로 다시 확인\n`,
     active: null,
     delta: null,
   })
@@ -241,14 +241,14 @@ async function buildSubscriptionBlock(supabase: any): Promise<{
       .filter((k) => (byTier[k] ?? 0) > 0)
       .map((k) => `${TIER_NAME[k]} ${byTier[k]}`)
     if (byTier.unknown) tierParts.push(`기타 ${byTier.unknown}`)
-    let text = `💳 구독자 <b>${active}</b>명${dStr}${tierParts.length ? ` · ${tierParts.join(' / ')}` : ''}\n`
+    let text = `- 구독자 <b>${active}</b>명${dStr}${tierParts.length ? ` · ${tierParts.join(' / ')}` : ''}\n`
 
     const on = j.auto_renew_on_now, off = j.auto_renew_off_now
     if (typeof on === 'number' && typeof off === 'number' && off > 0) {
-      text += `해지 예약 ${off}명 (${(off / Math.max(1, on + off) * 100).toFixed(0)}%)` +
+      text += `- 해지 예약 ${off}명 (${(off / Math.max(1, on + off) * 100).toFixed(0)}%)` +
         (j.auto_renew_unknown_now > 0 ? ` · 확인 불가 ${j.auto_renew_unknown_now}명` : '') + '\n'
     }
-    if (j.pending_plan_changes_now > 0) text += `플랜 변경 예약 ${j.pending_plan_changes_now}명\n`
+    if (j.pending_plan_changes_now > 0) text += `- 플랜 변경 예약 ${j.pending_plan_changes_now}명\n`
 
     const won = (n: number) => `₩${n.toLocaleString('ko-KR')}`
     const gross = j.monthly_revenue_krw
@@ -259,13 +259,13 @@ async function buildSubscriptionBlock(supabase: any): Promise<{
       revenue.push(`월 매출 ${won(gross)}${typeof net15 === 'number' ? ` (실수령 ${won(net15)})` : ''}`)
     }
     if (typeof nextGross === 'number') revenue.push(`다음 달 예상 ${won(nextGross)}`)
-    if (revenue.length) text += `💰 ${revenue.join(' · ')}${j.revenue_is_partial ? ' (일부 추정)' : ''}\n`
+    if (revenue.length) text += `- ${revenue.join(' · ')}${j.revenue_is_partial ? ' (일부 추정)' : ''}\n`
 
     const o = j.renewal_outcomes
     if (o && o.renewal_rate != null) {
-      text += `30일 갱신: 갱신 ${o.same_plan + o.changed_plan} · 만료 ${o.expired} (유지율 ${o.renewal_rate.toFixed(0)}%)\n`
+      text += `- 30일 갱신: 갱신 ${o.same_plan + o.changed_plan} · 만료 ${o.expired} (유지율 ${o.renewal_rate.toFixed(0)}%)\n`
     }
-    if (j.failed_lookups > 0) text += `⚠️ 애플 조회 실패 ${j.failed_lookups}건 · 구독자 수가 적게 나올 수 있음\n`
+    if (j.failed_lookups > 0) text += `- ⚠️ 애플 조회 실패 ${j.failed_lookups}건 · 구독자 수가 적게 나올 수 있음\n`
 
     if (!j.failed_lookups) await supabase
       .from('admin_daily_snapshot')

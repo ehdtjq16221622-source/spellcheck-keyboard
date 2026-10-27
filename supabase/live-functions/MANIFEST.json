@@ -130,11 +130,11 @@
       }
     },
     "daily_digest": {
-      "version": 39,
+      "version": 40,
       "verify_jwt": false,
-      "updated_at": 1793122326199,
+      "updated_at": 1793131177392,
       "files": {
-        "daily_digest/index.ts": "74e5b5fde0ce58a9",
+        "daily_digest/index.ts": "36a5d884a4d5878c",
         "daily_digest/_shared/telegram.ts": "2ca09cd0bbae756a",
         "_shared/subscription_audit.ts": "957cc9094a0feb12",
         "_shared/telegram.ts": "932ca4944375a8bf"
@@ -285,5 +285,5 @@
       }
     }
   },
-  "recorded_at": "2026-10-27T19:58:43.755Z"
+  "recorded_at": "2026-10-27T19:59:51.316Z"
 }
