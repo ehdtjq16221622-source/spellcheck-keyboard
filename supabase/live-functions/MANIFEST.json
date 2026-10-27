@@ -245,11 +245,11 @@
       }
     },
     "service_monitor": {
-      "version": 3,
+      "version": 12,
       "verify_jwt": false,
-      "updated_at": 1791909264096,
+      "updated_at": 1793131386084,
       "files": {
-        "service_monitor/index.ts": "60b510e8306637ec",
+        "service_monitor/index.ts": "80d75a00f31a346e",
         "_shared/telegram.ts": "932ca4944375a8bf"
       }
     },
@@ -285,5 +285,5 @@
       }
     }
   },
-  "recorded_at": "2026-10-27T20:02:23.177Z"
+  "recorded_at": "2026-10-27T20:03:16.140Z"
 }
