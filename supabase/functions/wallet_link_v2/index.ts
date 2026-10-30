@@ -260,6 +260,39 @@ Deno.serve(async (req: Request) => {
         return { decision: 'no_linked_source' }
       }
       if (error?.code === 'P0001') {
+        const subscriptionReview = [
+          'Second wallet subscription requires transaction review',
+          'Second wallet purchase mapping requires transaction review',
+        ].includes(error.message)
+        if (subscriptionReview && Deno.env.get('WALLET_LINKED_SUBSCRIPTION_MERGE_ENABLED') === 'true') {
+          const { data: purchase, error: purchaseError } = await supabase
+            .from('device_subscriptions')
+            .select('product_id, purchase_token')
+            .eq('device_id', appleSub)
+            .maybeSingle()
+          if (purchaseError) throw purchaseError
+          if (purchase?.purchase_token && purchase?.product_id &&
+              await verifySubscribedGuestPurchase(
+                purchase.purchase_token, purchase.product_id, appleSub, appleSub, false, true,
+              )) {
+            const { data: merged, error: mergeError } = await auditedRpc('merge_verified_legacy_wallet_v2_once', {
+              p_source_wallet_id: appleSub,
+              p_apple_sub: appleSub,
+              p_session_token_hash: tokenHash,
+              p_request_id: requestId,
+              p_verified_subscription_token: purchase.purchase_token,
+              p_verified_product_id: purchase.product_id,
+            })
+            if (mergeError?.code === 'P0001' &&
+                mergeError.message === 'Recent AI usage must settle before wallet merge') {
+              return { decision: 'retry_later', retryAfterSeconds: 300 }
+            }
+            if (mergeError && mergeError.code !== 'P0001') throw mergeError
+            if (!mergeError && merged?.[0]) {
+              return { decision: merged[0].decision, canonicalWalletId: merged[0].canonical_wallet_id }
+            }
+          }
+        }
         const { data: racedAlias, error: racedAliasError } = await supabase
           .from('credit_wallet_aliases')
           .select('canonical_wallet_id, apple_sub')
