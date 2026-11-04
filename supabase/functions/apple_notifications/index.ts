@@ -140,11 +140,22 @@ Deno.serve(async (req: Request) => {
 
     if (deviceId && state) {
       failureStage = 'subscription_state_update'
+      // A renewal carries the plan Apple actually billed, so a scheduled downgrade lands here.
+      const renewedProductId = typeof tx.productId === 'string' ? tx.productId : null
+      const renewedPlan = notificationType === 'DID_RENEW' && renewedProductId && expiresMs &&
+          originalTransactionId && KNOWN_SUBSCRIPTION_PRODUCTS.has(renewedProductId)
+        ? {
+          product_id: renewedProductId,
+          last_cycle_key: `${originalTransactionId}:${renewedProductId}:${expiresMs}`,
+          ...(typeof tx.transactionId === 'string' ? { latest_order_id: tx.transactionId } : {}),
+        }
+        : {}
       const { error } = await supabase
         .from('device_subscriptions')
         .update({
           subscription_state: state,
           expiry_time_millis: expiresMs,
+          ...renewedPlan,
           last_verified_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
