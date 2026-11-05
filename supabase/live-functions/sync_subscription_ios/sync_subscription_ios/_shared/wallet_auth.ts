@@ -12,6 +12,8 @@ export class WalletAccessError extends Error {
   }
 }
 
+export const ROTATION_GRACE_MS = 60_000
+
 export async function walletTokenHash(token: string): Promise<string> {
   const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token))
   return Array.from(new Uint8Array(bytes), (byte) => byte.toString(16).padStart(2, '0')).join('')
@@ -94,12 +96,28 @@ export async function resolveCreditWallet(
   }
 
   if (token) {
-    const { data: session, error } = await supabase
+    const { data: presented, error } = await supabase
       .from('credit_wallet_sessions')
-      .select('wallet_id, apple_sub, expires_at, revoked_at')
+      .select('wallet_id, apple_sub, expires_at, revoked_at, rotated_to_hash')
       .eq('token_hash', await walletTokenHash(token))
       .maybeSingle()
     if (error) throw error
+    let session = presented
+    // App launch rotates the session and may send a request with the old token
+    // a moment later. Accept it only briefly, and only as the live successor.
+    if (presented?.revoked_at && presented.rotated_to_hash &&
+        Date.now() - Date.parse(presented.revoked_at) <= ROTATION_GRACE_MS) {
+      const { data: successor, error: successorError } = await supabase
+        .from('credit_wallet_sessions')
+        .select('wallet_id, apple_sub, expires_at, revoked_at, rotated_to_hash')
+        .eq('token_hash', presented.rotated_to_hash)
+        .maybeSingle()
+      if (successorError) throw successorError
+      if (successor && !successor.revoked_at && Date.parse(successor.expires_at) > Date.now() &&
+          successor.wallet_id === presented.wallet_id && successor.apple_sub === presented.apple_sub) {
+        session = successor
+      }
+    }
     let missingSessionReason = requestedId.startsWith('v2:') ? 'guest_proof_failed' : 'not_found'
     if (!session && requestedId.startsWith('v2:')) {
       const { data: credential, error: credentialError } = await supabase
