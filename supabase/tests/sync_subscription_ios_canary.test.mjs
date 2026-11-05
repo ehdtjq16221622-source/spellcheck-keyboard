@@ -26,7 +26,7 @@ async function run({ allowlist = '', rpcError = null, requestedProduct = product
   allUsersEnabled = false, walletSessionsEnabled = false,
   existingProduct = null, appleCurrentProduct = true,
   appleCurrentReason = 'subscription_status_not_eligible',
-  syncOrigin, authenticated = true } = {}) {
+  syncOrigin, authenticated = true, tokenOwnerId = null, walletRows = [] } = {}) {
   let handler;
   const calls = [];
   globalThis.Deno = {
@@ -99,11 +99,24 @@ async function run({ allowlist = '', rpcError = null, requestedProduct = product
     from: (table) => {
       calls.push({ table });
       return {
-        select: () => ({ eq: () => ({ maybeSingle: async () => ({
-          data: table === 'device_subscriptions' && existingProduct
-            ? { product_id: existingProduct } : null,
-          error: null,
-        }) }) }),
+        select: (columns) => ({
+          eq: () => ({ maybeSingle: async () => ({
+            data: table === 'device_subscriptions' && columns === 'device_id'
+              ? (tokenOwnerId ? { device_id: tokenOwnerId } : null)
+              : table === 'device_subscriptions' && existingProduct
+              ? { product_id: existingProduct } : null,
+            error: null,
+          }) }),
+          in: async () => ({ data: table === 'device_credits' ? walletRows : [], error: null }),
+        }),
+        delete: () => ({ eq: async () => {
+          calls.push({ write: 'delete', table });
+          return { error: null };
+        } }),
+        update: () => ({ eq: async () => {
+          calls.push({ write: 'update', table });
+          return { error: null };
+        } }),
         upsert: async () => {
           calls.push({ write: 'upsert', table });
           return { error: null };
@@ -268,4 +281,43 @@ test('canary rejects an unproven wallet before Apple verification or any write',
   const { response, calls } = await run({ allowlist: 'v2:guest', authError: new Error('no wallet proof') });
   assert.equal(response.status, 500);
   assert.equal(calls.some((call) => call.verification || call.name), false);
+});
+
+test('legacy request cannot take a subscription from an Apple-linked wallet', async () => {
+  const { response, calls, body } = await run({
+    requestedDeviceId: 'old-device', authenticated: false, tokenOwnerId: 'apple-wallet',
+    walletRows: [{ device_id: 'apple-wallet', apple_user_id: 'apple-sub' },
+      { device_id: 'old-device', apple_user_id: null }],
+  });
+  assert.equal(response.status, 409);
+  assert.equal(body.error, 'subscription_owner_transfer_requires_review');
+  assert.equal(calls.some((call) => call.write), false);
+});
+
+test('legacy request cannot move a subscription to an ID without a wallet row', async () => {
+  const { response, calls } = await run({
+    requestedDeviceId: 'unregistered-device', authenticated: false, tokenOwnerId: 'old-wallet',
+    walletRows: [{ device_id: 'old-wallet', apple_user_id: null }],
+  });
+  assert.equal(response.status, 409);
+  assert.equal(calls.some((call) => call.write), false);
+});
+
+test('legacy reinstall between two unlinked wallets still moves the subscription', async () => {
+  const { response, calls } = await run({
+    requestedDeviceId: 'new-device', authenticated: false, tokenOwnerId: 'old-device',
+    walletRows: [{ device_id: 'old-device', apple_user_id: null },
+      { device_id: 'new-device', apple_user_id: null }],
+  });
+  assert.equal(response.status, 200);
+  assert.deepEqual(calls.filter((call) => call.write).map((call) => call.write).slice(0, 2), ['delete', 'update']);
+});
+
+test('authenticated legacy-path request keeps the existing transfer behavior', async () => {
+  const { response, calls } = await run({
+    requestedDeviceId: 'apple-wallet-2', authenticated: true, tokenOwnerId: 'apple-wallet',
+  });
+  assert.equal(response.status, 200);
+  assert.equal(calls.some((call) => call.table === 'device_credits'), false);
+  assert.deepEqual(calls.filter((call) => call.write).map((call) => call.write).slice(0, 2), ['delete', 'update']);
 });

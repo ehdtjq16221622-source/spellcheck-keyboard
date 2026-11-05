@@ -380,6 +380,24 @@ Deno.serve(async (req: Request) => {
 
     let upsertError: unknown = null
     if (tokenOwner && tokenOwner.device_id !== deviceId) {
+      // An unauthenticated request must not take a subscription away from an
+      // Apple-linked wallet, or hand it to an ID with no wallet row: renewal
+      // credits would then go nowhere (2026-11-06 incident).
+      if (!wallet.authenticated) {
+        auditStage = 'subscription_owner_check'
+        const { data: walletRows, error: walletRowsError } = await supabase
+          .from('device_credits')
+          .select('device_id, apple_user_id')
+          .in('device_id', [tokenOwner.device_id, deviceId])
+        if (walletRowsError) throw walletRowsError
+        const rows = (walletRows ?? []) as Array<{ device_id: string; apple_user_id: string | null }>
+        const currentOwner = rows.find((r) => r.device_id === tokenOwner.device_id)
+        const requester = rows.find((r) => r.device_id === deviceId)
+        if (!requester || currentOwner?.apple_user_id) {
+          throw new Error('subscription owner transfer requires review')
+        }
+        auditStage = 'subscription_record_write'
+      }
       const { error: removeCurrentError } = await supabase
         .from('device_subscriptions')
         .delete()
