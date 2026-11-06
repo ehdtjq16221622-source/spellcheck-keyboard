@@ -153,7 +153,7 @@
       "verify_jwt": false,
       "updated_at": 1793131108813,
       "files": {
-        "apple_notifications/index.ts": "122809c940d87345",
+        "apple_notifications/index.ts": "cdc8e385f0ed0932",
         "apple_notifications/_shared/apple_notification_verifier.ts": "5ebdb79d78031d55",
         "apple_notifications/_shared/apple_subscription_portable.ts": "7287457ae7d47218",
         "apple_notifications/_shared/credits.ts": "efbc3a7f6c9a006c",

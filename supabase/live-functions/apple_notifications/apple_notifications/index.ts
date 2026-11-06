@@ -140,11 +140,22 @@ Deno.serve(async (req: Request) => {
 
     if (deviceId && state) {
       failureStage = 'subscription_state_update'
+      // A renewal carries the plan Apple actually billed, so a scheduled downgrade lands here.
+      const renewedProductId = typeof tx.productId === 'string' ? tx.productId : null
+      const renewedPlan = notificationType === 'DID_RENEW' && renewedProductId && expiresMs &&
+          originalTransactionId && KNOWN_SUBSCRIPTION_PRODUCTS.has(renewedProductId)
+        ? {
+          product_id: renewedProductId,
+          last_cycle_key: `${originalTransactionId}:${renewedProductId}:${expiresMs}`,
+          ...(typeof tx.transactionId === 'string' ? { latest_order_id: tx.transactionId } : {}),
+        }
+        : {}
       const { error } = await supabase
         .from('device_subscriptions')
         .update({
           subscription_state: state,
           expiry_time_millis: expiresMs,
+          ...renewedPlan,
           last_verified_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
@@ -175,6 +186,19 @@ Deno.serve(async (req: Request) => {
           if (error) throw error
           console.log(JSON.stringify({
             category: 'subscription_credit_followup', type: 'renewal_grant',
+            result: (Array.isArray(data) ? data[0] : data)?.result ?? 'unknown', diagnosticId,
+          }))
+        } else if ((notificationType === 'EXPIRED' || notificationType === 'GRACE_PERIOD_EXPIRED') &&
+            expiresMs && Deno.env.get('SUBSCRIPTION_EXPIRY_CLEAR_ENABLED') === 'true') {
+          // Owner policy 2026-11-06: subscription credits end with the subscription.
+          const { data, error } = await supabase.rpc('expire_subscription_credits', {
+            p_original_txn: originalTransactionId,
+            p_expired_ms: expiresMs,
+            p_notification_id: notificationUUID,
+          })
+          if (error) throw error
+          console.log(JSON.stringify({
+            category: 'subscription_credit_followup', type: 'expiry_clear',
             result: (Array.isArray(data) ? data[0] : data)?.result ?? 'unknown', diagnosticId,
           }))
         } else if (notificationType === 'REFUND') {
