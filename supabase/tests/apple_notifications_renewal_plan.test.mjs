@@ -77,3 +77,58 @@ test('non-renewal events keep updating only state and expiry', async () => {
     assert.equal('last_cycle_key' in update, false, type);
   }
 });
+
+async function rpcCalls(type, tx, env = {}) {
+  const calls = [];
+  let handler;
+  const savedFetch = globalThis.fetch;
+  globalThis.Deno = { env: { get: key => ({ SUPABASE_URL: 'https://example.invalid',
+    SUPABASE_SERVICE_ROLE_KEY: 'service', ...env })[key] }, serve: fn => { handler = fn; } };
+  globalThis.__notificationDb = () => ({
+    from: () => ({
+      select() { return this; }, eq() { return this; }, update() { return this; },
+      async maybeSingle() { return { data: { device_id: 'wallet' } }; },
+      then(resolve) { resolve({ error: null }); },
+    }),
+    async rpc(name, args) { calls.push({ name, args }); return { data: [{ result: 'cleared' }], error: null }; },
+  });
+  globalThis.__notificationVerification = {
+    verifyAppleNotificationJws: async () => ({ verified: true, environment: 'Production', notification: {
+      notificationType: type, subtype: '', notificationUUID: 'delivery', signedDate: Date.now(),
+      data: { bundleId: 'com.kingboard.app', signedTransactionInfo: 'fixture', signedRenewalInfo: 'fixture' },
+    } }),
+    verifyAppleTransactionJws: async () => tx,
+    verifyAppleRenewalInfoJws: async () => ({ originalTransactionId: 'otx', autoRenewStatus: 0,
+      autoRenewProductId: 'com.kingboard.app.monthly_basic' }),
+  };
+  globalThis.fetch = async () => Response.json({});
+  try {
+    await import(`data:text/javascript,${encodeURIComponent(runnable)}#${crypto.randomUUID()}`);
+    const response = await handler(new Request('https://example.invalid/apple_notifications', {
+      method: 'POST', body: JSON.stringify({ signedPayload: 'fixture' }),
+    }));
+    assert.equal(response.status, 200);
+    return calls;
+  } finally { globalThis.fetch = savedFetch; }
+}
+
+const expiredTx = { originalTransactionId: 'otx', transactionId: 'tx2',
+  productId: 'com.kingboard.app.monthly_basic', expiresDate: Date.now() - 1000 };
+
+test('final expiry clears subscription credits for that cycle when enabled', async () => {
+  for (const type of ['EXPIRED', 'GRACE_PERIOD_EXPIRED']) {
+    const calls = await rpcCalls(type, expiredTx, { SUBSCRIPTION_EXPIRY_CLEAR_ENABLED: 'true' });
+    assert.deepEqual(calls, [{ name: 'expire_subscription_credits',
+      args: { p_original_txn: 'otx', p_expired_ms: expiredTx.expiresDate, p_notification_id: 'delivery' } }], type);
+  }
+});
+
+test('expiry clearing stays off without the flag', async () => {
+  assert.deepEqual(await rpcCalls('EXPIRED', expiredTx), []);
+});
+
+test('billing retry and auto-renew changes never clear credits', async () => {
+  for (const type of ['DID_FAIL_TO_RENEW', 'DID_CHANGE_RENEWAL_STATUS']) {
+    assert.deepEqual(await rpcCalls(type, expiredTx, { SUBSCRIPTION_EXPIRY_CLEAR_ENABLED: 'true' }), [], type);
+  }
+});

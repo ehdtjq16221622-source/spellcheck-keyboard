@@ -188,6 +188,19 @@ Deno.serve(async (req: Request) => {
             category: 'subscription_credit_followup', type: 'renewal_grant',
             result: (Array.isArray(data) ? data[0] : data)?.result ?? 'unknown', diagnosticId,
           }))
+        } else if ((notificationType === 'EXPIRED' || notificationType === 'GRACE_PERIOD_EXPIRED') &&
+            expiresMs && Deno.env.get('SUBSCRIPTION_EXPIRY_CLEAR_ENABLED') === 'true') {
+          // Owner policy 2026-11-06: subscription credits end with the subscription.
+          const { data, error } = await supabase.rpc('expire_subscription_credits', {
+            p_original_txn: originalTransactionId,
+            p_expired_ms: expiresMs,
+            p_notification_id: notificationUUID,
+          })
+          if (error) throw error
+          console.log(JSON.stringify({
+            category: 'subscription_credit_followup', type: 'expiry_clear',
+            result: (Array.isArray(data) ? data[0] : data)?.result ?? 'unknown', diagnosticId,
+          }))
         } else if (notificationType === 'REFUND') {
           const { data, error } = await supabase.rpc('revoke_subscription_credits_on_refund', {
             p_original_txn: originalTransactionId,
