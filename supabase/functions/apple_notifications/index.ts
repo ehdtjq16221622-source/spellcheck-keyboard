@@ -23,6 +23,10 @@ const KNOWN_SUBSCRIPTION_PRODUCTS = new Set([
   'com.kingboard.app.monthly_premium',
   'com.kingboard.app.monthly_pro',
 ])
+const CREDIT_PACK_PRODUCTS = new Set([
+  'com.kingboard.app.credits_7000',
+  'com.kingboard.app.credits_18000',
+])
 
 function safeErrorCode(error: unknown): string {
   let current = error
@@ -91,6 +95,16 @@ Deno.serve(async (req: Request) => {
     const expiresMs = typeof tx.expiresDate === 'number' ? (tx.expiresDate as number) : null
     const environment = String(verifiedEnvironment)
     const notificationUUID = String(notif.notificationUUID ?? '')
+
+    // Credit packs are one-time purchases with no device_subscriptions row. Refunds must take the
+    // credits back reliably, so a failure here returns 500 and Apple redelivers the notification.
+    if (productId && CREDIT_PACK_PRODUCTS.has(productId)) {
+      return await handleCreditPackNotification({
+        notificationType, productId, environment,
+        transactionId: typeof tx.transactionId === 'string' ? tx.transactionId : null,
+        notificationUUID, diagnosticId,
+      })
+    }
 
     // Map notification type -> subscription state (null = leave state unchanged).
     let state: string | null = null
@@ -319,6 +333,59 @@ Deno.serve(async (req: Request) => {
 })
 
 // "베이직" for com.kingboard.app.monthly_basic; unknown products keep their raw ID.
+async function handleCreditPackNotification(input: {
+  notificationType: string
+  productId: string
+  environment: string
+  transactionId: string | null
+  notificationUUID: string
+  diagnosticId: string
+}): Promise<Response> {
+  const { notificationType, productId, environment, transactionId, notificationUUID, diagnosticId } = input
+  const ok = (result: string) => new Response(JSON.stringify({ ok: true, notificationType, result, diagnosticId }),
+    { status: 200, headers: { 'Content-Type': 'application/json' } })
+  // CONSUMPTION_REQUEST and REFUND_DECLINED need no credit change. Consumption data is not sent:
+  // Apple requires the customer's consent for it, which the app does not collect.
+  if (notificationType !== 'REFUND' && notificationType !== 'REFUND_REVERSED') return ok('ignored')
+  if (!transactionId) throw new Error('credit_pack_transaction_missing')
+  const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+  const credits = productId.endsWith('18000') ? '18,000' : '7,000'
+  const rpc = notificationType === 'REFUND' ? 'refund_credit_pack_once' : 'reverse_credit_pack_refund_once'
+  const { data, error } = await supabase.rpc(rpc, {
+    p_transaction_id: transactionId, p_product_id: productId, p_environment: environment,
+    p_notification_id: notificationUUID,
+  })
+  if (error) {
+    const message = String(error.message ?? '')
+    if (message.includes('refund_after_reversal_requires_review')) {
+      // Retrying cannot fix this; acknowledge it and ask a person to look.
+      await sendTelegram(`⚠️ 묶음 재환불 확인 필요 · ${credits} 크레딧 (환불 취소 뒤 다시 환불)`, {
+        supabase, alertType: 'credit_pack_refund_review', idempotencyKey: notificationUUID || transactionId,
+      }).catch(() => false)
+      return ok('needs_review')
+    }
+    console.error(JSON.stringify({ category: 'credit_pack_refund', result: 'failed', rpc,
+      code: message.includes('refund_not_found_retry') ? 'refund_not_found_retry' : 'rpc_failed', diagnosticId }))
+    // 500 makes Apple redeliver (e.g. a reversal that arrived before its refund).
+    return new Response(JSON.stringify({ error: 'credit_pack_refund_failed', diagnosticId }), { status: 500 })
+  }
+  const row = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null
+  const result = String(row?.result ?? 'unknown')
+  console.log(JSON.stringify({ category: 'credit_pack_refund', rpc, result, environment, diagnosticId }))
+  if (result === 'recovered' || result === 'recorded_unclaimed' || result === 'restored') {
+    const envLabel = environment === 'Sandbox' ? '🧪 ' : ''
+    const text = notificationType === 'REFUND'
+      ? `${envLabel}💸 묶음 환불 · ${credits} 크레딧 · 회수 ${Number(row?.recovered ?? 0).toLocaleString('ko-KR')}` +
+        (Number(row?.shortfall ?? 0) > 0 ? ` (이미 사용 ${Number(row?.shortfall).toLocaleString('ko-KR')})` : '') +
+        (result === 'recorded_unclaimed' ? ' · 지급 전 환불' : '')
+      : `${envLabel}↩️ 묶음 환불 취소 · ${credits} 크레딧 · 복구 ${Number(row?.restored ?? 0).toLocaleString('ko-KR')}`
+    await sendTelegram(text, {
+      supabase, alertType: 'credit_pack_refund', idempotencyKey: `${notificationType}:${transactionId}`,
+    }).catch(() => false)
+  }
+  return ok(result)
+}
+
 function planName(productId: unknown): string {
   const names: Record<string, string> = {
     'com.kingboard.app.monthly_basic': '베이직',
