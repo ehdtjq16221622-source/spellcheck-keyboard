@@ -149,11 +149,11 @@
       }
     },
     "apple_notifications": {
-      "version": 41,
+      "version": 46,
       "verify_jwt": false,
-      "updated_at": 1793131108813,
+      "updated_at": 1794375345021,
       "files": {
-        "apple_notifications/index.ts": "cdc8e385f0ed0932",
+        "apple_notifications/index.ts": "75bdd64db9fa3862",
         "apple_notifications/_shared/apple_notification_verifier.ts": "5ebdb79d78031d55",
         "apple_notifications/_shared/apple_subscription_portable.ts": "7287457ae7d47218",
         "apple_notifications/_shared/credits.ts": "efbc3a7f6c9a006c",
@@ -282,6 +282,19 @@
         "dialect_standardization_experiment/generated-before.ts": "504afa2a1ea368f2",
         "dialect_standardization_experiment/generated-cases.ts": "af1dfeba191b7539",
         "dialect_standardization_experiment/index.ts": "01f5678a55a836e5"
+      }
+    },
+    "credit_pack_purchase": {
+      "version": 1,
+      "verify_jwt": false,
+      "updated_at": 1794375316665,
+      "files": {
+        "credit_pack_purchase/index.ts": "1f7585251fa510d9",
+        "credit_pack_purchase/_shared/apple_subscription_portable.ts": "4adaf6808394efd4",
+        "credit_pack_purchase/_shared/apple_subscription_status.ts": "9906b9e9889af6fb",
+        "credit_pack_purchase/_shared/credit_pack_validation.ts": "e86f82e567173164",
+        "credit_pack_purchase/_shared/telegram.ts": "932ca4944375a8bf",
+        "credit_pack_purchase/_shared/wallet_auth.ts": "e84fecb12f4eb98e"
       }
     }
   },
