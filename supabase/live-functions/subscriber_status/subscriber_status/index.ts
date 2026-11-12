@@ -4,7 +4,7 @@ import { buildRenewalOutcomes, decodeApplePayload, groupSubscriptionPeople, late
   renewalState, selectAppleSubscription, subscriptionTier, type SubscriptionObservation } from '../_shared/subscription_reporting.ts'
 
 const API = 'https://api.storekit.apple.com/inApps'
-const PRICES: Record<string, number> = { monthly_basic: 1100, monthly_premium: 2200, monthly_pro: 6600 }
+const PRICES: Record<string, number> = { monthly_basic: 1100, monthly_premium: 2200, monthly_pro: 6600, monthly_max: 9900 }
 
 async function makeJwt(): Promise<string> {
   const key = await importPKCS8(atob(Deno.env.get('APPLE_IAP_KEY_B64')!), 'ES256')

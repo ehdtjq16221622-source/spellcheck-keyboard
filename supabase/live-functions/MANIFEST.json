@@ -51,19 +51,19 @@
       }
     },
     "sync_subscription_ios": {
-      "version": 62,
+      "version": 67,
       "verify_jwt": false,
-      "updated_at": 1793131330207,
+      "updated_at": 1794486976743,
       "files": {
-        "sync_subscription_ios/index.ts": "8a608c4c828762ad",
+        "sync_subscription_ios/index.ts": "ba88fb0d3f18078a",
         "sync_subscription_ios/_shared/apple_receipt.ts": "b19ff55ec3cd1fbc",
         "sync_subscription_ios/_shared/apple_subscription_portable.ts": "4adaf6808394efd4",
         "sync_subscription_ios/_shared/apple_subscription_status.ts": "c7482dbd63e3e200",
-        "sync_subscription_ios/_shared/credits.ts": "efbc3a7f6c9a006c",
-        "sync_subscription_ios/_shared/subscription_alerts.ts": "206b223669b0a83b",
-        "sync_subscription_ios/_shared/subscription_audit.ts": "609166e46167ee53",
+        "sync_subscription_ios/_shared/credits.ts": "29cdf0a666e37406",
+        "sync_subscription_ios/_shared/subscription_alerts.ts": "4ae0b800dd91c8dd",
+        "sync_subscription_ios/_shared/subscription_audit.ts": "c85ec197d3ba4d85",
         "sync_subscription_ios/_shared/wallet_auth.ts": "e84fecb12f4eb98e",
-        "_shared/subscription_audit.ts": "957cc9094a0feb12"
+        "_shared/subscription_audit.ts": "9acddcbec900798d"
       }
     },
     "daily_checkin": {
@@ -130,13 +130,13 @@
       }
     },
     "daily_digest": {
-      "version": 40,
+      "version": 43,
       "verify_jwt": false,
-      "updated_at": 1793131177392,
+      "updated_at": 1794487041776,
       "files": {
-        "daily_digest/index.ts": "36a5d884a4d5878c",
+        "daily_digest/index.ts": "c8d1ef5ec1fbe0f5",
         "daily_digest/_shared/telegram.ts": "2ca09cd0bbae756a",
-        "_shared/subscription_audit.ts": "957cc9094a0feb12",
+        "_shared/subscription_audit.ts": "9acddcbec900798d",
         "_shared/telegram.ts": "932ca4944375a8bf"
       }
     },
@@ -149,14 +149,14 @@
       }
     },
     "apple_notifications": {
-      "version": 46,
+      "version": 47,
       "verify_jwt": false,
-      "updated_at": 1794375345021,
+      "updated_at": 1794486952423,
       "files": {
-        "apple_notifications/index.ts": "75bdd64db9fa3862",
+        "apple_notifications/index.ts": "692e14a0aae94aa5",
         "apple_notifications/_shared/apple_notification_verifier.ts": "5ebdb79d78031d55",
         "apple_notifications/_shared/apple_subscription_portable.ts": "7287457ae7d47218",
-        "apple_notifications/_shared/credits.ts": "efbc3a7f6c9a006c",
+        "apple_notifications/_shared/credits.ts": "29cdf0a666e37406",
         "apple_notifications/_shared/telegram.ts": "932ca4944375a8bf"
       }
     },
@@ -169,12 +169,12 @@
       }
     },
     "subscriber_status": {
-      "version": 30,
+      "version": 33,
       "verify_jwt": false,
-      "updated_at": 1793029837464,
+      "updated_at": 1794487021962,
       "files": {
-        "subscriber_status/index.ts": "230b85484d868ae6",
-        "_shared/subscription_reporting.ts": "d144a9abc13eee10"
+        "subscriber_status/index.ts": "88be92ff8a8a1d4e",
+        "_shared/subscription_reporting.ts": "ee656ed890b0281d"
       }
     },
     "referral": {
@@ -213,16 +213,16 @@
       }
     },
     "wallet_link_v2": {
-      "version": 63,
+      "version": 67,
       "verify_jwt": false,
-      "updated_at": 1792842967300,
+      "updated_at": 1794487002948,
       "files": {
-        "wallet_link_v2/index.ts": "8c3c55fe928d28e0",
+        "wallet_link_v2/index.ts": "dc107c858d9474b6",
         "wallet_link_v2/_shared/apple_auth.ts": "055bd2a8e05d6aa0",
         "wallet_link_v2/_shared/apple_subscription_portable.ts": "4adaf6808394efd4",
         "wallet_link_v2/_shared/apple_subscription_status.ts": "f8eaed6cfa72c6a6",
         "wallet_link_v2/_shared/devicecheck.ts": "0817dcfd6ef4b19f",
-        "wallet_link_v2/_shared/subscription_audit.ts": "300a5315f509b49e",
+        "wallet_link_v2/_shared/subscription_audit.ts": "62b23002024a0511",
         "wallet_link_v2/_shared/wallet_auth.ts": "47348a452be75a1d"
       }
     },
@@ -298,5 +298,5 @@
       }
     }
   },
-  "recorded_at": "2026-10-27T20:03:16.140Z"
+  "recorded_at": "2026-11-12T12:37:28.942Z"
 }

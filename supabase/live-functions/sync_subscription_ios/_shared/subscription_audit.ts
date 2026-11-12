@@ -2,7 +2,7 @@ export type SubscriptionAuditLevel = 'info' | 'warn' | 'error'
 
 type AuditFields = {
   stage?: string
-  product?: 'basic' | 'premium' | 'pro' | 'other'
+  product?: 'basic' | 'premium' | 'pro' | 'max' | 'other'
   source?: 'storekit_jws' | 'app_receipt' | 'google_play' | 'unknown'
   environment?: string | null
   state?: string
@@ -128,7 +128,7 @@ export async function readSubscriptionActivity(db: any, start: string, end: stri
         if (metadata.apple_current_product_verified === true && !metadata.source) group.verifiedCurrentProductGrants! += 1
         if (metadata.source === 'reconcile_20261017') group.manualRepairGrants! += 1
         const event = metadata.subscription_audit
-        const knownProducts = ['com.kingboard.app.monthly_basic', 'com.kingboard.app.monthly_premium', 'com.kingboard.app.monthly_pro']
+        const knownProducts = ['com.kingboard.app.monthly_basic', 'com.kingboard.app.monthly_premium', 'com.kingboard.app.monthly_pro', 'com.kingboard.app.monthly_max']
         const marked = event?.version === 1 &&
           ['subscription_grant', 'plan_change_applied'].includes(event.event) &&
           event.product_id === metadata.productId && event.environment === metadata.environment &&

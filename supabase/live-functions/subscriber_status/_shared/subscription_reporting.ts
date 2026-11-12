@@ -20,7 +20,7 @@ export function decodeApplePayload(jws: unknown): AppleTransaction | null {
 }
 
 export function subscriptionTier(product: unknown): string | null {
-  return typeof product === 'string' && /^com\.kingboard\.app\.monthly_(basic|premium|pro)$/.test(product)
+  return typeof product === 'string' && /^com\.kingboard\.app\.monthly_(basic|premium|pro|max)$/.test(product)
     ? product.slice('com.kingboard.app.'.length) : null
 }
 

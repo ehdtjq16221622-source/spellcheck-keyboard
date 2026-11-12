@@ -2,7 +2,7 @@ export type SubscriptionAuditLevel = 'info' | 'warn' | 'error'
 
 type AuditFields = {
   stage?: string
-  product?: 'basic' | 'premium' | 'pro' | 'other'
+  product?: 'basic' | 'premium' | 'pro' | 'max' | 'other'
   source?: 'storekit_jws' | 'app_receipt' | 'google_play' | 'unknown'
   environment?: string | null
   state?: string

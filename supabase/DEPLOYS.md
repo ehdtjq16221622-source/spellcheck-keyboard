@@ -30,3 +30,8 @@
 | 2026-10-27 20:00 | subscription_apple_reconcile | v4 | 4b4c613 |
 | 2026-10-27 20:02 | sync_subscription_ios | v62 | 17aa81d |
 | 2026-10-27 20:03 | service_monitor | v12 | 7cf66c5 |
+| 2026-11-12 12:36 | apple_notifications | v47 | ebca88f |
+| 2026-11-12 12:36 | sync_subscription_ios | v67 | ebca88f |
+| 2026-11-12 12:36 | wallet_link_v2 | v67 | ebca88f |
+| 2026-11-12 12:37 | subscriber_status | v33 | ebca88f |
+| 2026-11-12 12:37 | daily_digest | v43 | ebca88f |

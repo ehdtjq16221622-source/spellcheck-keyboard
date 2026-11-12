@@ -58,7 +58,7 @@ export function summarizeFailure(events: any[]): { stage: string; code: string; 
 
 // A verified entitlement is evidence, not proof of a new charge or of missing credits.
 const PAID_STAGES = ['subscription_lookup', 'plan_change_verification', 'atomic_subscription_and_grant', 'subscription_record_write', 'monthly_credit_grant']
-const PRODUCT_NAME: Record<string, string> = { basic: '베이직', premium: '프리미엄', pro: '프로' }
+const PRODUCT_NAME: Record<string, string> = { basic: '베이직', premium: '프리미엄', pro: '프로', max: '맥스' }
 
 type GrantEvidence = 'not_checked' | 'lookup_failed' | 'same_cycle_grant_found' | 'same_cycle_grant_missing' | 'grant_record_other_wallet'
 
