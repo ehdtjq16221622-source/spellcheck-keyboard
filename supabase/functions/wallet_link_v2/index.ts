@@ -79,10 +79,11 @@ async function sha256(value: string): Promise<string> {
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
-function auditProduct(productId: string): 'basic' | 'premium' | 'pro' | 'other' {
+function auditProduct(productId: string): 'basic' | 'premium' | 'pro' | 'max' | 'other' {
   if (productId.endsWith('.monthly_basic')) return 'basic'
   if (productId.endsWith('.monthly_premium')) return 'premium'
   if (productId.endsWith('.monthly_pro')) return 'pro'
+  if (productId.endsWith('.monthly_max')) return 'max'
   return 'other'
 }
 

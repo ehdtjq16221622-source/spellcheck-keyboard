@@ -22,6 +22,7 @@ const KNOWN_SUBSCRIPTION_PRODUCTS = new Set([
   'com.kingboard.app.monthly_basic',
   'com.kingboard.app.monthly_premium',
   'com.kingboard.app.monthly_pro',
+  'com.kingboard.app.monthly_max',
 ])
 const CREDIT_PACK_PRODUCTS = new Set([
   'com.kingboard.app.credits_7000',
@@ -391,6 +392,7 @@ function planName(productId: unknown): string {
     'com.kingboard.app.monthly_basic': '베이직',
     'com.kingboard.app.monthly_premium': '프리미엄',
     'com.kingboard.app.monthly_pro': '프로',
+    'com.kingboard.app.monthly_max': '맥스',
   }
   return typeof productId === 'string' ? names[productId] ?? productId : '상품 미확인'
 }

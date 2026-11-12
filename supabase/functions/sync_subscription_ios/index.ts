@@ -66,7 +66,7 @@ Deno.serve(async (req: Request) => {
     events.push({ ...fields, auditId: id, event })
   }
   let auditStage = 'parse_request'
-  let auditProduct: 'basic' | 'premium' | 'pro' | 'other' = 'other'
+  let auditProduct: 'basic' | 'premium' | 'pro' | 'max' | 'other' = 'other'
   let auditSource: 'storekit_jws' | 'app_receipt' | 'unknown' = 'unknown'
   let auditIsCanary = false
   let auditWalletFingerprint: string | undefined
@@ -85,7 +85,8 @@ Deno.serve(async (req: Request) => {
     auditSyncOrigin = typeof syncOrigin === 'string' ? syncOrigin.slice(0, 30) : undefined
     auditProduct = productId === 'com.kingboard.app.monthly_basic' ? 'basic'
       : productId === 'com.kingboard.app.monthly_premium' ? 'premium'
-      : productId === 'com.kingboard.app.monthly_pro' ? 'pro' : 'other'
+      : productId === 'com.kingboard.app.monthly_pro' ? 'pro'
+      : productId === 'com.kingboard.app.monthly_max' ? 'max' : 'other'
     auditSource = jwsToken ? 'storekit_jws' : receiptData ? 'app_receipt' : 'unknown'
     if (!requestedDeviceId || !productId || (!jwsToken && !receiptData)) {
       logSubscriptionAudit('warn', auditId, 'rejected', {
@@ -137,6 +138,7 @@ Deno.serve(async (req: Request) => {
       'com.kingboard.app.monthly_basic',
       'com.kingboard.app.monthly_premium',
       'com.kingboard.app.monthly_pro',
+      'com.kingboard.app.monthly_max',
     ].includes(productId)) {
       logSubscriptionAudit('warn', auditId, 'rejected', {
         stage: 'product_validation', product: auditProduct, source: auditSource,

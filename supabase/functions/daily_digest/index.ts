@@ -232,9 +232,9 @@ async function buildSubscriptionBlock(supabase: any): Promise<{
     const dStr = delta == null || delta === 0 ? '' : delta > 0 ? ` (▲${delta})` : ` (▼${-delta})`
 
     // Tier breakdown (from Apple-live active count).
-    const TIER_ORDER = ['monthly_pro', 'monthly_premium', 'monthly_basic']
+    const TIER_ORDER = ['monthly_max', 'monthly_pro', 'monthly_premium', 'monthly_basic']
     const TIER_NAME: Record<string, string> = {
-      monthly_pro: '프로', monthly_premium: '프리미엄', monthly_basic: '베이직',
+      monthly_max: '맥스', monthly_pro: '프로', monthly_premium: '프리미엄', monthly_basic: '베이직',
     }
     const byTier = (j.active_by_tier ?? {}) as Record<string, number>
     const tierParts = TIER_ORDER
