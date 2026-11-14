@@ -5,7 +5,9 @@ import { test } from 'node:test';
 
 const source = readFileSync(new URL('../functions/correct/index.ts', import.meta.url), 'utf8');
 const deadlineSource = readFileSync(new URL('../functions/correct/_shared/ai_deadline.ts', import.meta.url),'utf8').replace(/^export /gm,'');
-const runnable = stripTypeScriptTypes(deadlineSource + '\n' + source
+const languageSource = readFileSync(new URL('../functions/correct/language_prompts.ts', import.meta.url),'utf8').replace(/^export /gm,'');
+const runnable = stripTypeScriptTypes(deadlineSource + '\n' + languageSource + '\n' + source
+  .replace(/^import \{ buildForeignProofingPrompt.*$/m,'')
   .replace(/^import \{ AIRequestDeadline.*$/m,'')
   .replace(/^import \{ applyValidatedProofingEdits, parseProofingEdits \} from .*;?$/m,
     'const applyValidatedProofingEdits = globalThis.__applyValidatedProofingEdits; const parseProofingEdits = globalThis.__parseProofingEdits;')
@@ -174,4 +176,47 @@ test('insufficient-credit responses include a safe diagnostic ID and failure sta
   assert.equal(warning?.[1]?.paid_credits_remaining, 0);
   assert.equal(JSON.stringify(warning).includes('test-device'), false);
   assert.equal(JSON.stringify(warning).includes('test-request-id'), false);
+});
+
+// ---- English / Japanese (overseas launch) ----
+
+async function send(body) {
+  const ctx = await createHandler();
+  const response = await ctx.handler(new Request('http://localhost/correct', { method: 'POST',
+    body: JSON.stringify({ deviceId: 'fixture', requestId: 'fixture-request', ...body }) }));
+  return { ...ctx, response, result: await response.json() };
+}
+const systemOf = (call) => call.body.system_instruction?.parts?.[0]?.text ?? call.body.instructions;
+
+test('no language (every current app) keeps the Korean prompts exactly', async () => {
+  const korean = await send({ text: 'hello', formalMode: false });
+  const explicitKo = await send({ text: 'hello', formalMode: false, language: 'ko' });
+  const unknown = await send({ text: 'hello', formalMode: false, language: 'zh' });
+  assert.match(systemOf(korean.calls[0]), /한국어 맞춤법 교정기/);
+  assert.equal(systemOf(explicitKo.calls[0]), systemOf(korean.calls[0]));
+  assert.equal(systemOf(unknown.calls[0]), systemOf(korean.calls[0]));
+});
+
+test('English proofreading uses the English prompt on the same low-cost model and credit kind', async () => {
+  const r = await send({ text: 'i dont know where there going', formalMode: false, language: 'en-US' });
+  // The fake model answers 'gemini result', which drops most of the letters, so the deletion guard
+  // keeps the original text: that is the safe outcome.
+  assert.equal(r.result.result, 'i dont know where there going');
+  assert.equal(r.calls.length, 1);
+  assert.match(r.calls[0].url, /gemini-3\.1-flash-lite/);
+  assert.match(systemOf(r.calls[0]), /proofreader/);
+  assert.doesNotMatch(systemOf(r.calls[0]), /한국어/);
+  assert.equal(r.consumeCalls[0][3], 'correct');
+});
+
+test('Japanese tone keys map to Japanese instructions; custom goes to Luna with the user style', async () => {
+  const polite = await send({ text: '明日行ける', formalMode: true, formalLevel: 'polite', language: 'ja' });
+  assert.match(systemOf(polite.calls[0]), /です・ます調/);
+  assert.equal(polite.consumeCalls[0][3], 'formal');
+  const business = await send({ text: '明日行ける', formalMode: true, formalLevel: 'business', language: 'ja' });
+  assert.match(systemOf(business.calls[0]), /ビジネス文/);
+  const custom = await send({ text: 'see you', formalMode: true, formalLevel: 'custom', customPrompt: 'like a pirate', language: 'en' });
+  assert.equal(custom.calls[0].url, 'https://api.openai.com/v1/responses');
+  assert.match(custom.calls[0].body.instructions, /like a pirate/);
+  assert.match(custom.calls[0].body.instructions, /comes from the user/);
 });

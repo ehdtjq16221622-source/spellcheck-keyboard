@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { consumeAIUsage, refundAIUsage } from './_shared/credits.ts'
 import { resolveCreditWallet, WalletAccessError } from './_shared/wallet_auth.ts'
 import { AIRequestDeadline, AIRequestTimeout, recordSlowAIRequest } from './_shared/ai_deadline.ts'
+import { buildForeignProofingPrompt, buildForeignTonePrompt, hasSuspiciousForeignDeletion, normalizeCorrectionLanguage } from './language_prompts.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -52,7 +53,10 @@ Deno.serve(async (req: Request) => {
       preview,
       diagnosticId: requestedDiagnosticId,
       diagnosticTrace,
+      language,
     } = await req.json()
+    // 'en' / 'ja' use language_prompts.ts; anything else (including no value) is the Korean path.
+    const correctionLanguage = normalizeCorrectionLanguage(language)
 
     if (typeof requestId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId)) diagnosticId = requestId
     if (typeof requestedDiagnosticId === 'string' &&
@@ -134,6 +138,16 @@ Deno.serve(async (req: Request) => {
     try {
       failureStage = 'ai_provider'
       result = await deadline.run(async () => {
+      if (correctionLanguage !== 'ko') {
+        if (!formalMode) {
+          return await correctForeignLowCost(source, correctionLanguage, shouldRemovePunct, diagnosticId, deadline)
+        }
+        const system = buildForeignTonePrompt(correctionLanguage, normalizedLevel, shouldIncludeFormalPunct, customPrompt)
+        return normalizedLevel === '커스텀'
+          ? await callLuna(source, system, responseTrace, deadline)
+          : await callGemini(source, true, shouldRemovePunct, false, normalizedLevel, shouldIncludeFormalPunct, customPrompt,
+            responseTrace, deadline, system)
+      }
       if (!formalMode) {
         return await correctSpellingLowCost(source, shouldRemovePunct, includeDialect, diagnosticId, deadline)
       } else {
@@ -473,6 +487,24 @@ async function correctSpellingLowCost(
   }
 }
 
+// English / Japanese proofreading. Korean-only fixups (applyProofingFallbacks, applyNarrowProofingRules)
+// never run here. If the model cut a large part of the text, the original is returned unchanged.
+async function correctForeignLowCost(
+  source: string,
+  lang: 'en' | 'ja',
+  removePunct: boolean,
+  diagnosticId: string,
+  deadline?: AIRequestDeadline
+): Promise<string> {
+  const raw = await callProofingGemini(source, buildForeignProofingPrompt(lang, removePunct), false, deadline)
+  const result = removePunct ? restoreTerminalPunctuation(source, raw) : raw
+  if (hasSuspiciousForeignDeletion(source, result, lang)) {
+    logDiagnostic('warn', diagnosticId, 'proofing_safety_fallback', 'SUSPICIOUS_DELETION_ORIGINAL_KEPT')
+    return source
+  }
+  return result
+}
+
 function buildLowCostProofingPrompt(removePunct: boolean, includeDialect: boolean): string {
   if (includeDialect) return buildDialectProofingPrompt(removePunct, false)
   let prompt =
@@ -648,9 +680,10 @@ async function callGemini(
   formalIncludePunct: boolean,
   customPrompt?: string,
   trace?: ToneResponseTrace,
-  deadline?: AIRequestDeadline
+  deadline?: AIRequestDeadline,
+  systemOverride?: string
 ): Promise<string> {
-  const system = buildSystemPrompt(
+  const system = systemOverride ?? buildSystemPrompt(
     formalMode,
     removePunct,
     includeDialect,

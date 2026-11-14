@@ -59,7 +59,7 @@ function harness(endpoint, { delays=[10_000], statuses=[200], alreadyProcessed=f
   }
   const source=endpoint==='correct' && process.env.KINGBOARD_CORRECT_CANDIDATE
     ? readFileSync(process.env.KINGBOARD_CORRECT_CANDIDATE,'utf8') : read(`../functions/${endpoint}/index.ts`)
-  const program=shared.replace(/^export /gm,'')+'\n'+creditSource.replace(/^import .*$/gm,'').replace(/^export /gm,'')+'\n'+source.replace(/^import .*$/gm,'')
+  const program=shared.replace(/^export /gm,'')+'\n'+creditSource.replace(/^import .*$/gm,'').replace(/^export /gm,'')+'\n'+(endpoint==='correct'?read('../functions/correct/language_prompts.ts').replace(/^export /gm,''):'')+'\n'+source.replace(/^import .*$/gm,'')
   runInNewContext(stripTypeScriptTypes(program),context)
   return {
     rows,logs,requests,get charges(){return charges},get refunds(){return refunds},get balance(){return balance},

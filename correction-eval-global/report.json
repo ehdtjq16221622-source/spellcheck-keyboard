@@ -1,0 +1,563 @@
+{
+  "model": "gemini-3.1-flash-lite",
+  "summary": {
+    "proofing:en": {
+      "pass": 20,
+      "total": 20
+    },
+    "proofing:ja": {
+      "pass": 20,
+      "total": 20
+    },
+    "tone:ja": {
+      "pass": 4,
+      "total": 4
+    },
+    "tone:en": {
+      "pass": 4,
+      "total": 4
+    }
+  },
+  "results": [
+    {
+      "kind": "proofing",
+      "id": "en01",
+      "lang": "en",
+      "input": "i dont know where there going tonight",
+      "output": "I don't know where they're going tonight",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "en02",
+      "lang": "en",
+      "input": "your going to love this place lol",
+      "output": "you're going to love this place lol",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "en03",
+      "lang": "en",
+      "input": "can u send me the file by friday? thx",
+      "output": "can u send me the file by friday? thx",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "en04",
+      "lang": "en",
+      "input": "Its been a long day, im so tired 😴",
+      "output": "It's been a long day, I'm so tired 😴",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "en05",
+      "lang": "en",
+      "input": "I recieved your message and will definately reply tomorow",
+      "output": "I received your message and will definitely reply tomorrow",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "en06",
+      "lang": "en",
+      "input": "Thanks for the update. See you at 3pm.",
+      "output": "Thanks for the update. See you at 3pm.",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": [],
+      "changedWhenClean": false
+    },
+    {
+      "kind": "proofing",
+      "id": "en07",
+      "lang": "en",
+      "input": "He dont have time for this",
+      "output": "He doesn't have time for this",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "en08",
+      "lang": "en",
+      "input": "check https://example.com/a_b?x=1 its the new link",
+      "output": "check https://example.com/a_b?x=1 it's the new link",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "en09",
+      "lang": "en",
+      "input": "we was planning to go but it rained",
+      "output": "we were planning to go but it rained",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "en10",
+      "lang": "en",
+      "input": "The colour of the flat is lovely, i love it",
+      "output": "The colour of the flat is lovely, I love it",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "en11",
+      "lang": "en",
+      "input": "omg that was sooo funny haha",
+      "output": "omg that was sooo funny haha",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "en12",
+      "lang": "en",
+      "input": "Let me know if their available on monday",
+      "output": "Let me know if they're available on monday",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "en13",
+      "lang": "en",
+      "input": "i could of done it better",
+      "output": "I could have done it better",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "en14",
+      "lang": "en",
+      "input": "@sam can you review PR #42 before lunch",
+      "output": "@sam can you review PR #42 before lunch",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "en15",
+      "lang": "en",
+      "input": "Me and him went to the store yesterday",
+      "output": "He and I went to the store yesterday",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "en16",
+      "lang": "en",
+      "input": "I'm sorry I missed you call, I was driving",
+      "output": "I'm sorry I missed your call, I was driving",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "en17",
+      "lang": "en",
+      "input": "brb gonna grab coffee ☕",
+      "output": "brb gonna grab coffee ☕",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "en18",
+      "lang": "en",
+      "input": "The meeting has been moved to thursday afternoon",
+      "output": "The meeting has been moved to Thursday afternoon",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "en19",
+      "lang": "en",
+      "input": "It was nice to meet you, hope to see you agian soon!",
+      "output": "It was nice to meet you, hope to see you again soon!",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "en20",
+      "lang": "en",
+      "input": "오늘 meeting은 cancel됐어 ok?",
+      "output": "오늘 meeting은 cancel됐어 ok?",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "ja01",
+      "lang": "ja",
+      "input": "明日の会議わ十時からです",
+      "output": "明日の会議は十時からです",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "ja02",
+      "lang": "ja",
+      "input": "それは以外な結果でした",
+      "output": "それは意外な結果でした",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "ja03",
+      "lang": "ja",
+      "input": "今日はほんとに楽しかったw また遊ぼうね",
+      "output": "今日はほんとに楽しかったw また遊ぼうね",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "ja04",
+      "lang": "ja",
+      "input": "資料を送くりますので確認お願いします",
+      "output": "資料を送りますので確認お願いします",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "ja05",
+      "lang": "ja",
+      "input": "彼の努力には関心しました",
+      "output": "彼の努力には感心しました",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "ja06",
+      "lang": "ja",
+      "input": "了解です、明日伺います。",
+      "output": "了解です、明日伺います。",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": [],
+      "changedWhenClean": false
+    },
+    {
+      "kind": "proofing",
+      "id": "ja07",
+      "lang": "ja",
+      "input": "駅で友達に合う予定です",
+      "output": "駅で友達に会う予定です",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "ja08",
+      "lang": "ja",
+      "input": "このリンク見て https://example.jp/x 面白いよ😂",
+      "output": "このリンク見て https://example.jp/x 面白いよ😂",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "ja09",
+      "lang": "ja",
+      "input": "雨が降ってるから傘を持っていて",
+      "output": "雨が降ってるから傘を持って行って",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "ja10",
+      "lang": "ja",
+      "input": "お疲れ様です。本日の議事録を共有いたしまします。",
+      "output": "お疲れ様です。本日の議事録を共有いたします。",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "ja11",
+      "lang": "ja",
+      "input": "まじで草",
+      "output": "まじで草",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": [],
+      "changedWhenClean": false
+    },
+    {
+      "kind": "proofing",
+      "id": "ja12",
+      "lang": "ja",
+      "input": "子供の成長わ早いですね",
+      "output": "子供の成長は早いですね",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "ja13",
+      "lang": "ja",
+      "input": "来週の打ち合わせの日程を調製します",
+      "output": "来週の打ち合わせの日程を調整します",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "ja14",
+      "lang": "ja",
+      "input": "お返事遅くなってすみません(>_<)",
+      "output": "お返事遅くなってすみません(>_<)",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "ja15",
+      "lang": "ja",
+      "input": "これわ私の責任です",
+      "output": "これは私の責任です",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "ja16",
+      "lang": "ja",
+      "input": "@tanaka 明日のシフト代わってもらえる?",
+      "output": "@tanaka 明日のシフト代わってもらえる？",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "ja17",
+      "lang": "ja",
+      "input": "新しいスマホを買いました。とても使いやすいです",
+      "output": "新しいスマホを買いました。とても使いやすいです",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "ja18",
+      "lang": "ja",
+      "input": "先生にプレゼントを上げました",
+      "output": "先生にプレゼントをあげました",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "ja19",
+      "lang": "ja",
+      "input": "暑いので体調に気お付けてください",
+      "output": "暑いので体調に気を付けてください",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": []
+    },
+    {
+      "kind": "proofing",
+      "id": "ja20",
+      "lang": "ja",
+      "input": "今日の夜ご飯なにがいい?",
+      "output": "今日の夜ご飯なにがいい?",
+      "guarded": false,
+      "pass": true,
+      "missing": [],
+      "lost": [],
+      "changedWhenClean": false
+    },
+    {
+      "kind": "tone",
+      "id": "tj1",
+      "lang": "ja",
+      "level": "존댓말",
+      "input": "明日の会議、遅れるかも",
+      "output": "明日の会議、遅れてしまうかもしれません。",
+      "pass": true,
+      "missing": [],
+      "unwanted": [],
+      "wrongLanguage": false
+    },
+    {
+      "kind": "tone",
+      "id": "tj2",
+      "lang": "ja",
+      "level": "비즈니스",
+      "input": "資料まだ？早く送って",
+      "output": "お疲れ様です。\n資料の進捗状況はいかがでしょうか。お送りいただけますと幸いです。",
+      "pass": true,
+      "missing": [],
+      "unwanted": [],
+      "wrongLanguage": false
+    },
+    {
+      "kind": "tone",
+      "id": "tj3",
+      "lang": "ja",
+      "level": "고객 안내",
+      "input": "配送遅れてます。明日届きます",
+      "output": "お待たせしてしまい、申し訳ございません。配送に遅れが生じておりますが、明日お届けいたします。",
+      "pass": true,
+      "missing": [],
+      "unwanted": [],
+      "wrongLanguage": false
+    },
+    {
+      "kind": "tone",
+      "id": "tj4",
+      "lang": "ja",
+      "level": "소개팅체",
+      "input": "今日ありがとね！楽しかったw",
+      "output": "今日、ありがとね！楽しかったw",
+      "pass": true,
+      "missing": [],
+      "unwanted": [],
+      "wrongLanguage": false
+    },
+    {
+      "kind": "tone",
+      "id": "te1",
+      "lang": "en",
+      "level": "비즈니스",
+      "input": "where's the report?? i need it now",
+      "output": "Could you please provide an update on the report? I need it as soon as possible.",
+      "pass": true,
+      "missing": [],
+      "unwanted": [],
+      "wrongLanguage": false
+    },
+    {
+      "kind": "tone",
+      "id": "te2",
+      "lang": "en",
+      "level": "스마트 교정",
+      "input": "you never answer your phone, it's so annoying",
+      "output": "I've been having a hard time reaching you on the phone lately, and it's been a bit frustrating.",
+      "pass": true,
+      "missing": [],
+      "unwanted": [],
+      "wrongLanguage": false
+    },
+    {
+      "kind": "tone",
+      "id": "te3",
+      "lang": "en",
+      "level": "고객 안내",
+      "input": "your order is late. it ships tomorrow",
+      "output": "I am sorry for the wait regarding your order. It is running late, but it will ship tomorrow.",
+      "pass": true,
+      "missing": [],
+      "unwanted": [],
+      "wrongLanguage": false
+    },
+    {
+      "kind": "tone",
+      "id": "te4",
+      "lang": "en",
+      "level": "격식체",
+      "input": "hey guys, the office is closed friday",
+      "output": "Please be advised that the office will be closed on Friday.",
+      "pass": true,
+      "missing": [],
+      "unwanted": [],
+      "wrongLanguage": false
+    }
+  ]
+}
