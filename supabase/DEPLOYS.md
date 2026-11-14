@@ -35,3 +35,9 @@
 | 2026-11-12 12:36 | wallet_link_v2 | v67 | ebca88f |
 | 2026-11-12 12:37 | subscriber_status | v33 | ebca88f |
 | 2026-11-12 12:37 | daily_digest | v43 | ebca88f |
+| 2026-11-14 17:04 | DB: migrations 20261114100000 / 110000 / 120000 (Google accounts, Play packs, subscriptions v2, sign-up bonus) | applied | e39e816 |
+| 2026-11-14 17:05 | wallet_link_v2 | v68 | e39e816 |
+| 2026-11-14 17:05 | credit_pack_purchase | v2 | e39e816 |
+| 2026-11-14 17:05 | sync_subscription | v34 | e39e816 (live credits.ts / subscription_audit.ts kept: no Max plan) |
+| 2026-11-14 17:05 | google_play_notifications | v1 | e39e816 |
+| 2026-11-14 17:06 | correct | v178 | live v177 + language_prompts.ts (branch correct source is behind live; do not deploy it) |

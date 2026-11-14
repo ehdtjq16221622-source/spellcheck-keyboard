@@ -6,6 +6,7 @@ import {
   verifyAppleSubscriptionRecordDetailed,
 } from './_shared/apple_subscription_status.ts'
 import { walletTokenHash } from './_shared/wallet_auth.ts'
+import { isGoogleSubject, verifyGoogleIdentityToken } from './_shared/google_auth.ts'
 import { enrollBonusCanaryDevice, isBonusCanaryDevice } from './_shared/devicecheck.ts'
 import {
   logSubscriptionAudit,
@@ -95,6 +96,9 @@ async function verifySubscribedGuestPurchase(
   canary: boolean,
   rolloutEnabled = false,
 ): Promise<boolean> {
+  // A Google account's guest wallet can only hold a Google Play subscription, which Apple cannot
+  // confirm. Until Play-verified transfers exist, those moves stay "requires review" (never moved).
+  if (isGoogleSubject(appleSub)) return false
   if (!canary && !rolloutEnabled) {
     return await verifyAppleSubscriptionRecord(purchaseToken, productId, BUNDLE_ID, false)
   }
@@ -747,7 +751,20 @@ Deno.serve(async (req: Request) => {
     if (typeof body?.identityToken !== 'string' || body.identityToken.length > 16_384) {
       return respond({ error: 'Invalid Apple identity.' }, 401)
     }
-    const identity = await verifyAppleIdentityToken(body.identityToken, BUNDLE_ID)
+    // Android signs in with Google. The wallet subject is 'google:<sub>' and then flows through the
+    // same session, link and merge paths as an Apple subject (see _shared/google_auth.ts).
+    const googleProvider = body.provider === 'google'
+    if (googleProvider && Deno.env.get('WALLET_GOOGLE_SIGN_IN_ENABLED') !== 'true') {
+      return respond({ error: 'Not found.' }, 404)
+    }
+    let identity: { sub: string } | null
+    if (googleProvider) {
+      const google = await verifyGoogleIdentityToken(body.identityToken)
+      identity = google ? { sub: google.subject } : null
+      if (!identity) return respond({ error: 'Invalid Google identity.' }, 401)
+    } else {
+      identity = await verifyAppleIdentityToken(body.identityToken, BUNDLE_ID)
+    }
     if (!identity ||
         (!allUsersEnabled && !allowlist.has(identity.sub) &&
          await sha256(identity.sub) !== '014252a83ff1048722f43fecfec725a43c4ce151af89bc1aad535f0609de8c45')) {
@@ -1110,11 +1127,29 @@ Deno.serve(async (req: Request) => {
         if (sourceError) throw sourceError
         needsSubscriptionTransfer = purchase !== null || source.subscription_credits !== 0
       }
+      // Android has no DeviceCheck, so its sign-up bonus is granted once per Google account
+      // when a guest wallet is first linked. The RPC is idempotent per Google subject.
+      let signupBonusGranted: boolean | undefined
+      if (googleProvider && result.decision === 'linked') {
+        const { data: granted, error: bonusError } = await auditedRpc('grant_google_signup_bonus_once', {
+          p_wallet_id: body.walletId,
+          p_secret_hash: secretHash,
+          p_google_sub: identity.sub,
+        })
+        if (bonusError) {
+          // The link already committed; a bonus failure must not fail sign-in. A retried
+          // link call (same idempotency key) reaches this RPC again.
+          audit('google_signup_bonus_failed', { outcome: 'retry_on_next_link' })
+        } else {
+          signupBonusGranted = granted === true
+        }
+      }
       return respond({
         decision: result.decision,
         canonicalWalletId: result.canonical_wallet_id,
         guestTransferred: false,
         needsSubscriptionTransfer,
+        ...(signupBonusGranted === undefined ? {} : { signupBonusGranted }),
       })
     }
 

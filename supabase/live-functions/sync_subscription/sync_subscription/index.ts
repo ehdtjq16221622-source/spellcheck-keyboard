@@ -4,7 +4,8 @@ import {
   googleSubscriptionCreditsForProduct,
   setMonthlySubscriptionCredits,
 } from './_shared/credits.ts'
-import { verifySubscription } from './_shared/google_play.ts'
+import { acknowledgeSubscription, verifySubscription } from './_shared/google_play.ts'
+import { GoogleSubscriptionInputError, googleV2SyncInput, isGoogleV2Product } from './_shared/google_subscription_v2.ts'
 import { resolveCreditWallet, WalletAccessError } from './_shared/wallet_auth.ts'
 import {
   logSubscriptionAudit,
@@ -53,6 +54,85 @@ Deno.serve(async (req: Request) => {
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
+
+    // Current plans (same products and credits as iOS): signed-in wallet session, account-token
+    // binding, linked-token plan changes, and server-side acknowledgement.
+    if (isGoogleV2Product(productId)) {
+      const v2PackageName = Deno.env.get('GOOGLE_PLAY_PACKAGE_NAME') ?? 'com.spellcheck.keyboard'
+      auditStage = 'wallet_resolution'
+      const wallet = await resolveCreditWallet(req, supabase, deviceId, true)
+      auditWalletFingerprint = await subscriptionWalletFingerprint(wallet.walletId)
+      const { data: owner, error: ownerError } = await supabase
+        .from('device_credits').select('apple_user_id').eq('device_id', wallet.walletId).maybeSingle()
+      if (ownerError) throw ownerError
+      if (!wallet.authenticated || !owner?.apple_user_id) {
+        return new Response(JSON.stringify({ error: 'google_sign_in_required', audit_id: auditId }),
+          { status: 403, headers: { ...cors, 'Content-Type': 'application/json' } })
+      }
+      auditStage = 'account_token'
+      const { data: accountToken, error: tokenError } = await supabase.rpc('credit_pack_account_token', { p_wallet_id: wallet.walletId })
+      if (tokenError || typeof accountToken !== 'string') throw tokenError ?? new Error('account_token_unavailable')
+
+      auditStage = 'google_verification'
+      const verified = await verifySubscription(v2PackageName, productId, purchaseToken)
+      auditTransactionFingerprint = await subscriptionTransactionFingerprint(`${purchaseToken}:${productId}`)
+      if (verified.obfuscatedAccountId?.toLowerCase() !== accountToken.toLowerCase()) {
+        logSubscriptionAudit('warn', auditId, 'rejected', {
+          stage: 'google_account_binding', source: 'google_play_v2', failureCode: 'google_account_binding_mismatch',
+          walletFingerprint: auditWalletFingerprint, transactionFingerprint: auditTransactionFingerprint,
+        })
+        return new Response(JSON.stringify({ error: 'Subscription belongs to a different account.', audit_id: auditId }),
+          { status: 403, headers: { ...cors, 'Content-Type': 'application/json' } })
+      }
+      let input
+      try {
+        input = googleV2SyncInput(verified, productId, purchaseToken)
+      } catch (error) {
+        if (error instanceof GoogleSubscriptionInputError) {
+          return new Response(JSON.stringify({ error: error.code, audit_id: auditId }),
+            { status: error.code === 'subscription_pending' ? 202 : 400, headers: { ...cors, 'Content-Type': 'application/json' } })
+        }
+        throw error
+      }
+      auditStage = 'atomic_subscription_and_grant'
+      const { data, error } = await supabase.rpc('sync_google_subscription_v2_once', {
+        p_device_id: wallet.walletId, p_product_id: productId, p_purchase_token: purchaseToken,
+        p_linked_purchase_token: input.linkedPurchaseToken, p_state: input.state,
+        p_expiry_time_millis: input.expiryTimeMillis, p_order_id: verified.orderId, p_cycle_key: input.cycleKey,
+        p_amount: input.amount,
+        p_metadata: { audit_id: auditId, transaction_fingerprint: auditTransactionFingerprint,
+          google_purchase_verified: true, test_purchase: verified.testPurchase },
+      })
+      if (error) throw error
+      const result = Array.isArray(data) ? data[0] : data
+      if (!result) throw new Error('Google subscription sync response was empty.')
+      let acknowledged = verified.acknowledged
+      if (!acknowledged && input.state === 'SUBSCRIPTION_STATE_ACTIVE') {
+        auditStage = 'google_acknowledge'
+        try {
+          await acknowledgeSubscription(v2PackageName, productId, purchaseToken)
+          acknowledged = true
+        } catch {
+          // The grant is recorded; the app syncs again on next launch and acknowledgement is retried.
+        }
+      }
+      logSubscriptionAudit('info', auditId, 'atomic_sync_completed', {
+        stage: auditStage, source: 'google_play_v2', state: input.state, active: input.state === 'SUBSCRIPTION_STATE_ACTIVE',
+        grantApplied: result.applied === true, walletFingerprint: auditWalletFingerprint,
+        transactionFingerprint: auditTransactionFingerprint,
+      })
+      return new Response(JSON.stringify({
+        subscription_active: input.state === 'SUBSCRIPTION_STATE_ACTIVE' || input.state === 'SUBSCRIPTION_STATE_IN_GRACE_PERIOD',
+        subscription_state: input.state,
+        subscription_expiry_time_millis: input.expiryTimeMillis,
+        monthly_credit_granted: result.applied === true,
+        free_credits_remaining: Number(result.free_credits_remaining),
+        paid_credits_remaining: Number(result.paid_credits_remaining),
+        credits_remaining: Number(result.credits_remaining),
+        acknowledged,
+        audit_id: auditId,
+      }), { headers: { ...cors, 'Content-Type': 'application/json' } })
+    }
 
     const expectedPackageName =
       Deno.env.get('GOOGLE_PLAY_PACKAGE_NAME') ??

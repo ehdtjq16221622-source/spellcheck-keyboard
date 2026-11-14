@@ -8,7 +8,12 @@
 | b15ecc2 | 안드로이드 현재 플랜 구독, 플레이 실시간 알림 수신 |
 | 8cdee9c | 영어·일본어 AI 교정 |
 
-**푸시하지 않았다. 마이그레이션을 운영 DB에 적용하지 않았다. 함수를 배포하지 않았다.** 운영 DB는 읽기 전용 조회만 했다.
+**2026-11-14 17:04–17:06 UTC 운영 반영 완료(사용자 승인).** 브랜치는 푸시하지 않았다.
+- DB: 마이그레이션 3개 적용(`…100000`, `…110000`, `…120000` 신규 가입 보너스). 검사 2개 VALIDATE 완료, 새 함수 6개는 service_role만 실행 가능, 새 테이블 2개 RLS 켜짐·anon 접근 없음. 행 수 27,326 그대로.
+- 함수: wallet_link_v2 v68, credit_pack_purchase v2, sync_subscription v34, google_play_notifications v1(신규), correct v178. 모두 `verify_jwt=false`(기존과 같음).
+- 배포본은 **라이브 소스 + 이번 변경만**으로 만들었다. 이 브랜치의 `functions/correct`는 라이브보다 오래된 버전이다(라이브는 `consume_ai_credit_attempt` 방식, 시간 제한 10초). 그래서 correct는 라이브 v177에 언어 기능만 얹어 배포했다. **이 브랜치의 correct 소스로 배포하면 안 된다.** sync_subscription은 라이브의 `credits.ts`·`subscription_audit.ts`를 유지했다(아직 출시 전인 Max 플랜 매핑 제외).
+- 스위치 `WALLET_GOOGLE_SIGN_IN_ENABLED`, `GOOGLE_RTDN_ENABLED`는 꺼져 있다. 확인: 구글 sign_in 404, RTDN 404, 지갑 availability 200, correct 요청 ID 없음 409.
+- 신규 가입 보너스: 구글 계정당 1회 500(`grant_google_signup_bonus_once`, 원장 키 `google-signup:<subject>`). 게스트 지갑을 처음 구글 계정에 연결(`link`, decision `linked`)할 때 지급하고, 응답에 `signupBonusGranted`가 붙는다. 이미 구글 지갑이 있는 계정·Apple 연결에는 없다. 지급이 실패해도 연결은 성공하고, 같은 키로 다시 link하면 다시 시도한다.
 
 ## 상태 구분
 
@@ -18,7 +23,7 @@
 | 서버 소스 테스트 (`node --test supabase/tests/*.test.mjs`) | 277개 중 272개 통과. 실패 5개는 모두 "배포 기록본과 소스가 같은가" 검사다. 그중 4개(correct, translate, sync_credit_usage, sync_subscription)는 이번 작업 전부터 실패했다. wallet_link_v2 1개는 소스를 고쳐서 새로 실패하며, 배포 후 기록본을 갱신하면 통과한다. |
 | SQL 테스트 (PGlite, `supabase/tests/wallet-postgres-sandbox`) | 36개 모두 통과. 새 테스트는 구글 묶음 6개, 구글 구독 6개다. |
 | 실제 모델 교정 평가 (`correction-eval-global/run.mjs`) | 48개 모두 통과, 두 번 돌려 같은 결과. 영어·일본어 교정 각 20개, 말투 8개. 모델은 gemini-3.1-flash-lite이고 운영과 같은 설정이다. |
-| 운영 DB 반영 / 배포 | 하지 않음. 승인이 필요하다. |
+| 운영 DB 반영 / 배포 | 완료(위 참고). 시크릿·콘솔 설정과 스위치 켜기는 남았다. |
 | 실제 구글 로그인·플레이 결제 | 확인하지 못했다. 안드로이드 앱 구현과 콘솔 설정이 먼저 있어야 한다. |
 
 ## 바뀐 것
@@ -109,8 +114,7 @@
   - 국가별 가격을 정한다.
   - 라이선스 테스터를 등록한다.
   - 실시간 알림용 Pub/Sub 토픽과 인증 푸시 구독을 만든다.
-- **결정 1 – 안드로이드 신규 가입 보너스:** iOS는 Apple DeviceCheck로 중복 지급을 막고 보너스를 준다. 안드로이드에는 DeviceCheck가 없어서 지금 코드로는 신규 사용자 보너스가 0이다(`verification_pending`).
-  - 권장: 구글 계정 하나당 1회 지급. 구글 로그인이 중복 방지 기준이 된다. Play Integrity는 2순위.
+- **결정 1 – 안드로이드 신규 가입 보너스:** 확정·반영(2026-11-14). 구글 계정당 1회 500. 남은 위험: 구글 계정을 여러 개 만들면 계정마다 받는다. 악용이 보이면 Play Integrity를 추가한다.
 - **결정 2 – 한 사람이 iOS(Apple)와 안드로이드(구글)를 둘 다 쓸 때:** 지금은 지갑이 두 개로 나뉜다. 두 지갑을 합치는 기능은 없다.
   - 권장: 1차 출시는 따로 두고, 수요가 보이면 "다른 계정 연결"을 추가.
 - **결정 3 – 안드로이드 구독 환불:** 지금은 텔레그램 알림 후 사람이 처리한다. Apple 구독 환불과 같은 방식이다.
