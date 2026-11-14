@@ -1127,11 +1127,29 @@ Deno.serve(async (req: Request) => {
         if (sourceError) throw sourceError
         needsSubscriptionTransfer = purchase !== null || source.subscription_credits !== 0
       }
+      // Android has no DeviceCheck, so its sign-up bonus is granted once per Google account
+      // when a guest wallet is first linked. The RPC is idempotent per Google subject.
+      let signupBonusGranted: boolean | undefined
+      if (googleProvider && result.decision === 'linked') {
+        const { data: granted, error: bonusError } = await auditedRpc('grant_google_signup_bonus_once', {
+          p_wallet_id: body.walletId,
+          p_secret_hash: secretHash,
+          p_google_sub: identity.sub,
+        })
+        if (bonusError) {
+          // The link already committed; a bonus failure must not fail sign-in. A retried
+          // link call (same idempotency key) reaches this RPC again.
+          audit('google_signup_bonus_failed', { outcome: 'retry_on_next_link' })
+        } else {
+          signupBonusGranted = granted === true
+        }
+      }
       return respond({
         decision: result.decision,
         canonicalWalletId: result.canonical_wallet_id,
         guestTransferred: false,
         needsSubscriptionTransfer,
+        ...(signupBonusGranted === undefined ? {} : { signupBonusGranted }),
       })
     }
 

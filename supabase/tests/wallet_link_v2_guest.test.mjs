@@ -86,6 +86,12 @@ async function invoke(action, extras = {}, options = {}) {
       if (name === 'register_guest_wallet_v2' && options.registrationFails) {
         return { data: null, error: { message: 'simulated registration failure' } };
       }
+      if (name === 'link_apple_wallet_v2' && options.linkDecision) {
+        return { data: [{ decision: options.linkDecision, canonical_wallet_id: walletId }], error: null };
+      }
+      if (name === 'grant_google_signup_bonus_once') {
+        return { data: options.bonusGranted ?? true, error: null };
+      }
       if (name === 'reserve_guest_install_bonus') {
         return { data: options.reservation ?? 'pending', error: null };
       }
@@ -700,4 +706,37 @@ test('a Google guest subscription is never moved by Apple verification', async (
   assert.ok([403, 409].includes(r.status), String(r.status));
   assert.deepEqual(r.purchaseChecks, [], 'Apple is never asked about a Google purchase');
   assert.equal(r.rpcCalls.some((c) => c.name === 'merge_verified_v2_subscribed_guest_preserving_once'), false);
+});
+
+test('a guest wallet first linked to a Google account claims the once-per-account sign-up bonus', async () => {
+  const first = await invoke('link', { identityToken: 'google-token', provider: 'google', idempotencyKey: 'k3' },
+    { ...googleOn, linkDecision: 'linked' });
+  assert.equal(first.status, 200);
+  const bonus = first.rpcCalls.find((c) => c.name === 'grant_google_signup_bonus_once');
+  assert.equal(bonus.args.p_wallet_id, 'v2:11111111-1111-1111-1111-111111111111');
+  assert.equal(bonus.args.p_google_sub, 'google:1234567890');
+  assert.equal(typeof bonus.args.p_secret_hash, 'string');
+  assert.equal(first.body.signupBonusGranted, true);
+
+  const again = await invoke('link', { identityToken: 'google-token', provider: 'google', idempotencyKey: 'k3' },
+    { ...googleOn, linkDecision: 'linked', bonusGranted: false });
+  assert.equal(again.body.signupBonusGranted, false);
+});
+
+test('no sign-up bonus for an existing Google wallet, for Apple links, or when the bonus RPC fails', async () => {
+  const existing = await invoke('link', { identityToken: 'google-token', provider: 'google', idempotencyKey: 'k4' },
+    { ...googleOn, linkDecision: 'apple_existing_unmerged' });
+  assert.equal(existing.rpcCalls.some((c) => c.name === 'grant_google_signup_bonus_once'), false);
+  assert.equal('signupBonusGranted' in existing.body, false);
+
+  const apple = await invoke('link', { identityToken: 'apple-token', idempotencyKey: 'k5' },
+    { appleEnabled: true, allUsersEnabled: true, linkDecision: 'linked' });
+  assert.equal(apple.status, 200);
+  assert.equal(apple.rpcCalls.some((c) => c.name === 'grant_google_signup_bonus_once'), false);
+
+  const failed = await invoke('link', { identityToken: 'google-token', provider: 'google', idempotencyKey: 'k6' },
+    { ...googleOn, linkDecision: 'linked', failRpc: 'grant_google_signup_bonus_once' });
+  assert.equal(failed.status, 200, 'a bonus failure never fails the link');
+  assert.equal(failed.body.decision, 'linked');
+  assert.equal('signupBonusGranted' in failed.body, false);
 });
