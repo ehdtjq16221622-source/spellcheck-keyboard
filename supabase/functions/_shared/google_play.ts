@@ -69,7 +69,7 @@ async function signJwt(assertion: string, privateKey: string): Promise<string> {
   return base64UrlEncode(signature)
 }
 
-async function getAccessToken(): Promise<string> {
+export async function getAccessToken(): Promise<string> {
   const raw = Deno.env.get('GOOGLE_PLAY_SERVICE_ACCOUNT_JSON')
   if (!raw) {
     throw new Error('GOOGLE_PLAY_SERVICE_ACCOUNT_JSON secret is missing.')

@@ -12,6 +12,7 @@ const runnable = stripTypeScriptTypes(source
     'const { verifyAppleSubscriptionRecord, verifyAppleSubscriptionRecordDetailed } = globalThis.__appleSubscriptionStatus;')
   .replace(/^import \{ walletTokenHash \} from .*$/m,
     'const walletTokenHash = globalThis.__walletTokenHash;')
+  .replace(/^import \{ isGoogleSubject, verifyGoogleIdentityToken \} from .*$/m, "const { isGoogleSubject, verifyGoogleIdentityToken } = globalThis.__googleAuth ?? { isGoogleSubject: (s) => typeof s === 'string' && s.startsWith('google:'), verifyGoogleIdentityToken: async () => null };")
   .replace(/^import \{ enrollBonusCanaryDevice, isBonusCanaryDevice \} from .*$/m,
     'const enrollBonusCanaryDevice = globalThis.__enrollBonusCanaryDevice; const isBonusCanaryDevice = globalThis.__isBonusCanaryDevice;')
   .replace(/^import \{[\s\S]*?\} from '\.\.?\/\_shared\/subscription_audit\.ts'$/m,

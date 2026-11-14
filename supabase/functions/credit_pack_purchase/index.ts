@@ -3,6 +3,8 @@ import { fetchCurrentAppleTransaction, verifyAppleTransactionJws } from './_shar
 import { resolveCreditWallet, WalletAccessError } from './_shared/wallet_auth.ts'
 import { CreditPackClaimError, validateCreditPackClaim } from './_shared/credit_pack_validation.ts'
 import { sendTelegram } from './_shared/telegram.ts'
+import { validateGooglePackClaim } from './_shared/google_pack_validation.ts'
+import { consumeProductPurchase, getProductPurchase, GooglePlayApiError, purchaseTokenHash } from './_shared/google_play_products.ts'
 
 // Credit packs (one-time AI credits that never expire).
 //   POST { action: 'account_token', wallet_id }               -> { account_token }
@@ -46,14 +48,102 @@ Deno.serve(async (req: Request) => {
     const { data: owner, error: ownerError } = await supabase
       .from('device_credits').select('apple_user_id').eq('device_id', wallet.walletId).maybeSingle()
     if (ownerError) throw ownerError
+    const android = body?.platform === 'android'
     if (!wallet.authenticated || !owner?.apple_user_id) {
-      return json({ error: 'apple_sign_in_required', message: 'Apple로 로그인한 뒤 구매할 수 있어요.' }, 403)
+      return json(android
+        ? { error: 'google_sign_in_required', message: 'Google로 로그인한 뒤 구매할 수 있어요.' }
+        : { error: 'apple_sign_in_required', message: 'Apple로 로그인한 뒤 구매할 수 있어요.' }, 403)
     }
 
     stage = 'account_token'
     const { data: token, error: tokenError } = await supabase.rpc('credit_pack_account_token', { p_wallet_id: wallet.walletId })
     if (tokenError || typeof token !== 'string') throw tokenError ?? new Error('account_token_unavailable')
     if (action === 'account_token') return json({ account_token: token })
+
+    // Android: the app buys with Play Billing (obfuscatedAccountId = account_token) and sends the
+    // purchase token. The server reads Google's record, grants once, then consumes the purchase.
+    // `consumed: false` with a final result means "granted, consume again later": the app calls
+    // claim again on the next launch for any unconsumed purchase (the grant is idempotent).
+    if (android) {
+      const productId = body?.product_id
+      const purchaseToken = body?.purchase_token
+      if (typeof productId !== 'string' || productId.length > 200 ||
+          typeof purchaseToken !== 'string' || purchaseToken.length === 0 || purchaseToken.length > 4096) {
+        return json({ error: 'invalid_purchase' }, 400)
+      }
+      const packageName = Deno.env.get('GOOGLE_PLAY_PACKAGE_NAME') ?? 'com.spellcheck.keyboard'
+      const tokenHash = await purchaseTokenHash(purchaseToken)
+      stage = 'google_purchase_lookup'
+      let purchase
+      try {
+        purchase = await getProductPurchase(packageName, productId, purchaseToken) as unknown as Record<string, unknown>
+      } catch (error) {
+        // 400/404: the token is not a purchase of this product in our app. Anything else is transient.
+        if (error instanceof GooglePlayApiError && (error.status === 400 || error.status === 404)) {
+          return json({ error: 'purchase_not_found', diagnostic_id: diagnosticId }, 409)
+        }
+        throw error
+      }
+      stage = 'claim_validation'
+      let claim
+      try {
+        claim = validateGooglePackClaim({ productId, purchase, expectedAccountToken: token })
+      } catch (error) {
+        if (error instanceof CreditPackClaimError && error.code === 'purchase_pending') {
+          return json({ result: 'pending', credits: 0 }, 202)
+        }
+        if (error instanceof CreditPackClaimError && error.code === 'transaction_revoked' &&
+            typeof purchase.orderId === 'string') {
+          await supabase.rpc('refund_google_credit_pack_once', {
+            p_order_id: purchase.orderId, p_purchase_token_hash: tokenHash, p_product_id: productId,
+            p_environment: purchase.purchaseType === 0 ? 'Sandbox' : 'Production',
+            p_notification_id: `claim:${diagnosticId}`,
+          })
+          return json({ result: 'refunded', credits: 0 })
+        }
+        if (error instanceof CreditPackClaimError) {
+          console.warn(JSON.stringify({ category: 'credit_pack_claim', store: 'google_play', result: 'rejected', code: error.code, diagnosticId }))
+          return json({ error: error.code, diagnostic_id: diagnosticId }, 409)
+        }
+        throw error
+      }
+      stage = 'grant'
+      const { data, error } = await supabase.rpc('grant_google_credit_pack_once', {
+        p_wallet_id: wallet.walletId, p_account_token: token, p_order_id: claim.orderId,
+        p_purchase_token_hash: tokenHash, p_product_id: claim.productId, p_environment: claim.environment,
+      })
+      if (error) {
+        const code = rpcErrorCode(error)
+        console.error(JSON.stringify({ category: 'credit_pack_claim', store: 'google_play', result: 'failed', code, diagnosticId }))
+        return json({ error: code, diagnostic_id: diagnosticId }, code === 'grant_failed' ? 500 : 409)
+      }
+      const row = (Array.isArray(data) ? data[0] : data) as { result: string; credits: number; paid_credits: number | null }
+      if (!row || !FINAL_RESULTS.has(row.result)) throw new Error('grant_result_unknown')
+      let consumed = purchase.consumptionState === 1
+      if (!consumed && (row.result === 'granted' || row.result === 'already_granted' || row.result === 'sandbox_limit')) {
+        stage = 'google_consume'
+        try {
+          await consumeProductPurchase(packageName, productId, purchaseToken)
+          consumed = true
+        } catch (consumeError) {
+          console.error(JSON.stringify({ category: 'credit_pack_claim', store: 'google_play', result: 'consume_failed', diagnosticId,
+            message: consumeError instanceof Error ? consumeError.message.slice(0, 200) : 'unknown' }))
+        }
+      }
+      console.log(JSON.stringify({ category: 'credit_pack_claim', store: 'google_play', result: row.result,
+        product: claim.productId, environment: claim.environment, consumed, diagnosticId }))
+      if (row.result === 'granted' || row.result === 'sandbox_limit') {
+        const label = claim.credits.toLocaleString('ko-KR')
+        const prefix = claim.environment === 'Sandbox' ? '🧪 안드로이드 시험 결제' : '💳 안드로이드 묶음 구매'
+        await sendTelegram(row.result === 'granted'
+          ? `${prefix} · ${label} 크레딧 지급`
+          : `🧪 안드로이드 시험 결제 한도 초과 · ${label} 크레딧 미지급 (30일 3회)`, {
+          supabase, alertType: 'credit_pack_purchase', idempotencyKey: `gp:${claim.orderId}:${row.result}`,
+          metadata: { environment: claim.environment, product_id: claim.productId, store: 'google_play' },
+        }).catch(() => false)
+      }
+      return json({ result: row.result, credits: row.credits, paid_credits: row.paid_credits, consumed })
+    }
 
     const signed = body?.signed_transaction
     if (typeof signed !== 'string' || signed.length === 0 || signed.length > 64_000) {

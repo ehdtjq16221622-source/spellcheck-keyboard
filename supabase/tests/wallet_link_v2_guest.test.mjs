@@ -10,6 +10,7 @@ const runnable = stripTypeScriptTypes(source
   .replace(/^import \{[\s\S]*?\} from '\.\.?\/\_shared\/apple_subscription_status\.ts'$/m,
     'const { verifyAppleSubscriptionRecord, verifyAppleSubscriptionRecordDetailed } = globalThis.__appleSubscriptionStatus;')
   .replace(/^import \{ walletTokenHash \} from .*$/m, 'const walletTokenHash = globalThis.__walletTokenHash;')
+  .replace(/^import \{ isGoogleSubject, verifyGoogleIdentityToken \} from .*$/m, "const { isGoogleSubject, verifyGoogleIdentityToken } = globalThis.__googleAuth ?? { isGoogleSubject: (s) => typeof s === 'string' && s.startsWith('google:'), verifyGoogleIdentityToken: async () => null };")
   .replace(/^import \{ enrollBonusCanaryDevice, isBonusCanaryDevice \} from .*$/m,
     'const enrollBonusCanaryDevice = globalThis.__enrollDevice; const isBonusCanaryDevice = globalThis.__isCanaryDevice;')
   .replace(/^import \{[\s\S]*?\} from '\.\.?\/\_shared\/subscription_audit\.ts'$/m,
@@ -38,6 +39,7 @@ async function invoke(action, extras = {}, options = {}) {
       WALLET_LEGACY_MERGE_ALL_USERS_ENABLED: options.legacyAllUsersEnabled ? 'true' : undefined,
       WALLET_LEGACY_MERGE_CANARY_PAIRS: options.legacyPairs,
       SUPABASE_SERVICE_ROLE_KEY: options.serviceRoleKey,
+      WALLET_GOOGLE_SIGN_IN_ENABLED: options.googleEnabled ? 'true' : undefined,
     })[key] },
     serve: (callback) => { handler = callback; },
   };
@@ -64,6 +66,8 @@ async function invoke(action, extras = {}, options = {}) {
     subscriptionWalletFingerprint: async () => 'wallet-fingerprint',
   };
   globalThis.__walletTokenHash = async (value) => value;
+  globalThis.__googleAuth = { isGoogleSubject: (s) => typeof s === 'string' && s.startsWith('google:'),
+    verifyGoogleIdentityToken: async () => (options.googleSub ? { subject: 'google:' + options.googleSub } : null) };
   globalThis.__isCanaryDevice = async (token) => {
     deviceCalls.push({ action: 'query', token });
     if (options.queryFails) throw new Error('DeviceCheck query failed');
@@ -657,3 +661,43 @@ test('ordinary Apple wallet uses the tested portable verifier and rejects invali
   }
 });
 
+
+// ---- Google sign-in (Android) ----
+const googleOn = { appleEnabled: true, allUsersEnabled: true, googleEnabled: true, googleSub: '1234567890' };
+
+test('google sign-in stays off until its flag is set, and never falls back to Apple', async () => {
+  const off = await invoke('sign_in', { identityToken: 'google-token', provider: 'google' },
+    { ...googleOn, googleEnabled: false });
+  assert.equal(off.status, 404);
+  assert.equal(off.appleVerified, false);
+  assert.equal(off.rpcCalls.length, 0);
+  const bad = await invoke('sign_in', { identityToken: 'google-token', provider: 'google' },
+    { ...googleOn, googleSub: undefined });
+  assert.equal(bad.status, 401);
+  assert.equal(bad.appleVerified, false);
+  assert.equal(bad.rpcCalls.length, 0);
+});
+
+test('a Google account signs in and links through the same wallet paths with a google: subject', async () => {
+  const login = await invoke('sign_in', { identityToken: 'google-token', provider: 'google' }, googleOn);
+  assert.equal(login.status, 200);
+  assert.equal(login.appleVerified, false);
+  const issue = login.rpcCalls.find((c) => c.name === 'issue_apple_wallet_session');
+  assert.equal(issue.args.p_apple_sub, 'google:1234567890');
+  assert.match(login.body.sessionToken, /^[0-9a-f]{64}$/);
+
+  const link = await invoke('link', { identityToken: 'google-token', provider: 'google', idempotencyKey: 'k1' }, googleOn);
+  const linked = link.rpcCalls.find((c) => c.name === 'link_apple_wallet_v2');
+  assert.equal(linked.args.p_apple_sub, 'google:1234567890');
+});
+
+test('a Google guest subscription is never moved by Apple verification', async () => {
+  const r = await invoke('merge_subscribed_guest', { identityToken: 'google-token', provider: 'google',
+    sessionToken: 'b'.repeat(64), idempotencyKey: 'k2' },
+    { ...googleOn, historicalPurchaseValid: true, sourcePurchase: { product_id: 'com.kingboard.app.monthly_basic', purchase_token: 'gp-token' } });
+  // The mock cannot pass the guest-secret proof, so the route may stop at 403 before the subscription
+  // check; either way nothing is verified with Apple and nothing moves.
+  assert.ok([403, 409].includes(r.status), String(r.status));
+  assert.deepEqual(r.purchaseChecks, [], 'Apple is never asked about a Google purchase');
+  assert.equal(r.rpcCalls.some((c) => c.name === 'merge_verified_v2_subscribed_guest_preserving_once'), false);
+});
