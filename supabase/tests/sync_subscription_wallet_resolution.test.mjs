@@ -9,8 +9,11 @@ const runnable = stripTypeScriptTypes(source
     'const createClient = globalThis.__createClient;')
   .replace(/^import \{[\s\S]*?\} from '\.\.?\/\_shared\/credits\.ts'$/m,
     'const { getCredits, googleSubscriptionCreditsForProduct, setMonthlySubscriptionCredits } = globalThis.__credits;')
-  .replace(/^import \{ verifySubscription \} from .*$/m,
-    'const verifySubscription = globalThis.__verifySubscription;')
+  .replace(/^import \{ acknowledgeSubscription, verifySubscription \} from .*$/m,
+    'const verifySubscription = globalThis.__verifySubscription; const acknowledgeSubscription = async () => {};')
+  // Old Android plans never take the current-plan path; this stub keeps them on the legacy path.
+  .replace(/^import \{ GoogleSubscriptionInputError, googleV2SyncInput, isGoogleV2Product \} from .*$/m,
+    "const isGoogleV2Product = (id) => typeof id === 'string' && id.startsWith('com.kingboard.app.monthly_'); const googleV2SyncInput = null; class GoogleSubscriptionInputError extends Error {}")
   .replace(/^import \{ resolveCreditWallet, WalletAccessError \} from .*$/m,
     'const { resolveCreditWallet, WalletAccessError } = globalThis.__walletAuth;')
   .replace(/^import \{[\s\S]*?\} from '\.\.?\/_shared\/subscription_audit\.ts'$/m,

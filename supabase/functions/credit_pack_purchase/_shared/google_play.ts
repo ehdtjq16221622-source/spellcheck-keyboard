@@ -15,6 +15,8 @@ type SubscriptionLineItem = {
 
 type SubscriptionResponse = {
   subscriptionState?: string
+  linkedPurchaseToken?: string
+  testPurchase?: Record<string, unknown>
   acknowledgementState?: string
   lineItems?: SubscriptionLineItem[]
   externalAccountIdentifiers?: {
@@ -29,6 +31,10 @@ export type VerifiedSubscription = {
   cycleKey: string | null
   orderId: string | null
   obfuscatedAccountId: string | null
+  // Added 2026-11-14 for Android v2 plans; older callers ignore them.
+  acknowledged: boolean
+  linkedPurchaseToken: string | null
+  testPurchase: boolean
 }
 
 function base64UrlEncode(input: ArrayBuffer | string): string {
@@ -110,8 +116,7 @@ export async function getAccessToken(): Promise<string> {
 }
 
 function parseExpiry(lineItems: SubscriptionLineItem[] = [], productId: string): SubscriptionLineItem | null {
-  const matched = lineItems.find((item) => item.productId === productId) ?? lineItems[0]
-  return matched ?? null
+  return lineItems.find((item) => item.productId === productId) ?? null
 }
 
 function toMillis(value?: string): number | null {
@@ -152,6 +157,9 @@ export async function verifySubscription(
   }
 
   const lineItem = parseExpiry(json.lineItems, productId)
+  if (!lineItem) {
+    throw new Error('Google Play purchase does not contain the requested product.')
+  }
   const expiryTimeMillis = toMillis(lineItem?.expiryTime)
   const state = json.subscriptionState ?? 'SUBSCRIPTION_STATE_UNSPECIFIED'
 
@@ -162,5 +170,26 @@ export async function verifySubscription(
     cycleKey: lineItem?.expiryTime ?? null,
     orderId: lineItem?.latestSuccessfulOrderId ?? null,
     obfuscatedAccountId: json.externalAccountIdentifiers?.obfuscatedExternalAccountId ?? null,
+    acknowledged: json.acknowledgementState === 'ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED',
+    linkedPurchaseToken: json.linkedPurchaseToken ?? null,
+    testPurchase: json.testPurchase != null,
+  }
+}
+
+/** Subscriptions must be acknowledged within 3 days or Google refunds them. */
+export async function acknowledgeSubscription(
+  packageName: string,
+  subscriptionId: string,
+  purchaseToken: string
+): Promise<void> {
+  const accessToken = await getAccessToken()
+  const response = await fetch(
+    `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodeURIComponent(packageName)}` +
+      `/purchases/subscriptions/${encodeURIComponent(subscriptionId)}/tokens/${encodeURIComponent(purchaseToken)}:acknowledge`,
+    { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: '{}' }
+  )
+  if (!response.ok) {
+    const json = await response.json().catch(() => ({})) as { error?: { message?: string } }
+    throw new Error(json.error?.message ?? 'Failed to acknowledge Google Play subscription.')
   }
 }
