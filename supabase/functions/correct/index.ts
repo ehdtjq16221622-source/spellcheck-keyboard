@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { consumeAIUsage, refundAIUsage } from './_shared/credits.ts'
 import { resolveCreditWallet, WalletAccessError } from './_shared/wallet_auth.ts'
 import { AIRequestDeadline, AIRequestTimeout, recordSlowAIRequest } from './_shared/ai_deadline.ts'
-import { buildForeignProofingPrompt, buildForeignTonePrompt, hasSuspiciousForeignDeletion, normalizeCorrectionLanguage } from './language_prompts.ts'
+import { buildForeignProofingPrompt, buildForeignTonePrompt, isUnfaithfulForeignProofing, keepForeignEnding, normalizeCorrectionLanguage, unwrapForeignResult, wrapForeignSource } from './language_prompts.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -143,10 +143,14 @@ Deno.serve(async (req: Request) => {
           return await correctForeignLowCost(source, correctionLanguage, shouldRemovePunct, diagnosticId, deadline)
         }
         const system = buildForeignTonePrompt(correctionLanguage, normalizedLevel, shouldIncludeFormalPunct, customPrompt)
-        return normalizedLevel === '커스텀'
-          ? await callLuna(source, system, responseTrace, deadline)
-          : await callGemini(source, true, shouldRemovePunct, false, normalizedLevel, shouldIncludeFormalPunct, customPrompt,
+        // The writer's text goes in tags so the model treats it as text to rewrite, never as a
+        // question or instruction to act on (see language_prompts.ts).
+        const wrapped = wrapForeignSource(source)
+        const rewritten = normalizedLevel === '커스텀'
+          ? await callLuna(wrapped, system, responseTrace, deadline)
+          : await callGemini(wrapped, true, shouldRemovePunct, false, normalizedLevel, shouldIncludeFormalPunct, customPrompt,
             responseTrace, deadline, system)
+        return unwrapForeignResult(rewritten) || source
       }
       if (!formalMode) {
         return await correctSpellingLowCost(source, shouldRemovePunct, includeDialect, diagnosticId, deadline)
@@ -488,7 +492,8 @@ async function correctSpellingLowCost(
 }
 
 // English / Japanese proofreading. Korean-only fixups (applyProofingFallbacks, applyNarrowProofingRules)
-// never run here. If the model cut a large part of the text, the original is returned unchanged.
+// never run here. Proofreading may only make small edits: if the model returned a different text
+// (an answer to the message, a refusal, a rewrite or a cut), the original is returned unchanged.
 async function correctForeignLowCost(
   source: string,
   lang: 'en' | 'ja',
@@ -496,10 +501,11 @@ async function correctForeignLowCost(
   diagnosticId: string,
   deadline?: AIRequestDeadline
 ): Promise<string> {
-  const raw = await callProofingGemini(source, buildForeignProofingPrompt(lang, removePunct), false, deadline)
-  const result = removePunct ? restoreTerminalPunctuation(source, raw) : raw
-  if (hasSuspiciousForeignDeletion(source, result, lang)) {
-    logDiagnostic('warn', diagnosticId, 'proofing_safety_fallback', 'SUSPICIOUS_DELETION_ORIGINAL_KEPT')
+  const raw = unwrapForeignResult(
+    await callProofingGemini(wrapForeignSource(source), buildForeignProofingPrompt(lang, removePunct), false, deadline))
+  const result = keepForeignEnding(source, removePunct ? restoreTerminalPunctuation(source, raw) : raw, lang)
+  if (isUnfaithfulForeignProofing(source, result, lang)) {
+    logDiagnostic('warn', diagnosticId, 'proofing_safety_fallback', 'UNFAITHFUL_RESULT_ORIGINAL_KEPT')
     return source
   }
   return result

@@ -199,12 +199,14 @@ test('no language (every current app) keeps the Korean prompts exactly', async (
 
 test('English proofreading uses the English prompt on the same low-cost model and credit kind', async () => {
   const r = await send({ text: 'i dont know where there going', formalMode: false, language: 'en-US' });
-  // The fake model answers 'gemini result', which drops most of the letters, so the deletion guard
-  // keeps the original text: that is the safe outcome.
+  // The fake model answers 'gemini result', which is a different text, so the faithfulness guard
+  // keeps the original: that is the safe outcome.
   assert.equal(r.result.result, 'i dont know where there going');
   assert.equal(r.calls.length, 1);
   assert.match(r.calls[0].url, /gemini-3\.1-flash-lite/);
-  assert.match(systemOf(r.calls[0]), /proofreader/);
+  assert.match(systemOf(r.calls[0]), /proofreading tool/);
+  assert.equal(r.calls[0].body.contents[0].parts[0].text, '<message>\ni dont know where there going\n</message>',
+    'the writer\'s text is sent as tagged data');
   assert.doesNotMatch(systemOf(r.calls[0]), /한국어/);
   assert.equal(r.consumeCalls[0][3], 'correct');
 });
@@ -219,4 +221,6 @@ test('Japanese tone keys map to Japanese instructions; custom goes to Luna with 
   assert.equal(custom.calls[0].url, 'https://api.openai.com/v1/responses');
   assert.match(custom.calls[0].body.instructions, /like a pirate/);
   assert.match(custom.calls[0].body.instructions, /comes from the user/);
+  assert.equal(custom.calls[0].body.input, '<message>\nsee you\n</message>');
+  assert.equal(business.calls[0].body.contents[0].parts[0].text, '<message>\n明日行ける\n</message>');
 });
