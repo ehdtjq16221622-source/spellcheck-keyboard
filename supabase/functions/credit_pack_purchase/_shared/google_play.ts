@@ -22,6 +22,21 @@ type SubscriptionResponse = {
   externalAccountIdentifiers?: {
     obfuscatedExternalAccountId?: string
   }
+  // Present only for a resubscribe made in the Play Store subscriptions center (outside the app).
+  outOfAppPurchaseContext?: {
+    expiredPurchaseToken?: string
+    expiredExternalAccountIdentifiers?: { obfuscatedExternalAccountId?: string }
+  }
+}
+
+/** Google answered, but not with a subscription record. 4xx means retrying will not help. */
+export class GooglePlaySubscriptionError extends Error {
+  readonly status: number
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = 'GooglePlaySubscriptionError'
+    this.status = status
+  }
 }
 
 export type VerifiedSubscription = {
@@ -35,6 +50,10 @@ export type VerifiedSubscription = {
   acknowledged: boolean
   linkedPurchaseToken: string | null
   testPurchase: boolean
+  // A resubscribe from the Play Store carries no account ID of its own; Google names the expired
+  // subscription it continues instead.
+  expiredPurchaseToken: string | null
+  expiredObfuscatedAccountId: string | null
 }
 
 function base64UrlEncode(input: ArrayBuffer | string): string {
@@ -151,14 +170,14 @@ export async function verifySubscription(
     }
   )
 
-  const json = (await response.json()) as SubscriptionResponse & { error?: { message?: string } }
+  const json = (await response.json().catch(() => ({}))) as SubscriptionResponse & { error?: { message?: string } }
   if (!response.ok) {
-    throw new Error(json.error?.message ?? 'Failed to verify subscription with Google Play.')
+    throw new GooglePlaySubscriptionError(json.error?.message ?? 'Failed to verify subscription with Google Play.', response.status)
   }
 
   const lineItem = parseExpiry(json.lineItems, productId)
   if (!lineItem) {
-    throw new Error('Google Play purchase does not contain the requested product.')
+    throw new GooglePlaySubscriptionError('Google Play purchase does not contain the requested product.', 404)
   }
   const expiryTimeMillis = toMillis(lineItem?.expiryTime)
   const state = json.subscriptionState ?? 'SUBSCRIPTION_STATE_UNSPECIFIED'
@@ -173,6 +192,9 @@ export async function verifySubscription(
     acknowledged: json.acknowledgementState === 'ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED',
     linkedPurchaseToken: json.linkedPurchaseToken ?? null,
     testPurchase: json.testPurchase != null,
+    expiredPurchaseToken: json.outOfAppPurchaseContext?.expiredPurchaseToken ?? null,
+    expiredObfuscatedAccountId:
+      json.outOfAppPurchaseContext?.expiredExternalAccountIdentifiers?.obfuscatedExternalAccountId ?? null,
   }
 }
 

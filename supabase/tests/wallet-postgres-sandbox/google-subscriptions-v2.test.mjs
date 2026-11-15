@@ -5,7 +5,9 @@ import { PGlite } from '@electric-sql/pglite';
 
 const expirySql = await readFile(new URL('../../migrations/20261106090000_expire_subscription_credits.sql', import.meta.url), 'utf8');
 const v2Sql = await readFile(new URL('../../migrations/20261114110000_google_subscriptions_v2.sql', import.meta.url), 'utf8');
+const guardsSql = await readFile(new URL('../../migrations/20261115100000_google_subscription_guards.sql', import.meta.url), 'utf8');
 const BASIC = 'com.kingboard.app.monthly_basic';
+const MAX = 'com.kingboard.app.monthly_max';
 const PRO = 'com.kingboard.app.monthly_pro';
 const DAY = 86_400_000;
 
@@ -31,6 +33,7 @@ async function setup() {
   `);
   await db.exec(expirySql);
   await db.exec(v2Sql);
+  await db.exec(guardsSql);
   return db;
 }
 
@@ -117,6 +120,126 @@ test('grace keeps credits without a new grant; final expiry clears subscription 
     assert.equal((await one(db, 'select * from public.expire_google_subscription_credits($1,$2,$3)', ['tokA', e1, 'n2'])).result,
       'not_expired');
     assert.equal((await credits(db)).subscription_credits, 4000);
+  } finally { await db.close(); }
+});
+
+const setSub = (db, n, id = 'v2:g') =>
+  db.query('update public.device_credits set subscription_credits = $1 where device_id = $2', [n, id]);
+const subRow = (db, id = 'v2:g') =>
+  one(db, 'select purchase_token, product_id, subscription_state from public.device_subscriptions where device_id = $1', [id]);
+
+test('a returning subscriber: a new unlinked token replaces a lapsed subscription and gets a full grant', async () => {
+  const db = await setup();
+  try {
+    const past = Date.now() - 3 * DAY;
+    await sync(db, { expiry: past });
+    await sync(db, { state: 'SUBSCRIPTION_STATE_EXPIRED', expiry: past });
+    const fresh = Date.now() + 30 * DAY;
+    const r = await sync(db, { token: 'tokNew', expiry: fresh });
+    assert.equal(r.applied, true);
+    assert.equal((await credits(db)).subscription_credits, 4000);
+    assert.equal((await subRow(db)).purchase_token, 'tokNew');
+    // A stored record that merely ran out (no expiry notification seen) also counts as lapsed.
+    await sync(db, { wallet: 'v2:h', token: 'tokH', expiry: past });
+    assert.equal((await sync(db, { wallet: 'v2:h', token: 'tokH2', expiry: fresh })).applied, true);
+    // A second, unlinked subscription while one is still running stays a review case.
+    await rejects(sync(db, { token: 'tokOther', product: PRO, expiry: fresh + DAY, amount: 30000 }), 'token change requires review');
+  } finally { await db.close(); }
+});
+
+test('plan changes inside a paid period never refill credits for free', async () => {
+  const db = await setup();
+  try {
+    const now = Date.now();
+    await sync(db, { token: 't1', expiry: now + 20 * DAY });
+    await setSub(db, 0); // all 4,000 used
+    // Free upgrade (no new full period): balance stays, the cycle is settled without a grant.
+    const up = await sync(db, { token: 't2', linked: 't1', product: MAX, amount: 50000, expiry: now + 3 * DAY });
+    assert.equal(up.applied, false);
+    assert.equal((await credits(db)).subscription_credits, 0);
+    assert.equal((await sync(db, { token: 't2', linked: 't1', product: MAX, amount: 50000, expiry: now + 3 * DAY })).applied, false,
+      'a repeated sync of the moved token does not grant either');
+    assert.equal((await credits(db)).subscription_credits, 0);
+    // Back down with a long prorated period: still nothing (4,000 - 4,000 used).
+    await sync(db, { token: 't3', linked: 't2', expiry: now + 40 * DAY });
+    assert.equal((await credits(db)).subscription_credits, 0);
+    // Re-sign-up of the same plan: nothing either.
+    await sync(db, { token: 't4', linked: 't3', expiry: now + 40 * DAY + 1 });
+    assert.equal((await credits(db)).subscription_credits, 0);
+    // The real renewal of the moved token grants the plan in full again.
+    assert.equal((await sync(db, { token: 't4', expiry: now + 70 * DAY })).applied, true);
+    assert.equal((await credits(db)).subscription_credits, 4000);
+  } finally { await db.close(); }
+});
+
+test('a paid upgrade (full new period) tops up to the new plan minus what was already used', async () => {
+  const db = await setup();
+  try {
+    const now = Date.now();
+    await sync(db, { token: 't1', expiry: now + 20 * DAY });
+    await setSub(db, 3000); // 1,000 used
+    const up = await sync(db, { token: 't2', linked: 't1', product: PRO, amount: 30000, expiry: now + 30 * DAY });
+    assert.equal(up.applied, true);
+    assert.equal((await credits(db)).subscription_credits, 29000);
+    // Using it all and bouncing between plans cannot bring it back.
+    await setSub(db, 0);
+    await sync(db, { token: 't3', linked: 't2', expiry: now + 60 * DAY });
+    await sync(db, { token: 't4', linked: 't3', product: PRO, amount: 30000, expiry: now + 60 * DAY + 1 });
+    assert.equal((await credits(db)).subscription_credits, 0);
+    // A downgrade never lowers a balance that was paid for.
+    await setSub(db, 20000);
+    await sync(db, { token: 't5', linked: 't4', expiry: now + 90 * DAY });
+    assert.equal((await credits(db)).subscription_credits, 20000);
+  } finally { await db.close(); }
+});
+
+test('a plan change after the old period ended, or out of account hold, is a normal full grant', async () => {
+  const db = await setup();
+  try {
+    const now = Date.now();
+    await sync(db, { token: 't1', expiry: now - DAY });
+    await setSub(db, 100);
+    const r = await sync(db, { token: 't2', linked: 't1', product: PRO, amount: 30000, expiry: now + 30 * DAY });
+    assert.equal(r.applied, true);
+    assert.equal((await credits(db)).subscription_credits, 30000);
+  } finally { await db.close(); }
+});
+
+test('a linked token that belongs to another wallet is refused', async () => {
+  const db = await setup();
+  try {
+    const e1 = Date.now() + 20 * DAY;
+    await sync(db, { token: 't1', expiry: e1 });
+    await rejects(sync(db, { wallet: 'v2:h', token: 't2', linked: 't1', expiry: e1 + DAY }), 'owner transfer requires review');
+    assert.equal((await credits(db, 'v2:h')).subscription_credits, 0);
+  } finally { await db.close(); }
+});
+
+test('account hold and expiry report a past expiry: they are recorded, and the final expiry clears credits', async () => {
+  const db = await setup();
+  try {
+    const e1 = Date.now() - 10 * DAY;
+    await sync(db, { expiry: e1 });
+    await sync(db, { state: 'SUBSCRIPTION_STATE_IN_GRACE_PERIOD', expiry: Date.now() + DAY });
+    const held = e1 + 5 * DAY;
+    await sync(db, { state: 'SUBSCRIPTION_STATE_ON_HOLD', expiry: held });
+    assert.equal((await subRow(db)).subscription_state, 'SUBSCRIPTION_STATE_ON_HOLD');
+    assert.equal((await credits(db)).subscription_credits, 4000);
+    await sync(db, { state: 'SUBSCRIPTION_STATE_EXPIRED', expiry: held });
+    assert.deepEqual(await one(db, 'select * from public.expire_google_subscription_credits($1,$2,$3)', ['tokA', held, 'n1']),
+      { result: 'cleared', cleared: 4000 });
+  } finally { await db.close(); }
+});
+
+test('the old token of a changed plan is not the current subscription and changes nothing', async () => {
+  const db = await setup();
+  try {
+    const now = Date.now();
+    await sync(db, { token: 't1', expiry: now + 20 * DAY });
+    await sync(db, { token: 't2', linked: 't1', product: PRO, amount: 30000, expiry: now + 30 * DAY });
+    await rejects(sync(db, { token: 't1', state: 'SUBSCRIPTION_STATE_EXPIRED', expiry: now }), 'not the current Google subscription');
+    assert.deepEqual(await subRow(db), { purchase_token: 't2', product_id: PRO, subscription_state: 'SUBSCRIPTION_STATE_ACTIVE' });
+    assert.equal((await credits(db)).subscription_credits, 30000);
   } finally { await db.close(); }
 });
 

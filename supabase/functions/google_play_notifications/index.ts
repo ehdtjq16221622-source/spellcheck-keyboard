@@ -13,11 +13,11 @@
 // GOOGLE_PLAY_SERVICE_ACCOUNT_JSON, GOOGLE_PLAY_PACKAGE_NAME. Off unless GOOGLE_RTDN_ENABLED=true.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { verifyGooglePushToken } from './_shared/google_auth.ts'
-import { acknowledgeSubscription, verifySubscription } from './_shared/google_play.ts'
-import { consumeProductPurchase, getProductPurchase, purchaseTokenHash } from './_shared/google_play_products.ts'
+import { acknowledgeSubscription, GooglePlaySubscriptionError, verifySubscription } from './_shared/google_play.ts'
+import { consumeProductPurchase, getProductPurchase, GooglePlayApiError, purchaseTokenHash } from './_shared/google_play_products.ts'
 import { CREDIT_PACK_PRODUCTS, CreditPackClaimError } from './_shared/credit_pack_validation.ts'
 import { validateGooglePackClaim } from './_shared/google_pack_validation.ts'
-import { googleV2SyncInput, isGoogleV2Product } from './_shared/google_subscription_v2.ts'
+import { GoogleSubscriptionInputError, googleV2SyncInput, isGoogleV2Product } from './_shared/google_subscription_v2.ts'
 import { sendTelegram } from './_shared/telegram.ts'
 
 const json = (body: Record<string, unknown>, status = 200) =>
@@ -96,8 +96,12 @@ Deno.serve(async (req: Request) => {
               environment = purchase.purchaseType === 0 ? 'Sandbox' : 'Production'
               break
             }
-          } catch {
-            // Not this product.
+          } catch (lookupError) {
+            // 4xx = not this product. Anything else is Google being unavailable: retry the
+            // notification later instead of dropping a refund.
+            if (!(lookupError instanceof GooglePlayApiError) || lookupError.status < 400 || lookupError.status >= 500) {
+              throw lookupError
+            }
           }
         }
       }
@@ -129,7 +133,17 @@ Deno.serve(async (req: Request) => {
           typeof oneTime.sku !== 'string' || !Object.hasOwn(CREDIT_PACK_PRODUCTS, oneTime.sku)) {
         return json({ ignored: 'one_time_other' })
       }
-      const purchase = await getProductPurchase(packageName, oneTime.sku, oneTime.purchaseToken) as unknown as Record<string, unknown>
+      let purchase: Record<string, unknown>
+      try {
+        purchase = await getProductPurchase(packageName, oneTime.sku, oneTime.purchaseToken) as unknown as Record<string, unknown>
+      } catch (lookupError) {
+        // Google has no such purchase for this product: redelivery cannot change that.
+        if (lookupError instanceof GooglePlayApiError && [400, 404, 410].includes(lookupError.status)) {
+          log('pack_not_readable', { status: lookupError.status })
+          return json({ ignored: 'purchase_not_readable' })
+        }
+        throw lookupError
+      }
       const accountToken = purchase.obfuscatedExternalAccountId
       if (typeof accountToken !== 'string') return json({ ignored: 'no_account_binding' })
       const { data: walletId, error: walletError } = await supabase.rpc('credit_pack_wallet_for_account_token', { p_account_token: accountToken })
@@ -172,18 +186,32 @@ Deno.serve(async (req: Request) => {
           !isGoogleV2Product(sub.subscriptionId)) {
         return json({ ignored: 'subscription_other' })
       }
-      const verified = await verifySubscription(packageName, sub.subscriptionId, sub.purchaseToken)
-      // Wallet: the row that already holds this token, else the one holding the linked (previous)
-      // token, else the account token Google carries (first purchase completed outside the app).
+      let verified
+      try {
+        verified = await verifySubscription(packageName, sub.subscriptionId, sub.purchaseToken)
+      } catch (verifyError) {
+        // Google says there is no such subscription record (expired token, another product):
+        // redelivery cannot change that.
+        if (verifyError instanceof GooglePlaySubscriptionError && verifyError.status >= 400 && verifyError.status < 500 &&
+            verifyError.status !== 401 && verifyError.status !== 403 && verifyError.status !== 429) {
+          log('subscription_not_readable', { status: verifyError.status })
+          return json({ ignored: 'subscription_not_readable' })
+        }
+        throw verifyError
+      }
+      // Wallet: the row that already holds this token, else the one holding the previous token
+      // (plan change, or a resubscribe made in the Play Store), else the account token Google
+      // carries (first purchase completed outside the app).
       let walletId: string | null = null
-      for (const token of [sub.purchaseToken, verified.linkedPurchaseToken]) {
-        if (!token) continue
+      for (const token of [sub.purchaseToken, verified.linkedPurchaseToken, verified.expiredPurchaseToken]) {
+        if (!token || token.length > 512) continue
         const { data, error } = await supabase.from('device_subscriptions').select('device_id').eq('purchase_token', token).maybeSingle()
         if (error) throw error
         if (data?.device_id) { walletId = data.device_id; break }
       }
-      if (!walletId && verified.obfuscatedAccountId) {
-        const { data, error } = await supabase.rpc('credit_pack_wallet_for_account_token', { p_account_token: verified.obfuscatedAccountId })
+      const accountId = verified.obfuscatedAccountId ?? verified.expiredObfuscatedAccountId
+      if (!walletId && accountId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(accountId)) {
+        const { data, error } = await supabase.rpc('credit_pack_wallet_for_account_token', { p_account_token: accountId })
         if (error) throw error
         if (typeof data === 'string') walletId = data
       }
@@ -191,7 +219,18 @@ Deno.serve(async (req: Request) => {
         log('subscription_wallet_unknown')
         return json({ ignored: 'unknown_wallet' })
       }
-      const input = googleV2SyncInput(verified, sub.subscriptionId, sub.purchaseToken)
+      let input
+      try {
+        input = googleV2SyncInput(verified, sub.subscriptionId, sub.purchaseToken)
+      } catch (inputError) {
+        // Pending payment, or a plan change scheduled for the next renewal: a later notification
+        // (purchased / renewed) carries the real change.
+        if (inputError instanceof GoogleSubscriptionInputError) {
+          log('subscription_not_ready', { code: inputError.code })
+          return json({ ignored: inputError.code })
+        }
+        throw inputError
+      }
       const { data, error } = await supabase.rpc('sync_google_subscription_v2_once', {
         p_device_id: walletId, p_product_id: sub.subscriptionId, p_purchase_token: sub.purchaseToken,
         p_linked_purchase_token: input.linkedPurchaseToken, p_state: input.state,
@@ -200,6 +239,11 @@ Deno.serve(async (req: Request) => {
         p_metadata: { notification_id: notificationId, google_purchase_verified: true, test_purchase: verified.testPurchase },
       })
       if (error) {
+        // The old token of a changed plan: the wallet already moved to the new token.
+        if (/not the current Google subscription/.test(error.message ?? '')) {
+          log('subscription_not_current', { type: sub.notificationType })
+          return json({ ignored: 'not_current' })
+        }
         // Review-type rejections (owner change, unlinked token) will not succeed on retry.
         if (/requires review|belongs to another wallet|stale Google subscription/.test(error.message ?? '')) {
           log('subscription_review_required', { reason: error.message })

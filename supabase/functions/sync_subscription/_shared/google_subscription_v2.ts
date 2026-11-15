@@ -58,6 +58,11 @@ export function googleV2SyncInput(
       throw new GoogleSubscriptionInputError('subscription_pending')
     case 'SUBSCRIPTION_STATE_ACTIVE':
     case 'SUBSCRIPTION_STATE_CANCELED':
+      // A plan change scheduled for the next renewal (DEFERRED): the new plan is listed without an
+      // expiry until it starts. Nothing to record yet; the renewal notification applies it.
+      if (expiry == null && verified.state === 'SUBSCRIPTION_STATE_ACTIVE') {
+        throw new GoogleSubscriptionInputError('subscription_change_scheduled')
+      }
       // Canceled = auto-renew off; the paid period still runs until expiry, like iOS.
       if (expiry != null && expiry > nowMs) {
         return { ...base, state: 'SUBSCRIPTION_STATE_ACTIVE', cycleKey: `${purchaseToken}:${productId}:${expiry}` }

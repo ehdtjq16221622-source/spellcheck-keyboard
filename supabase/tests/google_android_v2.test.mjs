@@ -66,7 +66,7 @@ class WalletAccessError extends Error { constructor(m, s) { super(m); this.statu
 const activeSub = (extra = {}) => ({ active: true, state: 'SUBSCRIPTION_STATE_ACTIVE', expiryTimeMillis: Date.now() + 20 * DAY,
   cycleKey: 'x', orderId: 'GPA.5-5', obfuscatedAccountId: TOKEN, acknowledged: false, linkedPurchaseToken: null, testPurchase: false, ...extra });
 
-async function runSync(body, { verified = activeSub(), owner = 'google:1', authenticated = true, rpcResult, ackError } = {}) {
+async function runSync(body, { verified = activeSub(), owner = 'google:1', authenticated = true, rpcResult, ackError, held = {} } = {}) {
   let handler;
   const rpc = [];
   const acks = [];
@@ -81,7 +81,9 @@ async function runSync(body, { verified = activeSub(), owner = 'google:1', authe
     acknowledgeSubscription: async (...args) => { if (ackError) throw ackError; acks.push(args); },
   };
   globalThis.__db = () => ({
-    from: () => ({ select() { return this; }, eq() { return this; }, async maybeSingle() { return { data: { apple_user_id: owner }, error: null }; } }),
+    from: () => ({ select() { return this; }, eq() { return this; },
+      in(_c, tokens) { return { then: (resolve) => resolve({ data: tokens.filter((t) => held[t]).map((t) => ({ device_id: held[t] })), error: null }) }; },
+      async maybeSingle() { return { data: { apple_user_id: owner }, error: null }; } }),
     async rpc(name, args) {
       rpc.push({ name, args });
       if (name === 'credit_pack_account_token') return { data: TOKEN, error: null };
@@ -127,21 +129,47 @@ test('sync v2: acknowledgement failure keeps the grant and reports acknowledged:
   assert.equal(r.body.monthly_credit_granted, true);
 });
 
+test('sync v2: a Play Store resubscribe without an account ID is accepted only when it continues this wallet\'s subscription', async () => {
+  const outside = (extra = {}) => activeSub({ obfuscatedAccountId: null, expiredPurchaseToken: null, expiredObfuscatedAccountId: null, ...extra });
+  const unknown = await runSync(subBody, { verified: outside() });
+  assert.equal(unknown.status, 403, 'no account ID and no earlier subscription of this wallet');
+  const byExpiredAccount = await runSync(subBody, { verified: outside({ expiredObfuscatedAccountId: TOKEN.toUpperCase() }) });
+  assert.equal(byExpiredAccount.status, 200);
+  const byExpiredToken = await runSync(subBody, { verified: outside({ expiredPurchaseToken: 'old-token' }), held: { 'old-token': 'v2:g' } });
+  assert.equal(byExpiredToken.status, 200);
+  const byLinked = await runSync(subBody, { verified: outside({ linkedPurchaseToken: 'old-token' }), held: { 'old-token': 'v2:g' } });
+  assert.equal(byLinked.status, 200);
+  const someoneElses = await runSync(subBody, { verified: outside({ expiredPurchaseToken: 'old-token' }), held: { 'old-token': 'v2:other' } });
+  assert.equal(someoneElses.status, 403);
+  const wrongAccount = await runSync(subBody, { verified: activeSub({ obfuscatedAccountId: 'someone-else' }), held: { 'sub-token': 'v2:g' } });
+  assert.equal(wrongAccount.status, 403, 'a present but different account ID is never overridden');
+});
+
+test('sync v2: a scheduled plan change waits, and the old token of a changed plan is not an error', async () => {
+  const scheduled = await runSync(subBody, { verified: activeSub({ expiryTimeMillis: null }) });
+  assert.deepEqual([scheduled.status, scheduled.body.error], [202, 'subscription_change_scheduled']);
+  assert.equal(scheduled.rpc.some((c) => c.name === 'sync_google_subscription_v2_once'), false);
+  const old = await runSync(subBody, { rpcResult: { data: null, error: { message: 'not the current Google subscription' } } });
+  assert.deepEqual([old.status, old.body.error], [409, 'subscription_not_current']);
+});
+
 // ---------------- google_play_notifications ----------------
 
 const rtdnSource = stripTypeScriptTypes(readFileSync(fn('google_play_notifications/index.ts'), 'utf8')
   .replace(/^import \{ createClient \} from .*$/m, 'const createClient = globalThis.__db;')
   .replace(/^import \{ verifyGooglePushToken \} from .*$/m, 'const verifyGooglePushToken = globalThis.__push;')
-  .replace(/^import \{ acknowledgeSubscription, verifySubscription \} from .*$/m, 'const { acknowledgeSubscription, verifySubscription } = globalThis.__play;')
-  .replace(/^import \{ consumeProductPurchase, getProductPurchase, purchaseTokenHash \} from .*$/m,
-    'const { consumeProductPurchase, getProductPurchase, purchaseTokenHash } = globalThis.__products;')
+  .replace(/^import \{ acknowledgeSubscription, GooglePlaySubscriptionError, verifySubscription \} from .*$/m,
+    'const { acknowledgeSubscription, GooglePlaySubscriptionError, verifySubscription } = globalThis.__play;')
+  .replace(/^import \{ consumeProductPurchase, getProductPurchase, GooglePlayApiError, purchaseTokenHash \} from .*$/m,
+    'const { consumeProductPurchase, getProductPurchase, GooglePlayApiError, purchaseTokenHash } = globalThis.__products;')
   .replace(/^import \{ CREDIT_PACK_PRODUCTS, CreditPackClaimError \} from .*$/m, '')
   .replace(/^import \{ validateGooglePackClaim \} from .*$/m, '')
-  .replace(/^import \{ googleV2SyncInput, isGoogleV2Product \} from .*$/m, '')
+  .replace(/^import \{ GoogleSubscriptionInputError, googleV2SyncInput, isGoogleV2Product \} from .*$/m, '')
   .replace(/^import \{ sendTelegram \} from .*$/m, 'const sendTelegram = async (t) => { globalThis.__telegram.push(t); return true; };'))
   + '\n' + pure('credit_pack_purchase/_shared/credit_pack_validation.ts')
   + '\n' + pure('credit_pack_purchase/_shared/google_pack_validation.ts') + '\n' + v2Source;
 
+class PlayError extends Error { constructor(m, s) { super(m); this.status = s; } }
 const pack = { orderId: 'GPA.7777-1', purchaseState: 0, consumptionState: 0, quantity: 1, obfuscatedExternalAccountId: TOKEN };
 
 async function rtdn(note, { authorized = true, enabled = true, purchase = pack, verified = activeSub(), subRows = {},
@@ -153,10 +181,16 @@ async function rtdn(note, { authorized = true, enabled = true, purchase = pack, 
   globalThis.Deno = { env: { get: (k) => ({ SUPABASE_URL: 'u', SUPABASE_SERVICE_ROLE_KEY: 's', GOOGLE_RTDN_ENABLED: enabled ? 'true' : undefined,
     GOOGLE_RTDN_PUSH_AUDIENCE: 'aud', GOOGLE_RTDN_PUSH_SERVICE_ACCOUNT: 'push@x' })[k] }, serve: (f) => { handler = f; } };
   globalThis.__push = async () => authorized;
-  globalThis.__play = { verifySubscription: async () => verified, acknowledgeSubscription: async () => {} };
+  globalThis.__play = { GooglePlaySubscriptionError: PlayError, acknowledgeSubscription: async () => {},
+    verifySubscription: async () => { if (verified instanceof Error) throw verified; return verified; } };
   globalThis.__products = {
+    GooglePlayApiError: PlayError,
     purchaseTokenHash: async () => 'f'.repeat(64),
-    getProductPurchase: async (_p, productId) => (typeof purchase === 'function' ? purchase(productId) : purchase),
+    getProductPurchase: async (_p, productId) => {
+      const value = typeof purchase === 'function' ? purchase(productId) : purchase;
+      if (value instanceof Error) throw value;
+      return value;
+    },
     consumeProductPurchase: async (...a) => { consumed.push(a); },
   };
   globalThis.__db = () => ({
@@ -246,4 +280,41 @@ test('rtdn: review-type rejections are reported once and not retried; outages ar
   const down = await rtdn({ subscriptionNotification: { notificationType: 2, purchaseToken: 'st', subscriptionId: BASIC } },
     { subRows: { st: 'v2:g' }, rpcOverride: { sync_google_subscription_v2_once: { data: null, error: { message: 'connection reset' } } } });
   assert.equal(down.status, 500);
+});
+
+test('rtdn: notifications that can never apply are acknowledged quietly; Google outages are retried', async () => {
+  const note = { subscriptionNotification: { notificationType: 13, purchaseToken: 'st', subscriptionId: BASIC } };
+  const oldToken = await rtdn(note, { subRows: { st: 'v2:g' },
+    rpcOverride: { sync_google_subscription_v2_once: { data: null, error: { message: 'not the current Google subscription' } } } });
+  assert.deepEqual([oldToken.status, oldToken.body.ignored, oldToken.telegram.length], [200, 'not_current', 0]);
+  assert.equal(oldToken.rpc.some((c) => c.name === 'expire_google_subscription_credits'), false);
+
+  for (const verified of [activeSub({ state: 'SUBSCRIPTION_STATE_PENDING' }), activeSub({ expiryTimeMillis: null })]) {
+    const waiting = await rtdn({ subscriptionNotification: { notificationType: 4, purchaseToken: 'st', subscriptionId: BASIC } },
+      { subRows: { st: 'v2:g' }, verified });
+    assert.equal(waiting.status, 200);
+    assert.equal(waiting.rpc.some((c) => c.name === 'sync_google_subscription_v2_once'), false);
+  }
+
+  const gone = await rtdn(note, { verified: new PlayError('gone', 410) });
+  assert.deepEqual([gone.status, gone.body.ignored], [200, 'subscription_not_readable']);
+  assert.equal((await rtdn(note, { verified: new PlayError('unavailable', 503) })).status, 500);
+  assert.equal((await rtdn(note, { verified: new PlayError('forbidden', 403) })).status, 500, 'our own credentials failing is retried');
+
+  const packNote = { oneTimeProductNotification: { notificationType: 1, purchaseToken: 'pt', sku: 'com.kingboard.app.credits_7000' } };
+  assert.deepEqual((await rtdn(packNote, { purchase: new PlayError('not found', 404) })).body, { ignored: 'purchase_not_readable' });
+  assert.equal((await rtdn(packNote, { purchase: new PlayError('unavailable', 503) })).status, 500);
+
+  const voided = { voidedPurchaseNotification: { purchaseToken: 'pt', orderId: 'GPA.7777-1', productType: 2 } };
+  assert.equal((await rtdn(voided, { purchase: new PlayError('unavailable', 503) })).status, 500, 'a refund is not dropped on an outage');
+  assert.deepEqual((await rtdn(voided, { purchase: new PlayError('not found', 404) })).body, { ignored: 'not_a_pack' });
+});
+
+test('rtdn: a Play Store resubscribe finds the wallet through the expired subscription', async () => {
+  const note = { subscriptionNotification: { notificationType: 4, purchaseToken: 'new', subscriptionId: BASIC } };
+  const r = await rtdn(note, { subRows: { gone: 'v2:h' },
+    verified: activeSub({ obfuscatedAccountId: null, expiredPurchaseToken: 'gone', expiredObfuscatedAccountId: null }) });
+  assert.equal(r.rpc.find((c) => c.name === 'sync_google_subscription_v2_once').args.p_device_id, 'v2:h');
+  const byAccount = await rtdn(note, { verified: activeSub({ obfuscatedAccountId: null, expiredPurchaseToken: null, expiredObfuscatedAccountId: TOKEN }) });
+  assert.equal(byAccount.rpc.find((c) => c.name === 'sync_google_subscription_v2_once').args.p_device_id, 'v2:g');
 });
