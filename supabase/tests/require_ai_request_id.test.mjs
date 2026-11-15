@@ -63,7 +63,7 @@ function createHandler(functionName, source = sourceFor(bundle, functionName), a
     .replace(/^import \{ applyValidatedProofingEdits, parseProofingEdits \} from .*$/m,
       'const applyValidatedProofingEdits = globalThis.__applyValidatedProofingEdits; const parseProofingEdits = globalThis.__parseProofingEdits;')
     .replace(/^import \{ createClient \} from .*$/m, 'const createClient = globalThis.__createClient;')
-    .replace(/^import \{ consumeAIUsage, refundAIUsage \} from .*$/m,
+    .replace(/^import \{ consumeAIUsage, refundAIUsage(?:, completeAIUsage)? \} from .*$/m,
       'const consumeAIUsage = globalThis.__consumeAIUsage; const refundAIUsage = globalThis.__refundAIUsage;')
     .replace(/^import \{ resolveCreditWallet, WalletAccessError \} from .*$/m,
       'const resolveCreditWallet = globalThis.__resolveCreditWallet; class WalletAccessError extends Error { constructor(message, status) { super(message); this.status = status; } }');

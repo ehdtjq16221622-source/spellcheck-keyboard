@@ -1,14 +1,26 @@
 {
-  "reviewedCommit": "2228b6a",
-  "note": "Pending code is pinned separately from the current deployment manifest. This file does not approve deployment.",
+  "reviewedCommit": "bc3fcf0",
+  "note": "Reviewed release changes: 10-second provider budget, durable refund attempts, and disabled subscriber-benefit feed. Deployment is recorded separately.",
   "reviewOnlyChanges": {
     "correct/index.ts": {
-      "sha256": "cd94caa5475c5fa937be78523189328de2dd5c842dfc2051d7f182587087a6d7",
-      "reason": "7c23fc3: reviewed 25-second provider deadline and request correlation; not deployed. Covered by ai_deadline and ai-correlation tests."
+      "sha256": "841e504a8ba98eb27b09d717caefdbe1fa96576c65dadb919b8cb0a95e7f13a1",
+      "reason": "10-second total provider budget and attempt-specific debit/refund completion. DB recovery preserves retry history and refunds interrupted work. Covered by ai_deadline and isolated live-credit-audit tests."
     },
     "translate/index.ts": {
-      "sha256": "aeb36fdac035fe02fa71e4e6575e714f86880478d4feac7dffaf332667596a07",
-      "reason": "7c23fc3: reviewed 25-second provider deadline and request correlation; not deployed. Covered by ai_deadline and ai-correlation tests."
+      "sha256": "7e2329aa10c1104bc01961be34f96a582759497fd43b95c8a0548eb6de9bf998",
+      "reason": "10-second total provider budget and attempt-specific debit/refund completion. DB recovery preserves retry history and refunds interrupted work. Covered by ai_deadline and isolated live-credit-audit tests."
+    },
+    "correct/_shared/credits.ts": {
+      "sha256": "66009b6087917a7601717b4b45608cc257fc56001437476aaf2860a01c23874c",
+      "reason": "10-second total provider budget and attempt-specific debit/refund completion. DB recovery preserves retry history and refunds interrupted work. Covered by ai_deadline and isolated live-credit-audit tests."
+    },
+    "translate/_shared/credits.ts": {
+      "sha256": "66009b6087917a7601717b4b45608cc257fc56001437476aaf2860a01c23874c",
+      "reason": "10-second total provider budget and attempt-specific debit/refund completion. DB recovery preserves retry history and refunds interrupted work. Covered by ai_deadline and isolated live-credit-audit tests."
+    },
+    "get_active_notice/index.ts": {
+      "sha256": "5fbbf2ddb01238624ccfa004cb391542de92cc872b0d28e928af024f7566fec6",
+      "reason": "Optional marketing feed, empty and disabled by default; operational notices preserved on campaign errors. Covered by subscriber_benefit_feed tests."
     }
   }
 }

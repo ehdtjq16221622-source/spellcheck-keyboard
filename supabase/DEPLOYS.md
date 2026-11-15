@@ -17,6 +17,9 @@
 | 2026-10-24 08:51 | sync_subscription | v31 | d73e3f4 |
 | 2026-10-24 08:52 | sync_subscription_ios | v60 | c73bd6f |
 | 2026-10-24 11:56 | wallet_link_v2 | v63 | b4b22ad |
+| 2026-10-25 12:28 | correct | v175 | d1df0f0 |
+| 2026-10-25 12:30 | translate | v60 | 7caf943 |
+| 2026-10-25 12:32 | get_active_notice | v26 | 5373675 |
 | 2026-10-26 15:47 | subscriber_status | v29 | b3e5402 |
 | 2026-10-26 15:50 | subscriber_status | v30 | d52ebd5 |
 | 2026-10-26 15:55 | daily_digest | v38 | edd24f8 |
@@ -41,3 +44,20 @@
 | 2026-11-14 17:05 | sync_subscription | v34 | e39e816 (live credits.ts / subscription_audit.ts kept: no Max plan) |
 | 2026-11-14 17:05 | google_play_notifications | v1 | e39e816 |
 | 2026-11-14 17:06 | correct | v178 | live v177 + language_prompts.ts (branch correct source is behind live; do not deploy it) |
+
+## 2026-10-25 AI recovery and optional benefit database rollout
+
+| committed migration | production migration version |
+|---|---|
+| 20261024080206_ai_request_deadline_correlation.sql | 20261025122620 |
+| 20261025091650_ai_refund_retry_ledger.sql | 20261025122621 |
+| 20261025093344_subscriber_benefit_campaigns.sql | 20261025122623 |
+
+Verified at 2026-10-25 12:35 UTC: 98 completed AI attempts, zero overdue recovery rows,
+zero negative wallets, nine successful recovery scheduler runs, zero active benefit campaigns.
+The production rollback-only debit/refund probe passed and left zero probe wallets.
+Correct/translate/notice live source matches the recorded commits. AI provider work is
+limited to 10 seconds; wallet lookup, ledger calls, and client delivery are outside that budget.
+Server tests: 230 passed. Isolated database tests: 44 passed. iOS source/Swift logic tests:
+494 passed, zero failed, one UIKit/ImageIO simulator test skipped. No new iOS archive or
+physical-device ad callback/benefit popup verification was performed in this rollout.
