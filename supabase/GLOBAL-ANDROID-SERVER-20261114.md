@@ -11,7 +11,7 @@
 **2026-11-14 17:04–17:06 UTC 운영 반영 완료(사용자 승인).** 브랜치는 푸시하지 않았다.
 - DB: 마이그레이션 3개 적용(`…100000`, `…110000`, `…120000` 신규 가입 보너스). 검사 2개 VALIDATE 완료, 새 함수 6개는 service_role만 실행 가능, 새 테이블 2개 RLS 켜짐·anon 접근 없음. 행 수 27,326 그대로.
 - 함수: wallet_link_v2 v68, credit_pack_purchase v2, sync_subscription v34, google_play_notifications v1(신규), correct v178. 모두 `verify_jwt=false`(기존과 같음).
-- 배포본은 **라이브 소스 + 이번 변경만**으로 만들었다. 이 브랜치의 `functions/correct`는 라이브보다 오래된 버전이다(라이브는 `consume_ai_credit_attempt` 방식, 시간 제한 10초). 그래서 correct는 라이브 v177에 언어 기능만 얹어 배포했다. **이 브랜치의 correct 소스로 배포하면 안 된다.** sync_subscription은 라이브의 `credits.ts`·`subscription_audit.ts`를 유지했다(아직 출시 전인 Max 플랜 매핑 제외).
+- 배포본은 **라이브 소스 + 이번 변경만**으로 만들었다. 이 브랜치의 `functions/correct`는 라이브보다 오래된 버전이다(라이브는 `consume_ai_credit_attempt` 방식, 시간 제한 10초). 그래서 correct는 라이브 v177에 언어 기능만 얹어 배포했다. **이 브랜치의 correct 소스로 배포하면 안 된다.** (2026-11-15 해소: `codex/ai-10s-release-check`를 합쳐서(f70c09c) 이제 이 브랜치의 correct는 라이브 v178 + 아직 배포 안 한 영어·일본어 강화분이다. 단 `_shared/credits.ts`에는 출시 전인 Max 플랜 3줄이 더 있다.) sync_subscription은 라이브의 `credits.ts`·`subscription_audit.ts`를 유지했다(아직 출시 전인 Max 플랜 매핑 제외).
 - 스위치 `WALLET_GOOGLE_SIGN_IN_ENABLED`, `GOOGLE_RTDN_ENABLED`는 꺼져 있다. 확인: 구글 sign_in 404, RTDN 404, 지갑 availability 200, correct 요청 ID 없음 409.
 - 신규 가입 보너스: 구글 계정당 1회 500(`grant_google_signup_bonus_once`, 원장 키 `google-signup:<subject>`). 게스트 지갑을 처음 구글 계정에 연결(`link`, decision `linked`)할 때 지급하고, 응답에 `signupBonusGranted`가 붙는다. 이미 구글 지갑이 있는 계정·Apple 연결에는 없다. 지급이 실패해도 연결은 성공하고, 같은 키로 다시 link하면 다시 시도한다.
 
