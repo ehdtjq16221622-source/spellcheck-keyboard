@@ -1131,14 +1131,14 @@ Deno.serve(async (req: Request) => {
       // when a guest wallet is first linked. The RPC is idempotent per Google subject.
       let signupBonusGranted: boolean | undefined
       if (googleProvider && result.decision === 'linked') {
-        const { data: granted, error: bonusError } = await auditedRpc('grant_google_signup_bonus_once', {
-          p_wallet_id: body.walletId,
-          p_secret_hash: secretHash,
-          p_google_sub: identity.sub,
-        })
+        const bonusArgs = { p_wallet_id: body.walletId, p_secret_hash: secretHash, p_google_sub: identity.sub }
+        let { data: granted, error: bonusError } = await auditedRpc('grant_google_signup_bonus_once', bonusArgs)
+        // One immediate retry for a passing database error; the RPC grants at most once.
+        if (bonusError) ({ data: granted, error: bonusError } = await auditedRpc('grant_google_signup_bonus_once', bonusArgs))
         if (bonusError) {
-          // The link already committed; a bonus failure must not fail sign-in. A retried
-          // link call (same idempotency key) reaches this RPC again.
+          // The link already committed; a bonus failure must not fail sign-in. The response then
+          // has no signupBonusGranted, and the app calls link again with the same idempotency
+          // key, which reaches this RPC again.
           audit('google_signup_bonus_failed', { outcome: 'retry_on_next_link' })
         } else {
           signupBonusGranted = granted === true

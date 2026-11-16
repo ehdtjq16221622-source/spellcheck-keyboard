@@ -79,7 +79,7 @@ Deno.serve(async (req: Request) => {
         purchase = await getProductPurchase(packageName, productId, purchaseToken) as unknown as Record<string, unknown>
       } catch (error) {
         // 400/404: the token is not a purchase of this product in our app. Anything else is transient.
-        if (error instanceof GooglePlayApiError && (error.status === 400 || error.status === 404)) {
+        if (error instanceof GooglePlayApiError && [400, 404, 410].includes(error.status)) {
           return json({ error: 'purchase_not_found', diagnostic_id: diagnosticId }, 409)
         }
         throw error

@@ -44,6 +44,12 @@
 | 2026-11-14 17:05 | sync_subscription | v34 | e39e816 (live credits.ts / subscription_audit.ts kept: no Max plan) |
 | 2026-11-14 17:05 | google_play_notifications | v1 | e39e816 |
 | 2026-11-14 17:06 | correct | v178 | live v177 + language_prompts.ts (branch correct source is behind live; do not deploy it) |
+| 2026-11-16 04:07 | DB: migration 20261115100000 (sync_google_subscription_v2_once replaced; same signature and grants) | applied | 43f3a12 |
+| 2026-11-16 04:08 | credit_pack_purchase | v3 | 43f3a12 |
+| 2026-11-16 04:08 | sync_subscription | v35 | 43f3a12 (live credits.ts / subscription_audit.ts kept: no Max plan) |
+| 2026-11-16 04:08 | wallet_link_v2 | v69 | 43f3a12 |
+| 2026-11-16 04:08 | google_play_notifications | v2 | 43f3a12 |
+| 2026-11-16 04:09 | correct | v179 | 43f3a12 (live credits.ts kept: no Max plan) |
 
 ## 2026-10-25 AI recovery and optional benefit database rollout
 

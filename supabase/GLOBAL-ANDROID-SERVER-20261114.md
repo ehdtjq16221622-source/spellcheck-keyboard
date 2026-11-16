@@ -64,7 +64,9 @@
 - 예전 안드로이드 플랜(`kingboard_monthly_500/1000`)의 경로는 그대로다.
 - DB 함수: `sync_google_subscription_v2_once`, `expire_google_subscription_credits`.
 
-#### 2026-11-15 출시 전 검토에서 고친 것 (**아직 운영에 반영 안 됨**, 스위치 켜기 전 반영 필요)
+#### 2026-11-15 출시 전 검토에서 고친 것 (**2026-11-16 04:07–04:09 UTC 운영 반영 완료**, 사용자 승인)
+반영 내용: 마이그레이션 적용(함수 교체, 서명·권한 그대로), sync_subscription v35, google_play_notifications v2, wallet_link_v2 v69, credit_pack_purchase v3, correct v179(영어·일본어 프롬프트 강화 포함). 배포본은 라이브 소스에 이번 변경만 얹었고, `credits.ts`·`subscription_audit.ts`는 라이브 것을 유지했다(Max 플랜 미출시). 스위치는 그대로 꺼져 있다. 배포 전후 응답 코드가 같고, 배포 후 실제 교정 요청은 정상 처리됐다.
+
 마이그레이션 `20261115100000_google_subscription_guards.sql`(함수 교체만, 테이블 변경 없음)와 함수 `sync_subscription`, `google_play_notifications`, `wallet_link_v2`, `credit_pack_purchase`.
 - **만료 후 재구독이 막히던 문제.** 구글은 완전히 만료된 뒤 다시 구독하면 "이전 토큰" 없이 새 토큰을 준다. 예전 규칙으로는 전부 "확인 필요"로 떨어져 결제하고도 크레딧을 못 받았다. 이제 지갑에 저장된 구독이 끝난 상태면 새 토큰으로 바꾸고 정상 지급한다.
 - **플랜 바꾸기로 크레딧을 공짜로 다시 채우는 구멍.** 구글은 돈을 내지 않는 플랜 변경 방식(WITH_TIME_PRORATION, WITHOUT_PRORATION)과 해지 후 재가입을 허용하고, 그때마다 새 토큰을 준다. 예전 규칙은 새 토큰마다 플랜 크레딧을 통째로 다시 줬다. 이제 결제한 기간이 남아 있는 동안의 플랜 변경은

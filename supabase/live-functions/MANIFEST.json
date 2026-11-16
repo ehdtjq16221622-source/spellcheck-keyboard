@@ -1,15 +1,15 @@
 {
   "functions": {
     "correct": {
-      "version": 178,
+      "version": 179,
       "verify_jwt": false,
-      "updated_at": 1794675996776,
+      "updated_at": 1794802153470,
       "files": {
-        "correct/index.ts": "1b3ebcb4a4b6ef34",
+        "correct/index.ts": "6a11d091127ee5b4",
         "correct/_shared/ai_deadline.ts": "b2ff7a21aa0ceae0",
         "correct/_shared/credits.ts": "66009b6087917a76",
         "correct/_shared/wallet_auth.ts": "8d1219e6fcbafbb7",
-        "correct/language_prompts.ts": "ffcf2197c26984cf",
+        "correct/language_prompts.ts": "0c8f226302bc11c0",
         "correct/proofing_edits.ts": "12deac4c152276fb"
       }
     },
@@ -33,14 +33,14 @@
       }
     },
     "sync_subscription": {
-      "version": 34,
+      "version": 35,
       "verify_jwt": false,
-      "updated_at": 1794675949085,
+      "updated_at": 1794802107309,
       "files": {
-        "sync_subscription/index.ts": "cacd844304ed13b5",
+        "sync_subscription/index.ts": "8b6e23bc4e382c2a",
         "sync_subscription/_shared/credits.ts": "b45ea99450b2cc6b",
-        "sync_subscription/_shared/google_play.ts": "9750fcfdc6f6b34b",
-        "sync_subscription/_shared/google_subscription_v2.ts": "dfec0a88a1035895",
+        "sync_subscription/_shared/google_play.ts": "ef719c6199681c9f",
+        "sync_subscription/_shared/google_subscription_v2.ts": "c2c09b03b1189dbf",
         "sync_subscription/_shared/subscription_audit.ts": "e7be06fcc05bd5e0",
         "sync_subscription/_shared/wallet_auth.ts": "56852f745367a17c"
       }
@@ -217,11 +217,11 @@
       }
     },
     "wallet_link_v2": {
-      "version": 68,
+      "version": 69,
       "verify_jwt": false,
-      "updated_at": 1794675934808,
+      "updated_at": 1794802115729,
       "files": {
-        "wallet_link_v2/index.ts": "832427e586ad3c72",
+        "wallet_link_v2/index.ts": "297b677dfb10c530",
         "wallet_link_v2/_shared/apple_auth.ts": "055bd2a8e05d6aa0",
         "wallet_link_v2/_shared/apple_subscription_portable.ts": "4adaf6808394efd4",
         "wallet_link_v2/_shared/apple_subscription_status.ts": "f8eaed6cfa72c6a6",
@@ -290,33 +290,33 @@
       }
     },
     "credit_pack_purchase": {
-      "version": 2,
+      "version": 3,
       "verify_jwt": false,
-      "updated_at": 1794675942938,
+      "updated_at": 1794802097485,
       "files": {
-        "credit_pack_purchase/index.ts": "b7cf6fdd0fd016a4",
+        "credit_pack_purchase/index.ts": "61f6e8644f2ff145",
         "credit_pack_purchase/_shared/apple_subscription_portable.ts": "4adaf6808394efd4",
         "credit_pack_purchase/_shared/apple_subscription_status.ts": "9906b9e9889af6fb",
         "credit_pack_purchase/_shared/credit_pack_validation.ts": "e86f82e567173164",
         "credit_pack_purchase/_shared/google_pack_validation.ts": "032d48d65c58a834",
-        "credit_pack_purchase/_shared/google_play.ts": "9750fcfdc6f6b34b",
+        "credit_pack_purchase/_shared/google_play.ts": "ef719c6199681c9f",
         "credit_pack_purchase/_shared/google_play_products.ts": "ea2d1d445a89d08a",
         "credit_pack_purchase/_shared/telegram.ts": "932ca4944375a8bf",
         "credit_pack_purchase/_shared/wallet_auth.ts": "e84fecb12f4eb98e"
       }
     },
     "google_play_notifications": {
-      "version": 1,
+      "version": 2,
       "verify_jwt": false,
-      "updated_at": 1794675954961,
+      "updated_at": 1794802127488,
       "files": {
-        "google_play_notifications/index.ts": "fccdd340d1a151bc",
+        "google_play_notifications/index.ts": "1926becab6ef3cb2",
         "google_play_notifications/_shared/credit_pack_validation.ts": "e86f82e567173164",
         "google_play_notifications/_shared/google_auth.ts": "19c9016e77d42fa7",
         "google_play_notifications/_shared/google_pack_validation.ts": "032d48d65c58a834",
-        "google_play_notifications/_shared/google_play.ts": "9750fcfdc6f6b34b",
+        "google_play_notifications/_shared/google_play.ts": "ef719c6199681c9f",
         "google_play_notifications/_shared/google_play_products.ts": "ea2d1d445a89d08a",
-        "google_play_notifications/_shared/google_subscription_v2.ts": "dfec0a88a1035895",
+        "google_play_notifications/_shared/google_subscription_v2.ts": "c2c09b03b1189dbf",
         "google_play_notifications/_shared/telegram.ts": "932ca4944375a8bf"
       }
     }

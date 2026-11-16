@@ -76,7 +76,24 @@ Deno.serve(async (req: Request) => {
       auditStage = 'google_verification'
       const verified = await verifySubscription(v2PackageName, productId, purchaseToken)
       auditTransactionFingerprint = await subscriptionTransactionFingerprint(`${purchaseToken}:${productId}`)
-      if (verified.obfuscatedAccountId?.toLowerCase() !== accountToken.toLowerCase()) {
+      const isOurAccount = (value: string | null) =>
+        typeof value === 'string' && value.toLowerCase() === accountToken.toLowerCase()
+      let boundToWallet = isOurAccount(verified.obfuscatedAccountId)
+      if (!boundToWallet && !verified.obfuscatedAccountId) {
+        // Bought or resubscribed in the Play Store itself: Google carries no account ID. Accept it
+        // only when it continues a subscription this wallet already holds.
+        boundToWallet = isOurAccount(verified.expiredObfuscatedAccountId)
+        const earlierTokens = [purchaseToken, verified.linkedPurchaseToken, verified.expiredPurchaseToken]
+          .filter((token): token is string => typeof token === 'string' && token.length > 0 && token.length <= 512)
+        if (!boundToWallet && earlierTokens.length > 0) {
+          const { data: held, error: heldError } = await supabase.from('device_subscriptions')
+            .select('device_id').in('purchase_token', earlierTokens)
+          if (heldError) throw heldError
+          boundToWallet = Array.isArray(held) && held.length > 0 &&
+            held.every((row: { device_id: string }) => row.device_id === wallet.walletId)
+        }
+      }
+      if (!boundToWallet) {
         logSubscriptionAudit('warn', auditId, 'rejected', {
           stage: 'google_account_binding', source: 'google_play_v2', failureCode: 'google_account_binding_mismatch',
           walletFingerprint: auditWalletFingerprint, transactionFingerprint: auditTransactionFingerprint,
@@ -89,8 +106,9 @@ Deno.serve(async (req: Request) => {
         input = googleV2SyncInput(verified, productId, purchaseToken)
       } catch (error) {
         if (error instanceof GoogleSubscriptionInputError) {
+          const waiting = error.code === 'subscription_pending' || error.code === 'subscription_change_scheduled'
           return new Response(JSON.stringify({ error: error.code, audit_id: auditId }),
-            { status: error.code === 'subscription_pending' ? 202 : 400, headers: { ...cors, 'Content-Type': 'application/json' } })
+            { status: waiting ? 202 : 400, headers: { ...cors, 'Content-Type': 'application/json' } })
         }
         throw error
       }
@@ -103,6 +121,11 @@ Deno.serve(async (req: Request) => {
         p_metadata: { audit_id: auditId, transaction_fingerprint: auditTransactionFingerprint,
           google_purchase_verified: true, test_purchase: verified.testPurchase },
       })
+      // The old token of a changed plan: the wallet already moved to the new one. Not a failure.
+      if (error && /not the current Google subscription/.test(error.message ?? '')) {
+        return new Response(JSON.stringify({ error: 'subscription_not_current', audit_id: auditId }),
+          { status: 409, headers: { ...cors, 'Content-Type': 'application/json' } })
+      }
       if (error) throw error
       const result = Array.isArray(data) ? data[0] : data
       if (!result) throw new Error('Google subscription sync response was empty.')
