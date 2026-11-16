@@ -50,6 +50,7 @@
 | 2026-11-16 04:08 | wallet_link_v2 | v69 | 43f3a12 |
 | 2026-11-16 04:08 | google_play_notifications | v2 | 43f3a12 |
 | 2026-11-16 04:09 | correct | v179 | 43f3a12 (live credits.ts kept: no Max plan) |
+| 2026-11-16 04:25 | DB: migration 20261116100000 (full-price Android upgrade grants the new plan in full, like iOS) | applied | see next commit |
 
 ## 2026-10-25 AI recovery and optional benefit database rollout
 

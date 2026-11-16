@@ -6,6 +6,7 @@ import { PGlite } from '@electric-sql/pglite';
 const expirySql = await readFile(new URL('../../migrations/20261106090000_expire_subscription_credits.sql', import.meta.url), 'utf8');
 const v2Sql = await readFile(new URL('../../migrations/20261114110000_google_subscriptions_v2.sql', import.meta.url), 'utf8');
 const guardsSql = await readFile(new URL('../../migrations/20261115100000_google_subscription_guards.sql', import.meta.url), 'utf8');
+const upgradeSql = await readFile(new URL('../../migrations/20261116100000_google_upgrade_full_grant.sql', import.meta.url), 'utf8');
 const BASIC = 'com.kingboard.app.monthly_basic';
 const MAX = 'com.kingboard.app.monthly_max';
 const PRO = 'com.kingboard.app.monthly_pro';
@@ -34,6 +35,7 @@ async function setup() {
   await db.exec(expirySql);
   await db.exec(v2Sql);
   await db.exec(guardsSql);
+  await db.exec(upgradeSql);
   return db;
 }
 
@@ -172,23 +174,30 @@ test('plan changes inside a paid period never refill credits for free', async ()
   } finally { await db.close(); }
 });
 
-test('a paid upgrade (full new period) tops up to the new plan minus what was already used', async () => {
+test('a full-price upgrade grants the new plan in full (same as iOS); free bouncing still cannot refill', async () => {
   const db = await setup();
   try {
     const now = Date.now();
     await sync(db, { token: 't1', expiry: now + 20 * DAY });
     await setSub(db, 3000); // 1,000 used
-    const up = await sync(db, { token: 't2', linked: 't1', product: PRO, amount: 30000, expiry: now + 30 * DAY });
+    const up = await sync(db, { token: 't2', linked: 't1', product: PRO, amount: 30000, expiry: now + 33 * DAY });
     assert.equal(up.applied, true);
-    assert.equal((await credits(db)).subscription_credits, 29000);
-    // Using it all and bouncing between plans cannot bring it back.
+    assert.equal((await credits(db)).subscription_credits, 30000);
+    const grant = await one(db, `select metadata from public.credit_transactions where idempotency_key like 't2:%'`);
+    assert.equal(grant.metadata.period_used_carry, 0, 'the new paid period starts with no usage');
+    // Using it all and bouncing between plans for free cannot bring it back: the free way up keeps
+    // the billing date (here 1 ms later), so it is not a full-price upgrade.
     await setSub(db, 0);
     await sync(db, { token: 't3', linked: 't2', expiry: now + 60 * DAY });
     await sync(db, { token: 't4', linked: 't3', product: PRO, amount: 30000, expiry: now + 60 * DAY + 1 });
     assert.equal((await credits(db)).subscription_credits, 0);
+    // A same-size or smaller plan bought at full price is not an upgrade: usage still counts.
+    await sync(db, { token: 't4b', linked: 't4', product: PRO, amount: 30000, expiry: now + 95 * DAY });
+    assert.equal((await credits(db)).subscription_credits, 0);
+    await sync(db, { token: 't4c', linked: 't4b', product: PRO, amount: 30000, expiry: now + 95 * DAY + 1 });
     // A downgrade never lowers a balance that was paid for.
     await setSub(db, 20000);
-    await sync(db, { token: 't5', linked: 't4', expiry: now + 90 * DAY });
+    await sync(db, { token: 't5', linked: 't4c', expiry: now + 120 * DAY });
     assert.equal((await credits(db)).subscription_credits, 20000);
   } finally { await db.close(); }
 });
