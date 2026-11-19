@@ -188,13 +188,24 @@ async function send(body) {
 }
 const systemOf = (call) => call.body.system_instruction?.parts?.[0]?.text ?? call.body.instructions;
 
-test('no language (every current app) keeps the Korean prompts exactly', async () => {
-  const korean = await send({ text: 'hello', formalMode: false });
-  const explicitKo = await send({ text: 'hello', formalMode: false, language: 'ko' });
-  const unknown = await send({ text: 'hello', formalMode: false, language: 'zh' });
+test('no language (every current app) keeps the Korean prompts exactly for Korean text', async () => {
+  const korean = await send({ text: '안녕하세요 반가워요', formalMode: false });
+  const explicitKo = await send({ text: '안녕하세요 반가워요', formalMode: false, language: 'ko' });
+  const unknown = await send({ text: '안녕하세요 반가워요', formalMode: false, language: 'zh' });
+  const englishApp = await send({ text: '안녕하세요 반가워요', formalMode: false, language: 'en' });
   assert.match(systemOf(korean.calls[0]), /한국어 맞춤법 교정기/);
   assert.equal(systemOf(explicitKo.calls[0]), systemOf(korean.calls[0]));
   assert.equal(systemOf(unknown.calls[0]), systemOf(korean.calls[0]));
+  assert.equal(systemOf(englishApp.calls[0]), systemOf(korean.calls[0]), 'Korean text on an English phone is Korean');
+});
+
+test('the written text picks the prompts even when the app language differs (2026-11-20)', async () => {
+  const englishOnKoreanPhone = await send({ text: 'i dont know where there going', formalMode: false });
+  assert.match(systemOf(englishOnKoreanPhone.calls[0]), /proofreading tool/);
+  const japaneseOnEnglishPhone = await send({ text: '明日の会議、遅れるかも', formalMode: false, language: 'en' });
+  assert.doesNotMatch(systemOf(japaneseOnEnglishPhone.calls[0]), /proofreading tool|한국어 맞춤법 교정기/);
+  const noLetters = await send({ text: '12:30', formalMode: false, language: 'ja' });
+  assert.equal(systemOf(noLetters.calls[0]), systemOf(japaneseOnEnglishPhone.calls[0]), 'no letters: app language');
 });
 
 test('English proofreading uses the English prompt on the same low-cost model and credit kind', async () => {

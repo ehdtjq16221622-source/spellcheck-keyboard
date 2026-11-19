@@ -1,0 +1,160 @@
+{
+  "model": "gemini-3.1-flash-lite",
+  "runsPerCase": 6,
+  "summary": {
+    "proofing:en": {
+      "pass": 1,
+      "total": 2
+    }
+  },
+  "failures": [
+    {
+      "id": "ctl-en2b",
+      "input": "my freind 민수 is comming tomorow",
+      "passes": "5/6",
+      "bad": [
+        {
+          "output": "my friend 민수 is coming tomorow",
+          "missing": [
+            "tomorrow"
+          ],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false
+        }
+      ]
+    }
+  ],
+  "results": [
+    {
+      "kind": "proofing",
+      "id": "ctl-en2",
+      "lang": "en",
+      "input": "my freind Mike is comming tomorow",
+      "pass": true,
+      "passes": 6,
+      "runs": [
+        {
+          "output": "my friend Mike is coming tomorrow",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "my friend Mike is coming tomorrow",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "my friend Mike is coming tomorrow",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "my friend Mike is coming tomorrow",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "my friend Mike is coming tomorrow",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "my friend Mike is coming tomorrow",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "proofing",
+      "id": "ctl-en2b",
+      "lang": "en",
+      "input": "my freind 민수 is comming tomorow",
+      "pass": false,
+      "passes": 5,
+      "runs": [
+        {
+          "output": "my friend 민수 is coming tomorrow",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "my friend 민수 is coming tomorrow",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "my friend 민수 is coming tomorrow",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "my friend 민수 is coming tomorrow",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "my friend 민수 is coming tomorow",
+          "guarded": false,
+          "missing": [
+            "tomorrow"
+          ],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": false
+        },
+        {
+          "output": "my friend 민수 is coming tomorrow",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        }
+      ]
+    }
+  ]
+}

@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { consumeAIUsage, refundAIUsage, completeAIUsage } from './_shared/credits.ts'
 import { resolveCreditWallet, WalletAccessError } from './_shared/wallet_auth.ts'
 import { AIRequestDeadline, AIRequestTimeout, recordSlowAIRequest } from './_shared/ai_deadline.ts'
-import { buildForeignProofingPrompt, buildForeignTonePrompt, isUnfaithfulForeignProofing, keepForeignEnding, normalizeCorrectionLanguage, unwrapForeignResult, wrapForeignSource } from './language_prompts.ts'
+import { buildForeignProofingPrompt, buildForeignTonePrompt, isUnfaithfulForeignProofing, keepForeignEnding, normalizeCorrectionLanguage, resolveCorrectionLanguage, unwrapForeignResult, wrapForeignSource } from './language_prompts.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -55,8 +55,14 @@ Deno.serve(async (req: Request) => {
       diagnosticTrace,
       language,
     } = await req.json()
-    // 'en' / 'ja' use language_prompts.ts; anything else (including no value) is the Korean path.
-    const correctionLanguage = normalizeCorrectionLanguage(language)
+    // The written text picks the prompts (ko: index.ts, en/ja: language_prompts.ts); the app's
+    // language is the fallback when the text does not tell, and missing means Korean as before.
+    const appLanguage = normalizeCorrectionLanguage(language)
+    const correctionLanguage = resolveCorrectionLanguage(typeof text === 'string' ? text : '', language)
+    if (correctionLanguage !== appLanguage) {
+      // Counts only, never the text: how often people write in a language other than the app's.
+      console.log(JSON.stringify({ event: 'correction_language_switched', app: appLanguage, text: correctionLanguage }))
+    }
 
     if (typeof requestId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId)) diagnosticId = requestId
     if (typeof requestedDiagnosticId === 'string' &&

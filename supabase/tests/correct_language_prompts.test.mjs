@@ -12,6 +12,42 @@ test('language values: only en/ja variants switch; everything else stays Korean'
   for (const v of [undefined, null, '', 'ko', 'ko-KR', 'zh', 'english', 7]) assert.equal(m.normalizeCorrectionLanguage(v), 'ko');
 });
 
+test('the written text picks the language; the app language only fills in', () => {
+  const cases = [
+    // [text, app language, expected]
+    ['i dont know where there going tonight', 'ko', 'en'],      // English typed on a Korean phone
+    ['i dont know where there going tonight', undefined, 'en'], // old app, no language sent
+    ['내일 회의 몇시에 시작하나요', 'en', 'ko'],                 // Korean typed on an English phone
+    ['明日の会議、遅れるかも', 'ko', 'ja'],
+    ['明日の会議、遅れるかも', 'en', 'ja'],
+    ['이 PR merge 해도 되나요?', 'en', 'ko'],                   // Korean with English words
+    ['deploy 완료했습니다', 'en', 'ko'],
+    ['I love 김치 so much', 'ko', 'en'],                         // English with one Korean word
+    ['会議の資料をPDFで送ります', 'en', 'ja'],                   // Japanese with English letters
+    ['teh meeting with 田中さん is moved to friday', 'ja', 'en'], // English with one Japanese name
+    ['明日のmeeting、ちょっと遅れるかも', 'en', 'ja'],
+    ['확인 부탁드려요 https://example.com/very/long/english/path', 'en', 'ko'], // the link is ignored
+    ['메일은 someone.name@example.com 으로 보내주세요', 'en', 'ko'],
+    ['ㅋㅋㅋ', 'en', 'ko'],
+    ['ok', 'ja', 'ja'],          // too short to tell: app language
+    ['12:30 👍', 'en', 'en'],     // no letters: app language
+    ['12:30 👍', undefined, 'ko'],
+    ['会議室予約完了', 'ja', 'ja'], // kanji only (could be Chinese): app language
+    ['会議室予約完了', 'ko', 'ko'],
+  ];
+  for (const [text, app, expected] of cases) {
+    assert.equal(m.resolveCorrectionLanguage(text, app), expected, `${text} (app ${app})`);
+  }
+  assert.equal(m.detectTextLanguage(''), null);
+});
+
+test('index.ts lets the written text pick the prompts and never logs the text', () => {
+  const index = readFileSync(new URL('../functions/correct/index.ts', import.meta.url), 'utf8');
+  assert.match(index, /const correctionLanguage = resolveCorrectionLanguage\(typeof text === 'string' \? text : '', language\)/);
+  assert.match(index, /event: 'correction_language_switched', app: appLanguage, text: correctionLanguage \}/);
+  assert.doesNotMatch(index, /correction_language_switched[^\n]*source/);
+});
+
 test('proofreading prompts protect voice, slang and punctuation choice', () => {
   const en = m.buildForeignProofingPrompt('en', true);
   assert.match(en, /Casual stays casual/);

@@ -14,6 +14,35 @@ export function normalizeCorrectionLanguage(value: unknown): CorrectionLanguage 
   return 'ko'
 }
 
+// ---------- which language the text is written in (2026-11-20) ----------
+// The app sends its own UI language, but people write in other languages too: an English message
+// typed on a Korean phone went down the Korean prompts, and a Korean message on an English phone
+// went down the English ones. The written text now decides; the app language is used only when the
+// text does not say (numbers, emoji, very short Latin, kanji-only text that may be Chinese).
+// URLs, e-mail addresses and @/# tags are ignored so a Korean note with a link stays Korean.
+
+/** The language the text is clearly written in, or null when the letters do not tell. */
+export function detectTextLanguage(source: string): CorrectionLanguage | null {
+  const text = source.replace(/https?:\/\/\S+|www\.\S+|[\w.+-]+@[\w-]+\.[\w.-]+|[@#][^\s]+/gi, ' ')
+  const count = (re: RegExp) => (text.match(re) ?? []).length
+  const hangul = count(/[가-힣ㄱ-ㆎ]/g)
+  const kana = count(/[぀-ヿㇰ-ㇿｦ-ﾟ]/g)
+  const kanji = count(/[一-鿿]/g)
+  const latin = count(/[A-Za-z]/g)
+  // One Hangul syllable or Japanese character carries about as much as three Latin letters, so a
+  // Korean or Japanese sentence with English words keeps its language and an English sentence with
+  // one Korean or Japanese name stays English.
+  if (kana > 0 && kana + kanji >= hangul && (kana + kanji) * 3 >= latin) return 'ja'
+  if (hangul > 0 && hangul * 3 >= latin) return 'ko'
+  if (latin >= 3) return 'en'
+  return null
+}
+
+/** The text decides; the app's language (old apps send none: Korean) fills in when it cannot. */
+export function resolveCorrectionLanguage(source: string, appLanguage: unknown): CorrectionLanguage {
+  return detectTextLanguage(source) ?? normalizeCorrectionLanguage(appLanguage)
+}
+
 // ---------- the writer's text is data, never a request to the model ----------
 // People type questions and instructions to each other ("write me a poem", "what's the capital of
 // France"). Sent bare, the model answered them or refused, and that answer would have replaced the

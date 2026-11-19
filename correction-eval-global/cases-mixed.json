@@ -1,0 +1,23 @@
+{
+  "proofing": [
+    { "id": "mx-en1", "app": "ko", "expectLang": "en", "text": "i cant find the 김치 recipe u sent me", "must": ["can't", "I "], "keep": ["김치", " u "] },
+    { "id": "mx-en2", "app": "ko", "expectLang": "en", "text": "my freind 민수 is comming tomorow", "must": ["friend", "coming", "tomorrow"], "keep": ["민수"] },
+    { "id": "mx-en3", "app": "ko", "expectLang": "en", "text": "see u at 강남역 at 7, dont be late", "must": ["don't"], "keep": ["강남역", " u ", "7"] },
+    { "id": "mx-en4", "app": "ja", "expectLang": "en", "text": "teh meeting with 田中さん is moved to friday", "must": ["the "], "keep": ["田中さん", "friday"] },
+    { "id": "mx-en5", "app": "ko", "expectLang": "en", "text": "Thx for the gift!! 진짜 고마워 lol", "must": [], "keep": ["진짜 고마워", "lol", "Thx"], "forbid": ["Really", "really thank"] },
+    { "id": "mx-en6", "app": "ko", "expectLang": "en", "text": "check this out https://example.com/page its realy good", "must": ["it's", "really"], "keep": ["https://example.com/page"] },
+    { "id": "mx-en7", "app": "ko", "expectLang": "en", "text": "Can you tell me where the nearest station is?", "must": [], "keep": [], "unchanged": true },
+    { "id": "mx-en8", "app": "ko", "expectLang": "en", "text": "I'll be there at 3pm, see you!", "must": [], "keep": [], "unchanged": true },
+    { "id": "mx-ja1", "app": "ko", "expectLang": "ja", "text": "明日はZoomでミーティングします、資料わPDFで送ります", "must": ["資料は"], "keep": ["Zoom", "PDF"] },
+    { "id": "mx-ja2", "app": "en", "expectLang": "ja", "text": "了解です!OK、あとで連絡するね", "must": [], "keep": ["OK", "了解", "連絡するね"] },
+    { "id": "mx-ja3", "app": "en", "expectLang": "ja", "text": "今日わ本当にありがとうございました", "must": ["今日は"], "keep": ["ありがとうございました"] },
+    { "id": "mx-ja4", "app": "ko", "expectLang": "ja", "text": "ソウルの明洞で待ち合わせしよう", "must": [], "keep": ["明洞", "待ち合わせしよう"], "unchanged": true }
+  ],
+  "tone": [
+    { "id": "mx-t1", "app": "ko", "expectLang": "en", "mixed": true, "level": "비즈니스", "text": "can u send me the report about 서울 office by tmrw", "expect": ["[Rr]eport", "서울|Seoul"], "avoid": ["\\[Name\\]", "^[Dd]ear", "\\bu\\b", "tmrw"] },
+    { "id": "mx-t2", "app": "en", "expectLang": "ja", "mixed": true, "level": "존댓말", "text": "明日のmeeting、ちょっと遅れるかも", "expect": ["です|ます|ません"], "avoid": ["かも$"] },
+    { "id": "mx-t3", "app": "ja", "expectLang": "en", "level": "격식체", "text": "hey we gotta move the launch to 12/3 cuz of the server issue", "expect": ["12/3", "[Ss]erver"], "avoid": ["gotta", "cuz", "^[Hh]ey"] },
+    { "id": "mx-t4", "app": "ko", "expectLang": "en", "level": "고객 안내", "text": "ur order is late bc of the holiday, itll ship monday", "expect": ["[Mm]onday", "[Oo]rder"], "avoid": ["\\bur\\b", "\\bbc\\b"] },
+    { "id": "mx-t5", "app": "ko", "expectLang": "ja", "level": "비즈니스", "text": "資料まだ？今日中に送って", "expect": ["です|ます|ください"], "avoid": ["送って$"] }
+  ]
+}

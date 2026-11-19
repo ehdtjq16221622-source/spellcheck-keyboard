@@ -10,7 +10,17 @@ import { stripTypeScriptTypes } from 'node:module';
 const here = new URL('./', import.meta.url);
 const prompts = await import(`data:text/javascript,${encodeURIComponent(stripTypeScriptTypes(
   readFileSync(new URL('../supabase/functions/correct/language_prompts.ts', here), 'utf8')))}`);
-const { proofing, tone } = JSON.parse(readFileSync(new URL('cases.json', here), 'utf8'));
+//   CASES=file case file (default cases.json). A case with "app" instead of "lang" is routed the way
+//              the server routes it: resolveCorrectionLanguage(text, app). "mixed": true allows the
+//              other language's words (names, places) to stay in the output.
+const { proofing: rawProofing, tone: rawTone } = JSON.parse(readFileSync(new URL(process.env.CASES ?? 'cases.json', here), 'utf8'));
+const route = (c) => (c.lang ? c : { ...c, lang: prompts.resolveCorrectionLanguage(c.text, c.app) });
+const proofing = rawProofing.map(route);
+const tone = rawTone.map(route);
+for (const c of [...proofing, ...tone]) {
+  if (c.lang !== 'en' && c.lang !== 'ja') throw new Error(`${c.id} routes to ${c.lang}; this eval covers en/ja prompts only`);
+  if (c.expectLang && c.expectLang !== c.lang) throw new Error(`${c.id} routes to ${c.lang}, expected ${c.expectLang}`);
+}
 const key = process.env.GEMINI_API_KEY;
 if (!key) throw new Error('GEMINI_API_KEY is not set');
 const RUNS = Math.max(1, Number(process.env.RUNS ?? 1));
@@ -53,7 +63,9 @@ async function toneOnce(c) {
     await gemini(system, prompts.wrapForeignSource(c.text), { thinking: 'medium', temperature: 0.3, maxOutputTokens: 4096 }));
   const missing = c.expect.filter((re) => !new RegExp(re, 'm').test(out));
   const unwanted = c.avoid.filter((re) => new RegExp(re, 'm').test(out));
-  const wrongLanguage = c.lang === 'en' ? /[぀-ヿ가-힣]/.test(out) : /[가-힣]/.test(out) || !/[぀-ヿ一-鿿]/.test(out);
+  const wrongLanguage = c.mixed
+    ? (c.lang === 'en' ? !/[A-Za-z]{3}/.test(out) : !/[぀-ヿ]/.test(out))
+    : c.lang === 'en' ? /[぀-ヿ가-힣]/.test(out) : /[가-힣]/.test(out) || !/[぀-ヿ一-鿿]/.test(out);
   return { output: out, missing, unwanted, wrongLanguage, pass: missing.length === 0 && unwanted.length === 0 && !wrongLanguage };
 }
 

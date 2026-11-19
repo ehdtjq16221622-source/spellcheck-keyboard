@@ -1,0 +1,659 @@
+{
+  "model": "gemini-3.1-flash-lite",
+  "runsPerCase": 3,
+  "summary": {
+    "proofing:en": {
+      "pass": 7,
+      "total": 8
+    },
+    "proofing:ja": {
+      "pass": 4,
+      "total": 4
+    },
+    "tone:en": {
+      "pass": 3,
+      "total": 3
+    },
+    "tone:ja": {
+      "pass": 2,
+      "total": 2
+    }
+  },
+  "failures": [
+    {
+      "id": "mx-en2",
+      "input": "my freind 민수 is comming tomorow",
+      "passes": "1/3",
+      "bad": [
+        {
+          "output": "my friend 민수 is coming tomorow",
+          "missing": [
+            "tomorrow"
+          ],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false
+        },
+        {
+          "output": "my friend 민수 is coming tomorow",
+          "missing": [
+            "tomorrow"
+          ],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false
+        }
+      ]
+    }
+  ],
+  "results": [
+    {
+      "kind": "proofing",
+      "id": "mx-en1",
+      "lang": "en",
+      "input": "i cant find the 김치 recipe u sent me",
+      "pass": true,
+      "passes": 3,
+      "runs": [
+        {
+          "output": "I can't find the 김치 recipe u sent me",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "I can't find the 김치 recipe u sent me",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "I can't find the 김치 recipe u sent me",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "proofing",
+      "id": "mx-en2",
+      "lang": "en",
+      "input": "my freind 민수 is comming tomorow",
+      "pass": false,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "my friend 민수 is coming tomorrow",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "my friend 민수 is coming tomorow",
+          "guarded": false,
+          "missing": [
+            "tomorrow"
+          ],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": false
+        },
+        {
+          "output": "my friend 민수 is coming tomorow",
+          "guarded": false,
+          "missing": [
+            "tomorrow"
+          ],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": false
+        }
+      ]
+    },
+    {
+      "kind": "proofing",
+      "id": "mx-en3",
+      "lang": "en",
+      "input": "see u at 강남역 at 7, dont be late",
+      "pass": true,
+      "passes": 3,
+      "runs": [
+        {
+          "output": "see u at 강남역 at 7, don't be late",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "see u at 강남역 at 7, don't be late",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "see u at 강남역 at 7, don't be late",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "proofing",
+      "id": "mx-en4",
+      "lang": "en",
+      "input": "teh meeting with 田中さん is moved to friday",
+      "pass": true,
+      "passes": 3,
+      "runs": [
+        {
+          "output": "the meeting with 田中さん is moved to friday",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "the meeting with 田中さん is moved to friday",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "the meeting with 田中さん is moved to friday",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "proofing",
+      "id": "mx-en5",
+      "lang": "en",
+      "input": "Thx for the gift!! 진짜 고마워 lol",
+      "pass": true,
+      "passes": 3,
+      "runs": [
+        {
+          "output": "Thx for the gift!! 진짜 고마워 lol",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "Thx for the gift!! 진짜 고마워 lol",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "Thx for the gift!! 진짜 고마워 lol",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "proofing",
+      "id": "mx-en6",
+      "lang": "en",
+      "input": "check this out https://example.com/page its realy good",
+      "pass": true,
+      "passes": 3,
+      "runs": [
+        {
+          "output": "check this out https://example.com/page it's really good",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "check this out https://example.com/page it's really good",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "check this out https://example.com/page it's really good",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "proofing",
+      "id": "mx-en7",
+      "lang": "en",
+      "input": "Can you tell me where the nearest station is?",
+      "pass": true,
+      "passes": 3,
+      "runs": [
+        {
+          "output": "Can you tell me where the nearest station is?",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "Can you tell me where the nearest station is?",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "Can you tell me where the nearest station is?",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "proofing",
+      "id": "mx-en8",
+      "lang": "en",
+      "input": "I'll be there at 3pm, see you!",
+      "pass": true,
+      "passes": 3,
+      "runs": [
+        {
+          "output": "I'll be there at 3pm, see you!",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "I'll be there at 3pm, see you!",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "I'll be there at 3pm, see you!",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "proofing",
+      "id": "mx-ja1",
+      "lang": "ja",
+      "input": "明日はZoomでミーティングします、資料わPDFで送ります",
+      "pass": true,
+      "passes": 3,
+      "runs": [
+        {
+          "output": "明日はZoomでミーティングします、資料はPDFで送ります",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "明日はZoomでミーティングします、資料はPDFで送ります",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "明日はZoomでミーティングします、資料はPDFで送ります",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "proofing",
+      "id": "mx-ja2",
+      "lang": "ja",
+      "input": "了解です!OK、あとで連絡するね",
+      "pass": true,
+      "passes": 3,
+      "runs": [
+        {
+          "output": "了解です!OK、あとで連絡するね",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "了解です!OK、あとで連絡するね",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "了解です!OK、あとで連絡するね",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "proofing",
+      "id": "mx-ja3",
+      "lang": "ja",
+      "input": "今日わ本当にありがとうございました",
+      "pass": true,
+      "passes": 3,
+      "runs": [
+        {
+          "output": "今日は本当にありがとうございました",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "今日は本当にありがとうございました",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "今日は本当にありがとうございました",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "proofing",
+      "id": "mx-ja4",
+      "lang": "ja",
+      "input": "ソウルの明洞で待ち合わせしよう",
+      "pass": true,
+      "passes": 3,
+      "runs": [
+        {
+          "output": "ソウルの明洞で待ち合わせしよう",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "ソウルの明洞で待ち合わせしよう",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        },
+        {
+          "output": "ソウルの明洞で待ち合わせしよう",
+          "guarded": false,
+          "missing": [],
+          "lost": [],
+          "unwanted": [],
+          "changedWhenClean": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "mx-t1",
+      "lang": "en",
+      "level": "비즈니스",
+      "input": "can u send me the report about 서울 office by tmrw",
+      "pass": true,
+      "passes": 3,
+      "runs": [
+        {
+          "output": "Could you please send me the report regarding the 서울 office by tomorrow?",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        },
+        {
+          "output": "Could you please send me the report regarding the 서울 office by tomorrow?",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        },
+        {
+          "output": "Could you please send me the report regarding the 서울 office by tomorrow?",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "mx-t2",
+      "lang": "ja",
+      "level": "존댓말",
+      "input": "明日のmeeting、ちょっと遅れるかも",
+      "pass": true,
+      "passes": 3,
+      "runs": [
+        {
+          "output": "明日のmeetingですが、少し遅れるかもしれません。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        },
+        {
+          "output": "明日のミーティング、少し遅れるかもしれません。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        },
+        {
+          "output": "明日のmeeting、少し遅れるかもしれません。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "mx-t3",
+      "lang": "en",
+      "level": "격식체",
+      "input": "hey we gotta move the launch to 12/3 cuz of the server issue",
+      "pass": true,
+      "passes": 3,
+      "runs": [
+        {
+          "output": "The launch must be rescheduled to 12/3 due to the server issue.",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        },
+        {
+          "output": "The launch must be rescheduled to 12/3 due to the server issue.",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        },
+        {
+          "output": "The launch must be rescheduled to 12/3 due to the server issue.",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "mx-t4",
+      "lang": "en",
+      "level": "고객 안내",
+      "input": "ur order is late bc of the holiday, itll ship monday",
+      "pass": true,
+      "passes": 3,
+      "runs": [
+        {
+          "output": "We apologize for the delay due to the holiday, and your order will ship on Monday.",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        },
+        {
+          "output": "I apologize for the delay due to the holiday; your order will ship on Monday.",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        },
+        {
+          "output": "We apologize for the delay with your order due to the holiday; it will ship on Monday.",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "mx-t5",
+      "lang": "ja",
+      "level": "비즈니스",
+      "input": "資料まだ？今日中に送って",
+      "pass": true,
+      "passes": 3,
+      "runs": [
+        {
+          "output": "資料の進捗状況を確認させてください。本日中の送付をお願いします。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        },
+        {
+          "output": "資料の進捗はいかがでしょうか。本日中に送付をお願いします。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        },
+        {
+          "output": "資料はまだでしょうか。本日中に送付をお願いします。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    }
+  ]
+}
