@@ -4,7 +4,13 @@ import { resolveCreditWallet, WalletAccessError } from './_shared/wallet_auth.ts
 import { AIRequestDeadline, AIRequestTimeout, recordSlowAIRequest } from './_shared/ai_deadline.ts'
 type TranslationModelResult = {
   translation: string
-  pronunciationKo: string | null
+  pronunciation: string | null
+}
+
+/** The reader's language for the pronunciation line: what the app sends, Korean when it sends nothing (older apps). */
+type ReadingLanguage = 'ko' | 'en' | 'ja'
+function normalizeReadingLanguage(value: unknown): ReadingLanguage {
+  return value === 'en' || value === 'ja' ? value : 'ko'
 }
 
 const cors = {
@@ -19,7 +25,8 @@ Deno.serve(async (req: Request) => {
 
   let diagnosticId: string = crypto.randomUUID()
   try {
-    const { text, targetLang, deviceId, requestId } = await req.json()
+    const { text, targetLang, deviceId, requestId, pronunciationLang } = await req.json()
+    const readingLang = normalizeReadingLanguage(pronunciationLang)
     if (typeof requestId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId)) diagnosticId = requestId
     const serverManagedCredit = typeof deviceId === 'string' && deviceId.length > 0 &&
       typeof requestId === 'string' && requestId.length > 0
@@ -55,7 +62,7 @@ Deno.serve(async (req: Request) => {
     const aiStartedAt = Date.now()
     const deadline = new AIRequestDeadline()
     try {
-      result = await deadline.run(() => callLunaTranslation(text, targetLang, deadline))
+      result = await deadline.run(() => callLunaTranslation(text, targetLang, deadline, readingLang))
       if (credits?.usageTransactionId) {
         await completeAIUsage(supabase, wallet.walletId, credits.usageTransactionId)
       }
@@ -80,7 +87,12 @@ Deno.serve(async (req: Request) => {
         result: result.translation,
         request_id: requestId,
         diagnostic_id: diagnosticId,
-        ...(result.pronunciationKo ? { pronunciation_ko: result.pronunciationKo } : {}),
+        // Korean readers keep the field older apps read; others get it in their own script.
+        ...(result.pronunciation
+          ? readingLang === 'ko'
+            ? { pronunciation_ko: result.pronunciation }
+            : { pronunciation: result.pronunciation, pronunciation_lang: readingLang }
+          : {}),
         ...(credits ? creditSnapshot(credits) : {}),
       }),
       { headers: { ...cors, 'Content-Type': 'application/json', 'X-Kingboard-Diagnostic-ID': diagnosticId } }
@@ -114,7 +126,8 @@ function noCredits(credits: { freeCredits: number; paidCredits: number; remainin
   )
 }
 
-async function callLunaTranslation(text: string, targetLang: string, deadline?: AIRequestDeadline): Promise<TranslationModelResult> {
+async function callLunaTranslation(text: string, targetLang: string, deadline?: AIRequestDeadline,
+  readingLang: ReadingLanguage = 'ko'): Promise<TranslationModelResult> {
   const langNames: Record<string, string> = {
     ko: '한국어', en: '영어', ja: '일본어', zh: '중국어(간체)', 'zh-Hant': '중국어(번체)',
     es: '스페인어', fr: '프랑스어', de: '독일어', it: '이탈리아어', pt: '포르투갈어',
@@ -124,7 +137,20 @@ async function callLunaTranslation(text: string, targetLang: string, deadline?: 
     tl: '필리핀어', ro: '루마니아어', hu: '헝가리어', da: '덴마크어', fi: '핀란드어',
   }
   const lang = langNames[targetLang] ?? targetLang
-  const instructions = `다음 텍스트를 ${lang}로 자연스럽게 번역하세요. translation에는 번역문만 적으세요. pronunciation_ko에는 번역문을 한국어 사용자가 소리 내어 읽는 그대로 한글로 적으세요(예: こんにちは → 곤니치와, Hello → 헬로). 대상 언어가 한국어일 때만 빈 문자열로 두고, 그 외 언어에서는 pronunciation_ko를 절대 비우지 마세요. 설명은 붙이지 마세요.`
+  // Korean readers: exactly the request older apps have always made. English and Japanese readers get
+  // the pronunciation in romaji/katakana under a neutral field name.
+  const pronunciationField = readingLang === 'ko' ? 'pronunciation_ko' : 'pronunciation'
+  const readingRule: Record<ReadingLanguage, string> = {
+    ko: 'pronunciation_ko에는 번역문을 한국어 사용자가 소리 내어 읽는 그대로 한글로 적으세요(예: こんにちは → 곤니치와, Hello → 헬로). 대상 언어가 한국어일 때만 빈 문자열로 두고, 그 외 언어에서는 pronunciation_ko를 절대 비우지 마세요.',
+    ja: 'pronunciation에는 번역문을 일본어 사용자가 소리 내어 읽는 그대로 가타카나로 적으세요(예: 안녕하세요 → アンニョンハセヨ, Hello → ハロー). 대상 언어가 일본어일 때만 빈 문자열로 두고, 그 외 언어에서는 pronunciation을 절대 비우지 마세요.',
+    en: 'pronunciation에는 번역문을 영어 사용자가 소리 내어 읽을 수 있게 로마자로 적으세요(예: 안녕하세요 → annyeonghaseyo, こんにちは → konnichiwa). 대상 언어가 영어일 때만 빈 문자열로 두고, 그 외 언어에서는 pronunciation을 절대 비우지 마세요.',
+  }
+  const readingDescription: Record<ReadingLanguage, string> = {
+    ko: '한국어 번역이 아니면 반드시 한글로 적은 번역문 발음',
+    ja: '일본어 번역이 아니면 반드시 가타카나로 적은 번역문 발음',
+    en: '영어 번역이 아니면 반드시 로마자로 적은 번역문 발음',
+  }
+  const instructions = `다음 텍스트를 ${lang}로 자연스럽게 번역하세요. translation에는 번역문만 적으세요. ${readingRule[readingLang]} 설명은 붙이지 마세요.`
 
   const res = await (deadline ? deadline.fetch.bind(deadline) : fetch)('https://api.openai.com/v1/responses', {
     method: 'POST',
@@ -148,12 +174,12 @@ async function callLunaTranslation(text: string, targetLang: string, deadline?: 
             type: 'object',
             properties: {
               translation: { type: 'string' },
-              pronunciation_ko: {
+              [pronunciationField]: {
                 type: 'string',
-                description: '한국어 번역이 아니면 반드시 한글로 적은 번역문 발음',
+                description: readingDescription[readingLang],
               },
             },
-            required: ['translation', 'pronunciation_ko'],
+            required: ['translation', pronunciationField],
             additionalProperties: false,
           },
         },
@@ -173,20 +199,20 @@ async function callLunaTranslation(text: string, targetLang: string, deadline?: 
       .map((item: { text?: string }) => item.text ?? '')
       .join('')
   if (!content.trim()) throw new Error('빈 번역 응답')
-  return parseTranslationModelResult(content, targetLang)
+  return parseTranslationModelResult(content, targetLang, readingLang)
 }
 
-function parseTranslationModelResult(raw: string, targetLang: string): TranslationModelResult {
+function parseTranslationModelResult(raw: string, targetLang: string, readingLang: ReadingLanguage = 'ko'): TranslationModelResult {
   const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()
   const parsed = JSON.parse(cleaned) as Record<string, unknown>
   const translation = typeof parsed.translation === 'string' ? parsed.translation.trim() : ''
-  const pronunciation = typeof parsed.pronunciation_ko === 'string'
-    ? parsed.pronunciation_ko.trim()
-    : ''
+  const field = readingLang === 'ko' ? parsed.pronunciation_ko : parsed.pronunciation
+  const pronunciation = typeof field === 'string' ? field.trim() : ''
   if (!translation) throw new Error('빈 번역 응답')
   return {
     translation,
-    pronunciationKo: targetLang === 'ko' || !pronunciation ? null : pronunciation,
+    // No reading line when the translation is already in the reader's language.
+    pronunciation: targetLang === readingLang || !pronunciation ? null : pronunciation,
   }
 }
 
