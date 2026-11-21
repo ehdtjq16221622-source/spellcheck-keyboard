@@ -153,14 +153,15 @@
       }
     },
     "apple_notifications": {
-      "version": 47,
+      "version": 48,
       "verify_jwt": false,
-      "updated_at": 1794486952423,
+      "updated_at": 1795269126490,
       "files": {
-        "apple_notifications/index.ts": "692e14a0aae94aa5",
+        "apple_notifications/index.ts": "27cffcc267e04a49",
         "apple_notifications/_shared/apple_notification_verifier.ts": "5ebdb79d78031d55",
         "apple_notifications/_shared/apple_subscription_portable.ts": "7287457ae7d47218",
         "apple_notifications/_shared/credits.ts": "29cdf0a666e37406",
+        "apple_notifications/_shared/revenue.ts": "c437dc4934921035",
         "apple_notifications/_shared/telegram.ts": "932ca4944375a8bf"
       }
     },
@@ -250,11 +251,11 @@
       }
     },
     "service_monitor": {
-      "version": 12,
+      "version": 15,
       "verify_jwt": false,
-      "updated_at": 1793131386084,
+      "updated_at": 1795265829770,
       "files": {
-        "service_monitor/index.ts": "80d75a00f31a346e",
+        "service_monitor/index.ts": "96a22ce742a3507e",
         "_shared/telegram.ts": "932ca4944375a8bf"
       }
     },
@@ -290,17 +291,18 @@
       }
     },
     "credit_pack_purchase": {
-      "version": 3,
+      "version": 4,
       "verify_jwt": false,
-      "updated_at": 1794802097485,
+      "updated_at": 1795269167036,
       "files": {
-        "credit_pack_purchase/index.ts": "61f6e8644f2ff145",
+        "credit_pack_purchase/index.ts": "33e55a8641f10b01",
         "credit_pack_purchase/_shared/apple_subscription_portable.ts": "4adaf6808394efd4",
         "credit_pack_purchase/_shared/apple_subscription_status.ts": "9906b9e9889af6fb",
         "credit_pack_purchase/_shared/credit_pack_validation.ts": "e86f82e567173164",
         "credit_pack_purchase/_shared/google_pack_validation.ts": "032d48d65c58a834",
         "credit_pack_purchase/_shared/google_play.ts": "ef719c6199681c9f",
         "credit_pack_purchase/_shared/google_play_products.ts": "ea2d1d445a89d08a",
+        "credit_pack_purchase/_shared/revenue.ts": "c437dc4934921035",
         "credit_pack_purchase/_shared/telegram.ts": "932ca4944375a8bf",
         "credit_pack_purchase/_shared/wallet_auth.ts": "e84fecb12f4eb98e"
       }
@@ -321,5 +323,5 @@
       }
     }
   },
-  "recorded_at": "2026-11-12T12:37:28.942Z"
+  "recorded_at": "2026-11-21T13:53:37.610Z"
 }

@@ -70,3 +70,14 @@ limited to 10 seconds; wallet lookup, ledger calls, and client delivery are outs
 Server tests: 230 passed. Isolated database tests: 44 passed. iOS source/Swift logic tests:
 494 passed, zero failed, one UIKit/ImageIO simulator test skipped. No new iOS archive or
 physical-device ad callback/benefit popup verification was performed in this rollout.
+
+## 2026-11-21 — storage alarm and revenue alerts
+
+- `service_monitor` v15 from a9a6530 (cherry-pick of c3ea70d): RPC `service_monitor_storage`
+  (migration 20261121130000) and Telegram storage warning at 5GB / 300MB pg_net responses,
+  critical at 6.5GB. Follows the disk-full read-only incident (net._http_response 6.4GB).
+- Migration 20261121150000_revenue_events.sql applied via Management API after a rolled-back
+  rehearsal; `revenue_events` and `record_revenue_event` are service-role only.
+- `apple_notifications` v48 and `credit_pack_purchase` v4 from 1e0cf82: purchase/refund alerts
+  show Apple's price and the KST month's Production total per currency; lifetime pass routed
+  separately. Re-downloaded live source matches the commit; snapshots recorded.

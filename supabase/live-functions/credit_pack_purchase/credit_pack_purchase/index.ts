@@ -5,6 +5,7 @@ import { CreditPackClaimError, validateCreditPackClaim } from './_shared/credit_
 import { sendTelegram } from './_shared/telegram.ts'
 import { validateGooglePackClaim } from './_shared/google_pack_validation.ts'
 import { consumeProductPurchase, getProductPurchase, GooglePlayApiError, purchaseTokenHash } from './_shared/google_play_products.ts'
+import { appleRevenueAmount, recordRevenue, revenueLine } from './_shared/revenue.ts'
 
 // Credit packs (one-time AI credits that never expire).
 //   POST { action: 'account_token', wallet_id }               -> { account_token }
@@ -135,9 +136,10 @@ Deno.serve(async (req: Request) => {
       if (row.result === 'granted' || row.result === 'sandbox_limit') {
         const label = claim.credits.toLocaleString('ko-KR')
         const prefix = claim.environment === 'Sandbox' ? '🧪 안드로이드 시험 결제' : '💳 안드로이드 묶음 구매'
-        await sendTelegram(row.result === 'granted'
+        // Google's purchase record carries no price, so the amount is not counted in the total.
+        await sendTelegram((row.result === 'granted'
           ? `${prefix} · ${label} 크레딧 지급`
-          : `🧪 안드로이드 시험 결제 한도 초과 · ${label} 크레딧 미지급 (30일 3회)`, {
+          : `🧪 안드로이드 시험 결제 한도 초과 · ${label} 크레딧 미지급 (30일 3회)`) + '\n- 매출 금액 미확인 (구글 결제 · 합계 제외)', {
           supabase, alertType: 'credit_pack_purchase', idempotencyKey: `gp:${claim.orderId}:${row.result}`,
           metadata: { environment: claim.environment, product_id: claim.productId, store: 'google_play' },
         }).catch(() => false)
@@ -197,12 +199,25 @@ Deno.serve(async (req: Request) => {
     console.log(JSON.stringify({ category: 'credit_pack_claim', result: row.result, product: claim.productId,
       environment: claim.environment, diagnosticId }))
 
+    // Revenue from Apple's own record of the transaction (the server-fetched one, not the app's copy).
+    const amount = appleRevenueAmount(current)
+    const purchaseMs = typeof current.purchaseDate === 'number' ? current.purchaseDate : Date.now()
+    const revenue = amount
+      ? await recordRevenue(supabase, {
+        store: 'app_store', environment: claim.environment, category: 'credit_pack', kind: 'purchase',
+        productId: claim.productId, transactionId: claim.transactionId, amountMilli: amount.amountMilli,
+        currency: amount.currency, occurredAtMs: purchaseMs, source: 'credit_pack_claim',
+      })
+      : null
     if (row.result === 'granted' || row.result === 'sandbox_limit') {
       const label = claim.credits.toLocaleString('ko-KR')
       const prefix = claim.environment === 'Sandbox' ? '🧪 시험 결제' : '💳 묶음 구매'
-      await sendTelegram(row.result === 'granted'
+      const revenueText = amount
+        ? '\n' + revenueLine('purchase', amount.amountMilli, amount.currency, claim.environment, revenue)
+        : ''
+      await sendTelegram((row.result === 'granted'
         ? `${prefix} · ${label} 크레딧 지급`
-        : `🧪 시험 결제 한도 초과 · ${label} 크레딧 미지급 (30일 3회)`, {
+        : `🧪 시험 결제 한도 초과 · ${label} 크레딧 미지급 (30일 3회)`) + revenueText, {
         supabase, alertType: 'credit_pack_purchase', idempotencyKey: `${claim.transactionId}:${row.result}`,
         metadata: { environment: claim.environment, product_id: claim.productId },
       }).catch(() => false)
