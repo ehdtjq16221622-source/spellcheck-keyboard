@@ -3,12 +3,16 @@ import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import { test } from 'node:test';
 
+// Each function bundles its own copy of the revenue helper; tests inline the canonical one.
+const inlineRevenue = code => code.replace(/^import \{[^}]*\} from '\.\/_shared\/revenue\.ts'.*$/m,
+  stripTypeScriptTypes(readFileSync(new URL('../functions/_shared/revenue.ts', import.meta.url), 'utf8')).replace(/^export /gm, ''));
+
 const dir = new URL('../functions/credit_pack_purchase/', import.meta.url);
 const validation = stripTypeScriptTypes(readFileSync(new URL('_shared/credit_pack_validation.ts', dir), 'utf8'))
   .replace(/^export /gm, '');
 const googleValidation = stripTypeScriptTypes(readFileSync(new URL('_shared/google_pack_validation.ts', dir), 'utf8'))
   .replace(/^import .*$/gm, '').replace(/^export /gm, '');
-const runnable = stripTypeScriptTypes(readFileSync(new URL('index.ts', dir), 'utf8')
+const runnable = stripTypeScriptTypes(inlineRevenue(readFileSync(new URL('index.ts', dir), 'utf8'))
   .replace(/^import \{ createClient \} from .*$/m, 'const createClient = globalThis.__db;')
   .replace(/^import \{ fetchCurrentAppleTransaction, verifyAppleTransactionJws \} from .*$/m,
     'const { fetchCurrentAppleTransaction, verifyAppleTransactionJws } = globalThis.__apple;')
@@ -184,4 +188,15 @@ test('android: packs need a signed-in wallet session and valid input', async () 
   }
   const unknown = await call({ ...androidClaim, product_id: 'com.kingboard.app.monthly_pro' }, { appleUser: 'google:111' });
   assert.deepEqual([unknown.status, unknown.body.error], [409, 'unknown_product']);
+});
+test('a granted claim records the price from Apple\'s own transaction record and shows it', async () => {
+  const priced = { ...tx, price: 7000000, currency: 'KRW', purchaseDate: Date.parse('2026-11-21T02:59:00Z') };
+  const r = await call({ action: 'claim', wallet_id: 'v2:a', signed_transaction: 'jws' },
+    { current: priced, submitted: { ...priced, price: 1 } });
+  assert.equal(r.status, 200);
+  const record = r.rpc.find((c) => c.name === 'record_revenue_event');
+  assert.equal(record.args.p_amount_milli, 7000000);
+  assert.equal(record.args.p_category, 'credit_pack');
+  assert.equal(record.args.p_source, 'credit_pack_claim');
+  assert.match(r.telegram[0], /^💳 묶음 구매 · 7,000 크레딧 지급\n- 매출 ₩7,000/);
 });

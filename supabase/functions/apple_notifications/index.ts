@@ -2,6 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { verifyAppleNotificationJws, verifyAppleRenewalInfoJws, verifyAppleTransactionJws } from './_shared/apple_notification_verifier.ts'
 import { sendTelegram } from './_shared/telegram.ts'
 import { subscriptionCreditsForProduct } from './_shared/credits.ts'
+import { appleRevenueAmount, recordRevenue, revenueLine, type RevenueEvent } from './_shared/revenue.ts'
 
 // App Store Server Notifications V2 receiver.
 // Apple POSTs { signedPayload: <JWS> } on subscription lifecycle events. We
@@ -28,6 +29,7 @@ const CREDIT_PACK_PRODUCTS = new Set([
   'com.kingboard.app.credits_7000',
   'com.kingboard.app.credits_18000',
 ])
+const LIFETIME_PRODUCT = 'com.kingboard.app.features_lifetime'
 
 function safeErrorCode(error: unknown): string {
   let current = error
@@ -103,7 +105,14 @@ Deno.serve(async (req: Request) => {
       return await handleCreditPackNotification({
         notificationType, productId, environment,
         transactionId: typeof tx.transactionId === 'string' ? tx.transactionId : null,
-        notificationUUID, diagnosticId,
+        notificationUUID, diagnosticId, tx, signedDateMs: typeof notif.signedDate === 'number' ? notif.signedDate : null,
+      })
+    }
+    // The lifetime pass is a non-consumable with no server state; only its revenue is tracked here.
+    if (productId === LIFETIME_PRODUCT) {
+      return await handleLifetimeNotification({
+        notificationType, environment, tx, diagnosticId,
+        signedDateMs: typeof notif.signedDate === 'number' ? notif.signedDate : null,
       })
     }
 
@@ -236,6 +245,20 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // Revenue: each charge or refund Apple reports, recorded once per transaction (best-effort).
+    // An upgrade is an immediate new charge; Apple does not report the prorated credit.
+    const revenueKind: RevenueEvent['kind'] | null =
+      notificationType === 'SUBSCRIBED' || notificationType === 'DID_RENEW' || notificationType === 'OFFER_REDEEMED' ||
+        (notificationType === 'DID_CHANGE_RENEWAL_PREF' && subtype === 'UPGRADE') ? 'purchase'
+        : notificationType === 'REFUND' ? 'refund'
+        : notificationType === 'REFUND_REVERSED' ? 'refund_reversal' : null
+    const revenue = revenueKind
+      ? appleRevenueEvent(tx, revenueKind, 'subscription', environment,
+        typeof notif.signedDate === 'number' ? notif.signedDate : null)
+      : null
+    const subscriptionRevenue = revenue && KNOWN_SUBSCRIPTION_PRODUCTS.has(revenue.productId) ? revenue : null
+    const revenueResult = subscriptionRevenue ? await recordRevenue(supabase, subscriptionRevenue) : null
+
     // Telegram alerts for meaningful events. Kept short: the first line says what
     // happened and to which plan; extra lines appear only when something is off.
     const plan = planName(productId)
@@ -274,6 +297,10 @@ Deno.serve(async (req: Request) => {
       // First line: emoji title. Every following line starts with "- ".
       const lines = [`${environment === 'Production' ? '' : '🧪 [테스트] '}${label}`]
       if (details.length) lines.push(`- ${details.join(' · ')}`)
+      if (subscriptionRevenue) {
+        lines.push(revenueLine(subscriptionRevenue.kind, subscriptionRevenue.amountMilli, subscriptionRevenue.currency,
+          environment, revenueResult))
+      }
       if (!deviceId && notificationType !== 'TEST') lines.push('- ⚠️ 연결된 지갑 없음')
       // Cancellations and refunds are rare, so they carry the current subscriber
       // count in the same message. SUBSCRIBED/DID_RENEW skip it (noisy in spikes).
@@ -341,10 +368,22 @@ async function handleCreditPackNotification(input: {
   transactionId: string | null
   notificationUUID: string
   diagnosticId: string
+  tx: Record<string, unknown>
+  signedDateMs: number | null
 }): Promise<Response> {
-  const { notificationType, productId, environment, transactionId, notificationUUID, diagnosticId } = input
+  const { notificationType, productId, environment, transactionId, notificationUUID, diagnosticId, tx, signedDateMs } = input
   const ok = (result: string) => new Response(JSON.stringify({ ok: true, notificationType, result, diagnosticId }),
     { status: 200, headers: { 'Content-Type': 'application/json' } })
+  // The purchase alert comes from credit_pack_purchase when the app claims; this only records the
+  // revenue, so a pack bought but never claimed still counts. Whichever path is first records it.
+  if (notificationType === 'ONE_TIME_CHARGE') {
+    const purchase = appleRevenueEvent(tx, 'purchase', 'credit_pack', environment, signedDateMs)
+    if (purchase) {
+      const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+      await recordRevenue(supabase, purchase)
+    }
+    return ok(purchase ? 'revenue_recorded' : 'ignored')
+  }
   // CONSUMPTION_REQUEST and REFUND_DECLINED need no credit change. Consumption data is not sent:
   // Apple requires the customer's consent for it, which the app does not collect.
   if (notificationType !== 'REFUND' && notificationType !== 'REFUND_REVERSED') return ok('ignored')
@@ -373,18 +412,75 @@ async function handleCreditPackNotification(input: {
   const row = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null
   const result = String(row?.result ?? 'unknown')
   console.log(JSON.stringify({ category: 'credit_pack_refund', rpc, result, environment, diagnosticId }))
+  // Recorded after the credit change succeeded; never affects the 500-for-retry path above.
+  const refundRevenue = appleRevenueEvent(tx, notificationType === 'REFUND' ? 'refund' : 'refund_reversal',
+    'credit_pack', environment, signedDateMs)
+  const refundRevenueResult = refundRevenue ? await recordRevenue(supabase, refundRevenue) : null
   if (result === 'recovered' || result === 'recorded_unclaimed' || result === 'restored') {
     const envLabel = environment === 'Sandbox' ? '🧪 ' : ''
+    const revenueText = refundRevenue
+      ? '\n' + revenueLine(refundRevenue.kind, refundRevenue.amountMilli, refundRevenue.currency, environment,
+        refundRevenueResult)
+      : ''
     const text = notificationType === 'REFUND'
       ? `${envLabel}💸 묶음 환불 · ${credits} 크레딧 · 회수 ${Number(row?.recovered ?? 0).toLocaleString('ko-KR')}` +
         (Number(row?.shortfall ?? 0) > 0 ? ` (이미 사용 ${Number(row?.shortfall).toLocaleString('ko-KR')})` : '') +
         (result === 'recorded_unclaimed' ? ' · 지급 전 환불' : '')
       : `${envLabel}↩️ 묶음 환불 취소 · ${credits} 크레딧 · 복구 ${Number(row?.restored ?? 0).toLocaleString('ko-KR')}`
-    await sendTelegram(text, {
+    await sendTelegram(text + revenueText, {
       supabase, alertType: 'credit_pack_refund', idempotencyKey: `${notificationType}:${transactionId}`,
     }).catch(() => false)
   }
   return ok(result)
+}
+
+// Lifetime pass: purchase, refund and refund reversal alerts with the revenue change. Family Sharing
+// access is not a payment, so it is neither recorded nor announced.
+async function handleLifetimeNotification(input: {
+  notificationType: string
+  environment: string
+  tx: Record<string, unknown>
+  diagnosticId: string
+  signedDateMs: number | null
+}): Promise<Response> {
+  const { notificationType, environment, tx, diagnosticId, signedDateMs } = input
+  const ok = (result: string) => new Response(JSON.stringify({ ok: true, notificationType, result, diagnosticId }),
+    { status: 200, headers: { 'Content-Type': 'application/json' } })
+  const kind: RevenueEvent['kind'] | null = notificationType === 'ONE_TIME_CHARGE' ? 'purchase'
+    : notificationType === 'REFUND' ? 'refund' : notificationType === 'REFUND_REVERSED' ? 'refund_reversal' : null
+  if (!kind) return ok('ignored')
+  if (tx.inAppOwnershipType === 'FAMILY_SHARED') return ok('family_shared')
+  const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+  const event = appleRevenueEvent(tx, kind, 'lifetime', environment, signedDateMs)
+  const result = event ? await recordRevenue(supabase, event) : null
+  const title = kind === 'purchase' ? '💎 평생이용권 구매' : kind === 'refund' ? '💸 평생이용권 환불' : '↩️ 평생이용권 환불 취소'
+  const lines = [`${environment === 'Production' ? '' : '🧪 [테스트] '}${title}`]
+  const whenMs = kind === 'purchase' ? (typeof tx.purchaseDate === 'number' ? tx.purchaseDate : signedDateMs) : signedDateMs
+  if (whenMs != null) lines.push(`- ${formatKst(whenMs)}`)
+  if (event) lines.push(revenueLine(event.kind, event.amountMilli, event.currency, environment, result))
+  const transactionId = typeof tx.transactionId === 'string' ? tx.transactionId : diagnosticId
+  await sendTelegram(lines.join('\n'), {
+    supabase, alertType: 'lifetime_purchase', idempotencyKey: `${kind}:${transactionId}`,
+    metadata: { environment, kind },
+  }).catch(() => false)
+  return ok(kind)
+}
+
+// The Apple-reported charge or refund for one transaction, or null when Apple sent no price.
+function appleRevenueEvent(
+  tx: Record<string, unknown>, kind: RevenueEvent['kind'], category: RevenueEvent['category'],
+  environment: string, signedDateMs: number | null,
+): RevenueEvent | null {
+  const amount = appleRevenueAmount(tx)
+  if (!amount || typeof tx.transactionId !== 'string' || typeof tx.productId !== 'string') return null
+  if (tx.inAppOwnershipType === 'FAMILY_SHARED') return null
+  if (environment !== 'Production' && environment !== 'Sandbox') return null
+  const at = kind === 'purchase' ? tx.purchaseDate : kind === 'refund' ? (tx.revocationDate ?? signedDateMs) : signedDateMs
+  return {
+    store: 'app_store', environment, category, kind, productId: tx.productId,
+    transactionId: tx.transactionId, amountMilli: amount.amountMilli, currency: amount.currency,
+    occurredAtMs: typeof at === 'number' ? at : Date.now(), source: 'apple_notification',
+  }
 }
 
 function planName(productId: unknown): string {

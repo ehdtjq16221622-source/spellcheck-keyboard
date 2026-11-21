@@ -3,9 +3,13 @@ import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import { test } from 'node:test';
 
+// Each function bundles its own copy of the revenue helper; tests inline the canonical one.
+const inlineRevenue = code => code.replace(/^import \{[^}]*\} from '\.\/_shared\/revenue\.ts'.*$/m,
+  stripTypeScriptTypes(readFileSync(new URL('../functions/_shared/revenue.ts', import.meta.url), 'utf8')).replace(/^export /gm, ''));
+
 const helper = readFileSync(new URL('../functions/_shared/subscription_reporting.ts', import.meta.url), 'utf8');
 const helperUrl = `data:text/javascript,${encodeURIComponent(stripTypeScriptTypes(helper))}`;
-const source = readFileSync(new URL('../functions/apple_notifications/index.ts', import.meta.url), 'utf8');
+const source = inlineRevenue(readFileSync(new URL('../functions/apple_notifications/index.ts', import.meta.url), 'utf8'));
 const runnable = stripTypeScriptTypes(source
   .replace(/^import \{ createClient \} from .*$/m, 'const createClient = globalThis.__notificationDb;')
   .replace(/^import \{ verifyAppleNotificationJws, verifyAppleRenewalInfoJws, verifyAppleTransactionJws \} from .*$/m,
