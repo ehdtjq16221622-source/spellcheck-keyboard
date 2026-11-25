@@ -1,0 +1,558 @@
+{
+  "model": "gemini-3.1-flash-lite",
+  "runsPerCase": 1,
+  "summary": {
+    "tone:ja": {
+      "pass": 26,
+      "total": 28
+    }
+  },
+  "failures": [
+    {
+      "id": "ja-bz3",
+      "level": "비즈니스",
+      "input": "取引先が資料を送ってくれました。",
+      "passes": "0/1",
+      "bad": [
+        {
+          "output": "取引先より資料をいただきました。",
+          "missing": [
+            "くださ"
+          ],
+          "unwanted": [
+            "いただき"
+          ],
+          "wrongLanguage": false
+        }
+      ]
+    },
+    {
+      "id": "ja-po4",
+      "level": "존댓말",
+      "input": "先に帰るね。",
+      "passes": "0/1",
+      "bad": [
+        {
+          "output": "先に失礼します。",
+          "missing": [
+            "帰"
+          ],
+          "unwanted": [],
+          "wrongLanguage": false
+        }
+      ]
+    }
+  ],
+  "results": [
+    {
+      "kind": "tone",
+      "id": "ja-dt1",
+      "lang": "ja",
+      "level": "소개팅체",
+      "input": "今日は楽しかった。また会いたいな。",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "今日は楽しかった！また会いたいな。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-dt2",
+      "lang": "ja",
+      "level": "소개팅체",
+      "input": "週末空いてる？ご飯行かない？",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "週末空いてる？ご飯でも行かない？",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-dt3",
+      "lang": "ja",
+      "level": "소개팅체",
+      "input": "今日はありがとうございました。すごく楽しかったです。",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "今日はありがとうございました！すごく楽しかったです。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-dt4",
+      "lang": "ja",
+      "level": "소개팅체",
+      "input": "昨日は遅くまで付き合ってくれてありがとう。無事に着いたよ。",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "昨日は遅くまで付き合ってくれてありがとう！無事に着いたよ。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-sm1",
+      "lang": "ja",
+      "level": "스마트 교정",
+      "input": "明日、何時にする？",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "明日、何時にしようか？",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-sm2",
+      "lang": "ja",
+      "level": "스마트 교정",
+      "input": "まだ返事来てないんだけど、どうなってるの？",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "まだ返事来てないんだけど、状況はどうかな？",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-sm3",
+      "lang": "ja",
+      "level": "스마트 교정",
+      "input": "資料、今日中に送ってください。",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "資料を今日中にお送りください。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-sm4",
+      "lang": "ja",
+      "level": "스마트 교정",
+      "input": "会議は3時からです。遅れないでね。",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "会議は3時からです。遅れないようにね。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-fm1",
+      "lang": "ja",
+      "level": "격식체",
+      "input": "部長がそう言ってた。",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "部長がそのようにおっしゃっていました。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-fm2",
+      "lang": "ja",
+      "level": "격식체",
+      "input": "明日そっちに行くね。",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "明日、そちらへ伺います。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-fm3",
+      "lang": "ja",
+      "level": "격식체",
+      "input": "先生がこの本をくれた。",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "先生がこの本をくださいました。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-fm4",
+      "lang": "ja",
+      "level": "격식체",
+      "input": "私が資料を見ます。",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "私が資料を拝見いたします。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-bz1",
+      "lang": "ja",
+      "level": "비즈니스",
+      "input": "部長が明日の会議に来るって。",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "部長が明日の会議にいらっしゃるとのことです。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-bz2",
+      "lang": "ja",
+      "level": "비즈니스",
+      "input": "後で確認して連絡するね。",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "後ほど確認のうえ、ご連絡いたします。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-bz3",
+      "lang": "ja",
+      "level": "비즈니스",
+      "input": "取引先が資料を送ってくれました。",
+      "pass": false,
+      "passes": 0,
+      "runs": [
+        {
+          "output": "取引先より資料をいただきました。",
+          "missing": [
+            "くださ"
+          ],
+          "unwanted": [
+            "いただき"
+          ],
+          "wrongLanguage": false,
+          "pass": false
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-bz4",
+      "lang": "ja",
+      "level": "비즈니스",
+      "input": "明日の10時に打ち合わせしよう。",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "明日の10時に打ち合わせをお願いいたします。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-cs1",
+      "lang": "ja",
+      "level": "고객 안내",
+      "input": "荷物は明日届きます。",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "お荷物は明日お届けいたします。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-cs2",
+      "lang": "ja",
+      "level": "고객 안내",
+      "input": "商品が壊れてたので交換してほしい。",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "商品に不備がございましたこと、深くお詫び申し上げますとともに、早急に交換の手続きをさせていただきます。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-cs3",
+      "lang": "ja",
+      "level": "고객 안내",
+      "input": "店長に確認してから返事する。",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "店長に確認の上、改めてお返事いたします。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-cs4",
+      "lang": "ja",
+      "level": "고객 안내",
+      "input": "ご注文の発送は3日後になります。",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "ご注文いただきました商品は、3日後に発送いたします。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-pt1",
+      "lang": "ja",
+      "level": "학부모 안내",
+      "input": "明日は遠足です。お弁当を持たせてください。",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "明日は遠足でございます。お弁当のご用意をお願いいたします。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-pt2",
+      "lang": "ja",
+      "level": "학부모 안내",
+      "input": "今日、太郎くんが転んで膝をすりむいた。",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "本日、太郎くんが転んで膝をすりむいてしまいました。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-pt3",
+      "lang": "ja",
+      "level": "학부모 안내",
+      "input": "来週の月曜は休みだよ。",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "来週の月曜日は、お休みとなります。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-pt4",
+      "lang": "ja",
+      "level": "학부모 안내",
+      "input": "保護者会に来てくれてありがとう。",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "保護者会にお越しくださり、ありがとうございます。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-po1",
+      "lang": "ja",
+      "level": "존댓말",
+      "input": "明日行くね。",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "明日伺いますね。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-po2",
+      "lang": "ja",
+      "level": "존댓말",
+      "input": "部長が言ってた。",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "部長がおっしゃっていました。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-po3",
+      "lang": "ja",
+      "level": "존댓말",
+      "input": "これ、もらっていい？",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "こちら、いただいてもよろしいでしょうか。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-po4",
+      "lang": "ja",
+      "level": "존댓말",
+      "input": "先に帰るね。",
+      "pass": false,
+      "passes": 0,
+      "runs": [
+        {
+          "output": "先に失礼します。",
+          "missing": [
+            "帰"
+          ],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": false
+        }
+      ]
+    }
+  ]
+}

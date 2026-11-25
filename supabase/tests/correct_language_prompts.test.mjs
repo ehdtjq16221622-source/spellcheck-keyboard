@@ -115,6 +115,27 @@ test('every app tone key has an English and Japanese instruction', () => {
   assert.match(m.buildForeignTonePrompt('en', '알수없음', true), /friendly, polite/, 'unknown keys fall back to polite');
 });
 
+test('Japanese tone prompts: keigo direction, dating warmth and intent are spelled out; English is untouched', () => {
+  const ja = (key) => m.buildForeignTonePrompt('ja', key, true);
+  for (const key of ['존댓말', '격식체', '비즈니스', '고객 안내', '학부모 안내']) {
+    assert.match(ja(key), /尊敬語に「おる／おります」を重ねてはいけません/, key);
+    assert.match(ja(key), /×おっしゃっておりました ○おっしゃっていました/, key);
+  }
+  assert.match(ja('스마트 교정'), /何時がいいかな/);        // names the exact intent change to avoid
+  assert.match(ja('스마트 교정'), /文の働き/);
+  const dating = ja('소개팅체');
+  assert.match(dating, /本日/);                              // listed as a word NOT to use
+  assert.match(dating, /心待ちにしております/);
+  assert.match(dating, /タメ口ならやわらかいタメ口/);
+  assert.doesNotMatch(dating, /尊敬語に「おる/, 'dating is not a keigo tone');
+  // custom tones and the unknown-key fallback never get the keigo block unless they are a keigo tone
+  assert.doesNotMatch(m.buildForeignTonePrompt('ja', '커스텀', true, 'like a pirate'), /敬語の向き/);
+  assert.match(m.buildForeignTonePrompt('ja', '알수없음', true), /敬語の向き/, 'unknown keys fall back to the polite tone');
+  for (const key of ['스마트 교정', '존댓말', '격식체', '비즈니스', '고객 안내', '학부모 안내', '소개팅체', '커스텀']) {
+    assert.doesNotMatch(m.buildForeignTonePrompt('en', key, true, 'x'), /敬語|尊敬語|謙譲語/, `en ${key}`);
+  }
+});
+
 test('deletion guard: fixes pass, cut text is caught, short text is never judged', () => {
   assert.equal(m.hasSuspiciousForeignDeletion('i dont know where there going tonight', "I don't know where they're going tonight", 'en'), false);
   assert.equal(m.hasSuspiciousForeignDeletion('i dont know where there going tonight', 'I know.', 'en'), true);

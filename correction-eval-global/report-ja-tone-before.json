@@ -1,0 +1,324 @@
+{
+  "model": "gemini-3.1-flash-lite",
+  "runsPerCase": 1,
+  "summary": {
+    "tone:ja": {
+      "pass": 7,
+      "total": 12
+    }
+  },
+  "failures": [
+    {
+      "id": "ja-sm1",
+      "level": "스마트 교정",
+      "input": "明日、何時にする？",
+      "passes": "0/1",
+      "bad": [
+        {
+          "output": "明日は何時頃がいいかな？",
+          "missing": [],
+          "unwanted": [
+            "いいかな",
+            "がいい"
+          ],
+          "wrongLanguage": false
+        }
+      ]
+    },
+    {
+      "id": "ja-sm3",
+      "level": "스마트 교정",
+      "input": "資料、今日中に送ってください。",
+      "passes": "0/1",
+      "bad": [
+        {
+          "output": "資料を本日中にお送りいただけますでしょうか。",
+          "missing": [
+            "今日中"
+          ],
+          "unwanted": [],
+          "wrongLanguage": false
+        }
+      ]
+    },
+    {
+      "id": "ja-sm4",
+      "level": "스마트 교정",
+      "input": "会議は3時からです。遅れないでね。",
+      "passes": "0/1",
+      "bad": [
+        {
+          "output": "会議は3時からだよ。時間通りに来てね。",
+          "missing": [
+            "遅れ"
+          ],
+          "unwanted": [],
+          "wrongLanguage": false
+        }
+      ]
+    },
+    {
+      "id": "ja-fm1",
+      "level": "격식체",
+      "input": "部長がそう言ってた。",
+      "passes": "0/1",
+      "bad": [
+        {
+          "output": "部長がそのようにおっしゃっておりました。",
+          "missing": [],
+          "unwanted": [
+            "おっしゃっており",
+            "おっしゃっておりま"
+          ],
+          "wrongLanguage": false
+        }
+      ]
+    },
+    {
+      "id": "ja-fm3",
+      "level": "격식체",
+      "input": "先生がこの本をくれた。",
+      "passes": "0/1",
+      "bad": [
+        {
+          "output": "先生より本書を賜りました。",
+          "missing": [
+            "くださ"
+          ],
+          "unwanted": [],
+          "wrongLanguage": false
+        }
+      ]
+    }
+  ],
+  "results": [
+    {
+      "kind": "tone",
+      "id": "ja-dt1",
+      "lang": "ja",
+      "level": "소개팅체",
+      "input": "今日は楽しかった。また会いたいな。",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "今日は楽しかった。また会いたいな。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-dt2",
+      "lang": "ja",
+      "level": "소개팅체",
+      "input": "週末空いてる？ご飯行かない？",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "週末空いてる？ご飯行かない？",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-dt3",
+      "lang": "ja",
+      "level": "소개팅체",
+      "input": "今日はありがとうございました。すごく楽しかったです。",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "今日はありがとうございました。すごく楽しかったです。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-dt4",
+      "lang": "ja",
+      "level": "소개팅체",
+      "input": "昨日は遅くまで付き合ってくれてありがとう。無事に着いたよ。",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "昨日は遅くまで付き合ってくれてありがとう。無事に着いたよ。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-sm1",
+      "lang": "ja",
+      "level": "스마트 교정",
+      "input": "明日、何時にする？",
+      "pass": false,
+      "passes": 0,
+      "runs": [
+        {
+          "output": "明日は何時頃がいいかな？",
+          "missing": [],
+          "unwanted": [
+            "いいかな",
+            "がいい"
+          ],
+          "wrongLanguage": false,
+          "pass": false
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-sm2",
+      "lang": "ja",
+      "level": "스마트 교정",
+      "input": "まだ返事来てないんだけど、どうなってるの？",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "まだ返事をもらえていないみたいなんだけど、状況はどうかな？",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-sm3",
+      "lang": "ja",
+      "level": "스마트 교정",
+      "input": "資料、今日中に送ってください。",
+      "pass": false,
+      "passes": 0,
+      "runs": [
+        {
+          "output": "資料を本日中にお送りいただけますでしょうか。",
+          "missing": [
+            "今日中"
+          ],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": false
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-sm4",
+      "lang": "ja",
+      "level": "스마트 교정",
+      "input": "会議は3時からです。遅れないでね。",
+      "pass": false,
+      "passes": 0,
+      "runs": [
+        {
+          "output": "会議は3時からだよ。時間通りに来てね。",
+          "missing": [
+            "遅れ"
+          ],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": false
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-fm1",
+      "lang": "ja",
+      "level": "격식체",
+      "input": "部長がそう言ってた。",
+      "pass": false,
+      "passes": 0,
+      "runs": [
+        {
+          "output": "部長がそのようにおっしゃっておりました。",
+          "missing": [],
+          "unwanted": [
+            "おっしゃっており",
+            "おっしゃっておりま"
+          ],
+          "wrongLanguage": false,
+          "pass": false
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-fm2",
+      "lang": "ja",
+      "level": "격식체",
+      "input": "明日そっちに行くね。",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "明日、そちらへ伺います。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-fm3",
+      "lang": "ja",
+      "level": "격식체",
+      "input": "先生がこの本をくれた。",
+      "pass": false,
+      "passes": 0,
+      "runs": [
+        {
+          "output": "先生より本書を賜りました。",
+          "missing": [
+            "くださ"
+          ],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": false
+        }
+      ]
+    },
+    {
+      "kind": "tone",
+      "id": "ja-fm4",
+      "lang": "ja",
+      "level": "격식체",
+      "input": "私が資料を見ます。",
+      "pass": true,
+      "passes": 1,
+      "runs": [
+        {
+          "output": "私が資料を拝見いたします。",
+          "missing": [],
+          "unwanted": [],
+          "wrongLanguage": false,
+          "pass": true
+        }
+      ]
+    }
+  ]
+}

@@ -16,7 +16,8 @@ const prompts = await import(`data:text/javascript,${encodeURIComponent(stripTyp
 const { proofing: rawProofing, tone: rawTone } = JSON.parse(readFileSync(new URL(process.env.CASES ?? 'cases.json', here), 'utf8'));
 const route = (c) => (c.lang ? c : { ...c, lang: prompts.resolveCorrectionLanguage(c.text, c.app) });
 const proofing = rawProofing.map(route);
-const tone = rawTone.map(route);
+const only = (process.env.LEVELS ?? '').split(',').filter(Boolean); // LEVELS=격식체,스마트 교정 limits the tone cases
+const tone = rawTone.filter((c) => only.length === 0 || only.includes(c.level)).map(route);
 for (const c of [...proofing, ...tone]) {
   if (c.lang !== 'en' && c.lang !== 'ja') throw new Error(`${c.id} routes to ${c.lang}; this eval covers en/ja prompts only`);
   if (c.expectLang && c.expectLang !== c.lang) throw new Error(`${c.id} routes to ${c.lang}, expected ${c.expectLang}`);
