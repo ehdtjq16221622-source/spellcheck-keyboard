@@ -14,11 +14,11 @@
       }
     },
     "translate": {
-      "version": 60,
+      "version": 63,
       "verify_jwt": false,
-      "updated_at": 1792931409279,
+      "updated_at": 1795180867727,
       "files": {
-        "translate/index.ts": "7e2329aa10c1104b",
+        "translate/index.ts": "7b7dd1f33ae2a1eb",
         "translate/_shared/ai_deadline.ts": "b2ff7a21aa0ceae0",
         "translate/_shared/credits.ts": "66009b6087917a76",
         "translate/_shared/wallet_auth.ts": "a5a6dfd1cabb33f5"
@@ -323,5 +323,5 @@
       }
     }
   },
-  "recorded_at": "2026-11-21T13:53:37.610Z"
+  "recorded_at": "2026-11-28T04:29:11.412Z"
 }
