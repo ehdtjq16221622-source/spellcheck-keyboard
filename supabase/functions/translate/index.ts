@@ -2,9 +2,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { consumeAIUsage, refundAIUsage, completeAIUsage } from './_shared/credits.ts'
 import { resolveCreditWallet, WalletAccessError } from './_shared/wallet_auth.ts'
 import { AIRequestDeadline, AIRequestTimeout, recordSlowAIRequest } from './_shared/ai_deadline.ts'
+import { validateWords, wordsInstruction, wordsSchema, type TranslationWord } from './words.ts'
 type TranslationModelResult = {
   translation: string
   pronunciation: string | null
+  /** Optional learner aid; absent when the model gave none or it failed validation. */
+  words?: TranslationWord[]
 }
 
 /** The reader's language for the pronunciation line: what the app sends, Korean when it sends nothing (older apps). */
@@ -93,6 +96,7 @@ Deno.serve(async (req: Request) => {
             ? { pronunciation_ko: result.pronunciation }
             : { pronunciation: result.pronunciation, pronunciation_lang: readingLang }
           : {}),
+        ...(result.words ? { words: result.words } : {}),
         ...(credits ? creditSnapshot(credits) : {}),
       }),
       { headers: { ...cors, 'Content-Type': 'application/json', 'X-Kingboard-Diagnostic-ID': diagnosticId } }
@@ -150,7 +154,8 @@ async function callLunaTranslation(text: string, targetLang: string, deadline?: 
     ja: '일본어 번역이 아니면 반드시 가타카나로 적은 번역문 발음',
     en: '영어 번역이 아니면 반드시 로마자로 적은 번역문 발음',
   }
-  const instructions = `다음 텍스트를 ${lang}로 자연스럽게 번역하세요. translation에는 번역문만 적으세요. ${readingRule[readingLang]} 설명은 붙이지 마세요.`
+  const readerNames: Record<ReadingLanguage, string> = { ko: '한국어', en: '영어', ja: '일본어' }
+  const instructions = `다음 텍스트를 ${lang}로 자연스럽게 번역하세요. translation에는 번역문만 적으세요. ${readingRule[readingLang]} ${wordsInstruction(readerNames[readingLang])} 설명은 붙이지 마세요.`
 
   const res = await (deadline ? deadline.fetch.bind(deadline) : fetch)('https://api.openai.com/v1/responses', {
     method: 'POST',
@@ -178,8 +183,9 @@ async function callLunaTranslation(text: string, targetLang: string, deadline?: 
                 type: 'string',
                 description: readingDescription[readingLang],
               },
+              words: wordsSchema,
             },
-            required: ['translation', pronunciationField],
+            required: ['translation', pronunciationField, 'words'],
             additionalProperties: false,
           },
         },
@@ -209,10 +215,13 @@ function parseTranslationModelResult(raw: string, targetLang: string, readingLan
   const field = readingLang === 'ko' ? parsed.pronunciation_ko : parsed.pronunciation
   const pronunciation = typeof field === 'string' ? field.trim() : ''
   if (!translation) throw new Error('빈 번역 응답')
+  // Words are optional: a bad or missing list is dropped, never an error.
+  const words = targetLang === readingLang ? null : validateWords(parsed.words, translation)
   return {
     translation,
     // No reading line when the translation is already in the reader's language.
     pronunciation: targetLang === readingLang || !pronunciation ? null : pronunciation,
+    ...(words ? { words } : {}),
   }
 }
 
