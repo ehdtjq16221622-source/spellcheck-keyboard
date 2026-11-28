@@ -5,13 +5,17 @@ import { test } from 'node:test';
 
 const source = readFileSync(new URL('../functions/translate/index.ts', import.meta.url), 'utf8');
 const deadlineSource = readFileSync(new URL('../functions/translate/_shared/ai_deadline.ts', import.meta.url),'utf8').replace(/^export /gm,'');
-const runnable = stripTypeScriptTypes(deadlineSource + '\n' + source
+const pronunciationSource = readFileSync(new URL('../functions/translate/pronunciation.ts', import.meta.url), 'utf8').replace(/^export /gm, '');
+const wordsSource = readFileSync(new URL('../functions/translate/words.ts', import.meta.url), 'utf8').replace(/^export /gm, '');
+const runnable = stripTypeScriptTypes(deadlineSource + '\n' + pronunciationSource + '\n' + wordsSource + '\n' + source
   .replace(/^import \{ AIRequestDeadline.*$/m,'')
   .replace(/^import \{ createClient \} from .*;?$/m, 'const createClient = globalThis.__createClient;')
   .replace(/^import \{ consumeAIUsage, refundAIUsage, completeAIUsage \} from .*;?$/m,
     'const consumeAIUsage = globalThis.__consumeAIUsage; const refundAIUsage = globalThis.__refundAIUsage; const completeAIUsage = async () => {};')
   .replace(/^import \{ resolveCreditWallet, WalletAccessError \} from .*;?$/m,
     'const resolveCreditWallet = globalThis.__resolveCreditWallet; class WalletAccessError extends Error {}')
+  .replace(/^import \{ japanesePronunciationGuidance,[\s\S]*?from '\.\/pronunciation\.ts'$/m, '')
+  .replace(/^import \{ validateWords, wordsInstruction, wordsSchema, type TranslationWord \} from '\.\/words\.ts'$/m, '')
   .replace(/^import \{ parseTranslationModelResult, type TranslationModelResult \} from .*;?$/m,
     'const parseTranslationModelResult = globalThis.__parseTranslationModelResult;'));
 
@@ -61,7 +65,7 @@ test('translation uses Luna Responses with structured translation and pronunciat
   assert.equal(request.body.store, false);
   assert.equal(request.body.input, '안녕하세요');
   assert.equal(request.body.text.format.type, 'json_schema');
-  assert.deepEqual(request.body.text.format.schema.required, ['translation', 'pronunciation_ko']);
+  assert.deepEqual(request.body.text.format.schema.required, ['translation', 'pronunciation_ko', 'words']);
 
   responsePayload = {
     status: 'completed',
